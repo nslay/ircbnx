@@ -31,11 +31,12 @@
 #include "BnxResponseEngine.h"
 #include "BnxAccessSystem.h"
 #include "IrcClient.h"
+#include "IrcUser.h"
 
 class BnxBot : public IrcClient {
 public:
 	BnxBot()
-	: m_pConnectTimer(NULL) { }
+	: m_pConnectTimer(NULL), m_bChatter(true) { }
 
 	virtual ~BnxBot();
 
@@ -47,6 +48,8 @@ public:
 
 	void StartUp();
 	void Shutdown();
+
+	virtual void Disconnect();
 
 protected:
 	virtual bool ProcessCommands(const char *pSource, const char *pTarget, const char *pMessage);
@@ -61,10 +64,24 @@ protected:
 	virtual void OnCtcpVersion(const char *pSource, const char *pTarget);
 
 private:
+	struct MatchesUser {
+		MatchesUser(const IrcUser &clUser_)
+		: clUser(clUser_) { }
+
+		bool operator()(const IrcUser &clMask) const {
+			return clMask.Matches(clUser);
+		}
+
+		const IrcUser &clUser;
+	};
+
 	std::string m_strServer, m_strPort;
 	struct event *m_pConnectTimer;
 
-	std::vector<std::string> m_homeChannels;
+	bool m_bChatter;
+
+	std::vector<std::string> m_vHomeChannels;
+	std::vector<IrcUser> m_vIgnoredUsers;
 	BnxResponseEngine m_clResponseEngine;
 	BnxAccessSystem m_clAccessSystem;
 

@@ -41,17 +41,17 @@ void BnxBot::SetServerAndPort(const std::string &strServer, const std::string &s
 }
 
 void BnxBot::AddHomeChannel(const std::string &channel) {
-	if (std::find(m_homeChannels.begin(), m_homeChannels.end(), channel) != m_homeChannels.end())
+	if (std::find(m_vHomeChannels.begin(), m_vHomeChannels.end(), channel) != m_vHomeChannels.end())
 		return;
 
-	m_homeChannels.push_back(channel);
+	m_vHomeChannels.push_back(channel);
 }
 
 void BnxBot::DeleteHomeChannel(const std::string &channel) {
-	std::vector<std::string>::iterator itr = std::find(m_homeChannels.begin(), m_homeChannels.end(), channel);
+	std::vector<std::string>::iterator itr = std::find(m_vHomeChannels.begin(), m_vHomeChannels.end(), channel);
 
-	if (itr != m_homeChannels.end())
-		m_homeChannels.erase(itr);
+	if (itr != m_vHomeChannels.end())
+		m_vHomeChannels.erase(itr);
 }
 
 bool BnxBot::LoadResponseRules(const std::string &strFilename) {
@@ -92,6 +92,13 @@ void BnxBot::Shutdown() {
 		event_free(m_pConnectTimer);
 		m_pConnectTimer = NULL;
 	}
+}
+
+void BnxBot::Disconnect() {
+	IrcClient::Disconnect();
+
+	m_vIgnoredUsers.clear();
+	m_clAccessSystem.ResetSessions();
 }
 
 bool BnxBot::ProcessCommands(const char *pSource, const char *pTarget, const char *pMessage) {
@@ -150,12 +157,33 @@ bool BnxBot::ProcessCommands(const char *pSource, const char *pTarget, const cha
 		return true;
 	}
 
+	if (strCommand == "chatter") {
+		m_bChatter = true;
+
+		// The original BNX would ignore users indefinitely, here we'll clear the list on "chatter"
+		m_vIgnoredUsers.clear();
+
+		Send("PRIVMSG %s :Permission to speak freely, sir?\r\n", clUser.GetNickname().c_str());
+
+		return true;
+	}
+
+	if (strCommand == "shutup") {
+		m_bChatter = false;
+
+		Send("PRIVMSG %s :Aww... Why can't I talk anymore?\r\n", clUser.GetNickname().c_str());
+
+		return true;
+	}
+
 
 	return false;
 }
 
 void BnxBot::ProcessMessage(const char *pSource, const char *pTarget, const char *pMessage) {
-	char aResponseBuffer[512] = "";
+	// Chatter isn't turned on
+	if (!m_bChatter)
+		return;
 
 	IrcUser clUser(pSource);
 	const std::string &strSourceNick = clUser.GetNickname();
@@ -164,16 +192,38 @@ void BnxBot::ProcessMessage(const char *pSource, const char *pTarget, const char
 	if (strSourceNick == GetCurrentNickname())
 		return;
 
-	if (pTarget == GetCurrentNickname()) {
-		const std::string &strResponse = m_clResponseEngine.ComputeResponse(pMessage);
-		snprintf(aResponseBuffer, sizeof(aResponseBuffer), strResponse.c_str(), strSourceNick.c_str());
-		Send("PRIVMSG %s :%s\r\n", strSourceNick.c_str(), aResponseBuffer);
+	const char *pReplyTo = strSourceNick.c_str();
+	std::string strPrefix;
+
+	if (pTarget != GetCurrentNickname()) {
+		if (IrcStrCaseStr(pMessage,GetCurrentNickname().c_str()) == NULL)
+			return;
+
+		pReplyTo = pTarget;
+		strPrefix = strSourceNick + ": ";
 	}
-	else if (IrcStrCaseStr(pMessage,GetCurrentNickname().c_str()) != NULL) {
-		const std::string &strResponse = m_clResponseEngine.ComputeResponse(pMessage);
-		snprintf(aResponseBuffer, sizeof(aResponseBuffer), strResponse.c_str(), strSourceNick.c_str());
-		Send("PRIVMSG %s :%s: %s\r\n", pTarget, strSourceNick.c_str(), aResponseBuffer);
+
+	if (std::find_if(m_vIgnoredUsers.begin(), m_vIgnoredUsers.end(), MatchesUser(clUser)) != m_vIgnoredUsers.end())
+		return;
+
+	if (IrcMatch("*shut*up*", pMessage)) {
+		IrcUser clMask;
+
+		clMask.SetNickname("*");
+		clMask.SetUsername("*");
+		clMask.SetHostname(clUser.GetHostname());
+
+		m_vIgnoredUsers.push_back(clMask);
+
+		Send("PRIVMSG %s :%sOK, I won't talk to you anymore.\r\n", pReplyTo, strPrefix.c_str());
+		return;
 	}
+
+	const std::string &strResponse = m_clResponseEngine.ComputeResponse(pMessage);
+
+	char aResponseBuffer[512] = "";
+	snprintf(aResponseBuffer, sizeof(aResponseBuffer), strResponse.c_str(), strSourceNick.c_str());
+	Send("PRIVMSG %s :%s%s\r\n", pReplyTo, strPrefix.c_str(), aResponseBuffer);
 }
 
 void BnxBot::OnConnect() {
@@ -198,8 +248,8 @@ void BnxBot::OnDisconnect() {
 void BnxBot::OnRegistered() {
 	IrcClient::OnRegistered();
 
-	for (size_t i = 0; i < m_homeChannels.size(); ++i) {
-		Send("JOIN %s\r\n", m_homeChannels[i].c_str());
+	for (size_t i = 0; i < m_vHomeChannels.size(); ++i) {
+		Send("JOIN %s\r\n", m_vHomeChannels[i].c_str());
 	}
 }
 
