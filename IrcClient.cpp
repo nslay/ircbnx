@@ -152,7 +152,7 @@ bool IrcClient::Connect(const std::string &strServer, const std::string &strPort
 
 	// XXX: Handle errors?
 	m_pWriteEvent = event_new(m_pEventBase, m_socket, EV_WRITE, &Dispatch<&IrcClient::OnWrite>, this);
-	m_pReadEvent = event_new(m_pEventBase, m_socket, EV_READ, &Dispatch<&IrcClient::OnRead>, this);
+	m_pReadEvent = event_new(m_pEventBase, m_socket, EV_READ | EV_PERSIST, &Dispatch<&IrcClient::OnRead>, this);
 
 	event_add(m_pWriteEvent, NULL);
 
@@ -421,7 +421,5 @@ void IrcClient::OnRead(int fd, short what) {
 	}
 
 	memmove(m_stagingBuffer, p, m_stagingBufferSize);
-
-	event_add(m_pReadEvent, NULL);
 }
 

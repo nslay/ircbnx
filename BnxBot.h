@@ -52,7 +52,7 @@ public:
 	virtual void Disconnect();
 
 protected:
-	virtual bool ProcessCommands(const char *pSource, const char *pTarget, const char *pMessage);
+	virtual bool ProcessCommand(const char *pSource, const char *pTarget, const char *pMessage);
 	virtual void ProcessMessage(const char *pSource, const char *pTarget, const char *pMessage);
 
 	virtual void OnConnect();
@@ -64,8 +64,8 @@ protected:
 	virtual void OnCtcpVersion(const char *pSource, const char *pTarget);
 
 private:
-	struct MatchesUser {
-		MatchesUser(const IrcUser &clUser_)
+	struct MaskMatches {
+		MaskMatches(const IrcUser &clUser_)
 		: clUser(clUser_) { }
 
 		bool operator()(const IrcUser &clMask) const {

@@ -101,11 +101,13 @@ void BnxBot::Disconnect() {
 	m_clAccessSystem.ResetSessions();
 }
 
-bool BnxBot::ProcessCommands(const char *pSource, const char *pTarget, const char *pMessage) {
+bool BnxBot::ProcessCommand(const char *pSource, const char *pTarget, const char *pMessage) {
 	if (pTarget != GetCurrentNickname())
 		return false;
 
 	IrcUser clUser(pSource);
+
+	const std::string &strSourceNick = clUser.GetNickname();
 	
 	std::stringstream messageStream;
 	messageStream.str(pMessage);
@@ -122,7 +124,7 @@ bool BnxBot::ProcessCommands(const char *pSource, const char *pTarget, const cha
 			return false;
 		}
 
-		Send("PRIVMSG %s :Your wish is my command, master.\r\n", clUser.GetNickname().c_str());
+		Send("PRIVMSG %s :Your wish is my command, master.\r\n", strSourceNick.c_str());
 
 		return true;
 	}
@@ -136,7 +138,7 @@ bool BnxBot::ProcessCommands(const char *pSource, const char *pTarget, const cha
 	if (strCommand == "logout") {
 		m_clAccessSystem.Logout(clUser);
 
-		Send("PRIVMSG %s :Fare the well...\r\n", clUser.GetNickname().c_str());
+		Send("PRIVMSG %s :Fare the well...\r\n", strSourceNick.c_str());
 
 		return true;
 	}
@@ -163,7 +165,7 @@ bool BnxBot::ProcessCommands(const char *pSource, const char *pTarget, const cha
 		// The original BNX would ignore users indefinitely, here we'll clear the list on "chatter"
 		m_vIgnoredUsers.clear();
 
-		Send("PRIVMSG %s :Permission to speak freely, sir?\r\n", clUser.GetNickname().c_str());
+		Send("PRIVMSG %s :Permission to speak freely, sir?\r\n", strSourceNick.c_str());
 
 		return true;
 	}
@@ -171,9 +173,19 @@ bool BnxBot::ProcessCommands(const char *pSource, const char *pTarget, const cha
 	if (strCommand == "shutup") {
 		m_bChatter = false;
 
-		Send("PRIVMSG %s :Aww... Why can't I talk anymore?\r\n", clUser.GetNickname().c_str());
+		Send("PRIVMSG %s :Aww... Why can't I talk anymore?\r\n", strSourceNick.c_str());
 
 		return true;
+	}
+
+	if (pclSession->GetAccessLevel() == 100) {
+		if (strCommand == "shutdown") {
+			Send("PRIVMSG %s :Sir, if you don't mind, I'll close down for a while...\r\n", strSourceNick.c_str());
+
+			Shutdown();
+
+			return true;
+		}
 	}
 
 
@@ -203,17 +215,11 @@ void BnxBot::ProcessMessage(const char *pSource, const char *pTarget, const char
 		strPrefix = strSourceNick + ": ";
 	}
 
-	if (std::find_if(m_vIgnoredUsers.begin(), m_vIgnoredUsers.end(), MatchesUser(clUser)) != m_vIgnoredUsers.end())
+	if (std::find_if(m_vIgnoredUsers.begin(), m_vIgnoredUsers.end(), MaskMatches(clUser)) != m_vIgnoredUsers.end())
 		return;
 
 	if (IrcMatch("*shut*up*", pMessage)) {
-		IrcUser clMask;
-
-		clMask.SetNickname("*");
-		clMask.SetUsername("*");
-		clMask.SetHostname(clUser.GetHostname());
-
-		m_vIgnoredUsers.push_back(clMask);
+		m_vIgnoredUsers.push_back(IrcUser("*","*",clUser.GetHostname()));
 
 		Send("PRIVMSG %s :%sOK, I won't talk to you anymore.\r\n", pReplyTo, strPrefix.c_str());
 		return;
@@ -288,7 +294,7 @@ void BnxBot::OnPrivmsg(const char *pSource, const char *pTarget, const char *pMe
 
 	pMessage = (const char *)message.data;
 
-	if (ProcessCommands(pSource, pTarget, pMessage))
+	if (ProcessCommand(pSource, pTarget, pMessage))
 		return;
 
 	// Finally, process the message text

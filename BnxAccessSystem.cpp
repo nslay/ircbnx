@@ -97,8 +97,13 @@ bool BnxAccessSystem::Login(const IrcUser &clUser, const std::string &strPasswor
 	if (itr == m_vUserEntries.end() || !itr->CheckPassword(strPassword))
 		return false;
 
-	if (std::find(m_vUserSessions.begin(), m_vUserSessions.end(), clUser) == m_vUserSessions.end())
+	std::vector<UserSession>::iterator sessionItr;
+	sessionItr = std::find(m_vUserSessions.begin(), m_vUserSessions.end(), clUser);
+
+	if (sessionItr == m_vUserSessions.end())
 		m_vUserSessions.push_back(UserSession(clUser,itr->GetAccessLevel()));
+	else
+		sessionItr->Update();
 
 	return true;
 }
