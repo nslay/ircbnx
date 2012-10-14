@@ -103,7 +103,7 @@ bool BnxAccessSystem::Login(const IrcUser &clUser, const std::string &strPasswor
 	if (sessionItr == m_vUserSessions.end())
 		m_vUserSessions.push_back(UserSession(clUser,itr->GetAccessLevel()));
 	else
-		sessionItr->Update();
+		*sessionItr = UserSession(clUser,itr->GetAccessLevel()); // The access level may have been updated
 
 	return true;
 }
