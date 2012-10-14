@@ -186,6 +186,24 @@ bool BnxBot::ProcessCommand(const char *pSource, const char *pTarget, const char
 
 			return true;
 		}
+
+		if (strCommand == "userlist") {
+			const std::vector<BnxAccessSystem::UserEntry> &vUserEntries = m_clAccessSystem.GetAllEntries();
+
+			Send("PRIVMSG %s :Access List:\r\n", strSourceNick.c_str());
+
+			for (size_t i = 0; i < vUserEntries.size(); ++i) {
+				const IrcUser &clMask = vUserEntries[i].GetHostmask();
+				std::string strMask = clMask.GetHostmask();
+				int iAccessLevel = vUserEntries[i].GetAccessLevel();
+
+				Send("PRIVMSG %s :%s %d\r\n", strSourceNick.c_str(), strMask.c_str(), iAccessLevel);
+			}
+
+			Send("PRIVMSG %s :End of Access List.\r\n", strSourceNick.c_str());
+
+			return true;
+		}
 	}
 
 
