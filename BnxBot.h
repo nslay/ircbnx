@@ -29,6 +29,7 @@
 #include <string>
 #include <vector>
 #include "BnxResponseEngine.h"
+#include "BnxAccessSystem.h"
 #include "IrcClient.h"
 
 class BnxBot : public IrcClient {
@@ -42,11 +43,13 @@ public:
 	void AddHomeChannel(const std::string &channel);
 	void DeleteHomeChannel(const std::string &channel);
 	bool LoadResponseRules(const std::string &strFileName);
+	bool LoadAccessList(const std::string &strFilename);
 
 	void StartUp();
 	void Shutdown();
 
 protected:
+	virtual bool ProcessCommands(const char *pSource, const char *pTarget, const char *pMessage);
 	virtual void ProcessMessage(const char *pSource, const char *pTarget, const char *pMessage);
 
 	virtual void OnConnect();
@@ -63,6 +66,7 @@ private:
 
 	std::vector<std::string> m_homeChannels;
 	BnxResponseEngine m_clResponseEngine;
+	BnxAccessSystem m_clAccessSystem;
 
 	template<void (BnxBot::*Method)(int, short)>
 	static void Dispatch(int fd, short what, void *arg) {

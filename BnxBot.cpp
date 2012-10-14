@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <sstream>
 #include "Ctcp.h"
 #include "IrcString.h"
 #include "IrcUser.h"
@@ -62,6 +63,15 @@ bool BnxBot::LoadResponseRules(const std::string &strFilename) {
 	return m_clResponseEngine.LoadFromStream(responseStream);
 }
 
+bool BnxBot::LoadAccessList(const std::string &strFilename) {
+	std::ifstream accessStream(strFilename.c_str());
+
+	if (!accessStream)
+		return false;
+
+	return m_clAccessSystem.LoadFromStream(accessStream);
+}
+
 void BnxBot::StartUp() {
 	if (m_pConnectTimer != NULL)
 		return;
@@ -84,11 +94,75 @@ void BnxBot::Shutdown() {
 	}
 }
 
+bool BnxBot::ProcessCommands(const char *pSource, const char *pTarget, const char *pMessage) {
+	if (pTarget != GetCurrentNickname())
+		return false;
+
+	IrcUser clUser(pSource);
+	
+	std::stringstream messageStream;
+	messageStream.str(pMessage);
+
+	std::string strCommand;
+
+	if (!(messageStream >> strCommand))
+		return false;
+
+	if (strCommand == "login") {
+		std::string strPassword;
+
+		if (!(messageStream >> strPassword) || !m_clAccessSystem.Login(clUser, strPassword)) {
+			return false;
+		}
+
+		Send("PRIVMSG %s :Your wish is my command, master.\r\n", clUser.GetNickname().c_str());
+
+		return true;
+	}
+
+	BnxAccessSystem::UserSession *pclSession = m_clAccessSystem.GetSession(clUser);
+
+	if (pclSession == NULL)
+		return false;
+
+	// Commands for all access levels
+	if (strCommand == "logout") {
+		m_clAccessSystem.Logout(clUser);
+
+		Send("PRIVMSG %s :Fare the well...\r\n", clUser.GetNickname().c_str());
+
+		return true;
+	}
+
+	if (strCommand == "say") {
+		std::string strSayTarget, strLine;
+		
+		if (!(messageStream >> strSayTarget)) 
+			return false;
+
+		messageStream.get();
+
+		if (!std::getline(messageStream, strLine))
+			return false;
+
+		Send("PRIVMSG %s :%s\r\n", strSayTarget.c_str(), strLine.c_str());
+
+		return true;
+	}
+
+
+	return false;
+}
+
 void BnxBot::ProcessMessage(const char *pSource, const char *pTarget, const char *pMessage) {
 	char aResponseBuffer[512] = "";
 
 	IrcUser clUser(pSource);
 	const std::string &strSourceNick = clUser.GetNickname();
+
+	// Don't respond to self
+	if (strSourceNick == GetCurrentNickname())
+		return;
 
 	if (pTarget == GetCurrentNickname()) {
 		const std::string &strResponse = m_clResponseEngine.ComputeResponse(pMessage);
@@ -110,7 +184,6 @@ void BnxBot::OnConnect() {
 void BnxBot::OnDisconnect() {
 	std::cout << "OnDisconnect" << std::endl;
 	IrcClient::OnDisconnect();
-
 
 	if (m_pConnectTimer == NULL)
 		return;
@@ -147,13 +220,14 @@ void BnxBot::OnPrivmsg(const char *pSource, const char *pTarget, const char *pMe
 
 	if (message.tagSize > 0) {
 		const char *pTag = (const char *)message.tag;
+		pMessage = (const char *)message.data;
 
 		if (!strcmp(pTag,"VERSION")) {
 			OnCtcpVersion(pSource, pTarget);
 		}
 		else if (!strcmp(pTag,"ACTION")) {
 			if (message.dataSize > 0)
-				OnCtcpAction(pSource, pTarget, (const char *)message.data);
+				OnCtcpAction(pSource, pTarget, pMessage);
 		}
 
 		return;
@@ -163,6 +237,9 @@ void BnxBot::OnPrivmsg(const char *pSource, const char *pTarget, const char *pMe
 		return;
 
 	pMessage = (const char *)message.data;
+
+	if (ProcessCommands(pSource, pTarget, pMessage))
+		return;
 
 	// Finally, process the message text
 	ProcessMessage(pSource, pTarget, pMessage);

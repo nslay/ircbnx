@@ -40,6 +40,7 @@ int main(int argc, char **argv) {
 	bnxBot.SetNickname("enslay");
 	bnxBot.AddHomeChannel("#nslay");
 	bnxBot.LoadResponseRules("response.txt");
+	bnxBot.LoadAccessList("access.lst");
 	
 	bnxBot.SetEventBase(pEventBase);
 
