@@ -154,7 +154,7 @@ bool BnxBot::ProcessCommand(const char *pSource, const char *pTarget, const char
 		if (!std::getline(messageStream, strLine))
 			return false;
 
-		Send("PRIVMSG %s :%s\r\n", strSayTarget.c_str(), strLine.c_str());
+		Say(strSayTarget.c_str(), strLine.c_str());
 
 		return true;
 	}
@@ -245,9 +245,46 @@ void BnxBot::ProcessMessage(const char *pSource, const char *pTarget, const char
 
 	const std::string &strResponse = m_clResponseEngine.ComputeResponse(pMessage);
 
-	char aResponseBuffer[512] = "";
-	snprintf(aResponseBuffer, sizeof(aResponseBuffer), strResponse.c_str(), strSourceNick.c_str());
-	Send("PRIVMSG %s :%s%s\r\n", pReplyTo, strPrefix.c_str(), aResponseBuffer);
+	if (strResponse[0] == '/')
+		strPrefix.clear();
+
+	char aResponseBuffer[513] = "";
+	snprintf(aResponseBuffer, sizeof(aResponseBuffer), (strPrefix + strResponse).c_str(), strSourceNick.c_str());
+
+	Say(pReplyTo, aResponseBuffer);
+}
+
+void BnxBot::Say(const char *pTarget, const char *pMessage) {
+	CtcpEncoder clEncoder;
+
+	if (pMessage[0] == '/') {
+		std::stringstream ss;
+		ss.str(pMessage);
+
+		std::string strCommand;
+
+		ss >> strCommand;
+
+		if (strCommand == "/me") {
+			std::string strAction;
+
+			ss.get();
+
+			if (!std::getline(ss,strAction))
+				return;
+
+			if (!clEncoder.Encode(MakeCtcpMessage("ACTION",strAction.c_str())))
+				return;
+
+			pMessage = clEncoder.GetRaw();
+		}
+		else {
+			// Unrecognized command
+			return;
+		}
+	}
+
+	Send("PRIVMSG %s :%s\r\n", pTarget, pMessage);
 }
 
 void BnxBot::OnConnect() {

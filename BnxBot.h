@@ -54,6 +54,7 @@ public:
 protected:
 	virtual bool ProcessCommand(const char *pSource, const char *pTarget, const char *pMessage);
 	virtual void ProcessMessage(const char *pSource, const char *pTarget, const char *pMessage);
+	virtual void Say(const char *pTarget, const char *pMessage);
 
 	virtual void OnConnect();
 	virtual void OnDisconnect();
