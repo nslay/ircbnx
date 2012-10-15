@@ -154,7 +154,7 @@ bool BnxBot::ProcessCommand(const char *pSource, const char *pTarget, const char
 		if (!std::getline(messageStream, strLine))
 			return false;
 
-		Say(strSayTarget.c_str(), strLine.c_str());
+		Say(strSayTarget.c_str(), "%s", strLine.c_str());
 
 		return true;
 	}
@@ -248,32 +248,32 @@ void BnxBot::ProcessMessage(const char *pSource, const char *pTarget, const char
 	if (strResponse[0] == '/')
 		strPrefix.clear();
 
-	char aResponseBuffer[513] = "";
-	snprintf(aResponseBuffer, sizeof(aResponseBuffer), (strPrefix + strResponse).c_str(), strSourceNick.c_str());
-
-	Say(pReplyTo, aResponseBuffer);
+	Say(pReplyTo, (strPrefix + strResponse).c_str(), strSourceNick.c_str());
 }
 
-void BnxBot::Say(const char *pTarget, const char *pMessage) {
+void BnxBot::Say(const char *pTarget, const char *pFormat, ...) {
 	CtcpEncoder clEncoder;
+	char aBuffer[513];
 
-	if (pMessage[0] == '/') {
-		std::stringstream ss;
-		ss.str(pMessage);
+	va_list ap;
+	va_start(ap, pFormat);
+	vsnprintf(aBuffer,sizeof(aBuffer),pFormat,ap);
+	va_end(ap);
 
-		std::string strCommand;
+	const char *pMessage = aBuffer;
 
-		ss >> strCommand;
+	if (aBuffer[0] == '/') {
+		const char *pCommand;
 
-		if (strCommand == "/me") {
-			std::string strAction;
+		char *pParam = strpbrk(aBuffer, " \t");
+		if (pParam != NULL)
+			*pParam++ = '\0';
 
-			ss.get();
-
-			if (!std::getline(ss,strAction))
+		if (!strcmp(pCommand,"/me")) {
+			if (pParam == NULL || *pParam == '\0')
 				return;
 
-			if (!clEncoder.Encode(MakeCtcpMessage("ACTION",strAction.c_str())))
+			if (!clEncoder.Encode(MakeCtcpMessage("ACTION",pParam)))
 				return;
 
 			pMessage = clEncoder.GetRaw();
