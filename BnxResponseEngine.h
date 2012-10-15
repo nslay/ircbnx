@@ -34,17 +34,24 @@
 class BnxResponseEngine {
 public:
 	BnxResponseEngine() {
-		AddDefaultResponse("Please go on.");
-		AddDefaultResponse("You must be joking!");
-		AddDefaultResponse("Are you talkin' to me?");
-		AddDefaultResponse("Get outta town!");
+		AddDefaultStatementResponse("Please go on.");
+		AddDefaultStatementResponse("You must be joking!");
+		AddDefaultStatementResponse("Are you talkin' to me?");
+		AddDefaultStatementResponse("Get outta town!");
+
+		AddDefaultQuestionResponse("Why do you ask?");
+		AddDefaultQuestionResponse("How should I know?");
 	}
 
 	bool LoadFromStream(std::istream &is);
 	void SaveToStream(std::ostream &os) const;
 
-	void AddDefaultResponse(const std::string &strMessage) {
-		m_vDefaultResponses.push_back(strMessage);
+	void AddDefaultStatementResponse(const std::string &strMessage) {
+		m_vDefaultStatementResponses.push_back(strMessage);
+	}
+
+	void AddDefaultQuestionResponse(const std::string &strMessage) {
+		m_vDefaultQuestionResponses.push_back(strMessage);
 	}
 
 	const std::string & ComputeResponse(const std::string &strMessage) const {
@@ -52,8 +59,14 @@ public:
 
 		itr = std::find(m_vRules.begin(), m_vRules.end(), strMessage);
 
-		if (itr == m_vRules.end())
-			return m_vDefaultResponses[rand() % m_vDefaultResponses.size()];
+		if (itr == m_vRules.end()) {
+			const std::vector<std::string> &vDefaultResponses = (*strMessage.rbegin() == '?') ? 
+										m_vDefaultQuestionResponses : 
+										m_vDefaultStatementResponses;
+
+			return vDefaultResponses[rand() % vDefaultResponses.size()];
+
+		}
 
 		return itr->ComputeResponse();
 	}
@@ -64,7 +77,7 @@ public:
 
 private:
 	std::vector<BnxResponseRule> m_vRules;
-	std::vector<std::string> m_vDefaultResponses;
+	std::vector<std::string> m_vDefaultStatementResponses, m_vDefaultQuestionResponses;
 };
 
 #endif
