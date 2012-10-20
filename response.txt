@@ -5,83 +5,62 @@
 ;
 ; Standard response rules
 ;
-P who +are +you
+P \bwho +are +you\b
 R Who I am is not important...
-P what.*are.*you
-P are.*you.*bot
+P \bwhat\b.*\bare\b.*\byou\b
+P \bare\b.*\byou\b.*\bbot\b
 R I'm a BNX Chatterbot v1.0
-P you.*are.*gay
-P are.*you.* +gay
-P you.*are.* +fag
-P are.*you.* +fag
+P \byou\b.*\bare\b.*gay\b
+P \bare\b.*\byou\b.*\bgay\b
+P \byou\b.*\bare\b.*\bfag\b
+P \bare\b.*\byou\b.*\bfag\b
 R Why, are you a homophobe?
 P haha
 P hehe
-P  +lol +
-P  +rofl +
+P \blol\b
+P \brofl\b
 R Something which causes you mirth?
 R Are you laughing at me?
 ;
 ; Small talk rules
 ;
-P hug +me +
-P  +hug +me +
-P  +embrace +me +
-P  +take +me +your +arm
-P  +wrap +your +arm
+P \bhug +me\b
+P \bembrace +me\b
+P \btake +me +.*\byour\b.* +arm\b
+P \bwrap +.*\byour\b.* +arm\b
 R /me hugs %s.
 R /me shakes %s's hand instead.
-P i.*love.*you
+P \bi\b.*\blove\b.*\byou\b
 R I love you too. ;-)
-P i.*hate.*you
+P \bi\b.*\bhate\b.*\byou\b
 R Hate is such a strong word...
-P what.*my.*lag
+P \bwhat\b.*\bmy\b.*\blag\b
 R I see you with 6 red.
 ;
 ; Polite rules
 ;
-P hi
-P hi,
-P hi +
-P sup
-P sup,
-P sup +
-P hey
-P hey,
-P hey +
-P howdy
-P howdy,
-P howdy +
-P hail
-P hail,
-P hail +
-P hello
-P hello,
-P hello +
+P \bhi\b
+P \bsup\b
+P \bhey\b
+P \bhowdy\b
+P \bhail\b
+P \bhello\b
 R Hi, how are you?
 R Sup?
 R Hail!
 R Greetz!
-P bye
-P bye,
-P bye +
-P  +later
-P  +later,
-P  +later +
-P ciao
-P ciao,
-P ciao +
-P good +night
-P good +night,
-P good +night +
+P \bbye\b
+P \blater\b
+P \bciao\b
+P \bgood +night\b
 R Bye!
 R See ya!
 R Nice chatting with you!
 R Bah! Good riddance! j/k
-P  +how +are +you
-P  +how +you +doing
-P  +how +you +feel
-P  +how +you +been
+P \bhow +are +you\b
+P \bhow +you +doing\b
+P \bhow +you +feel\b
+P \bhow +you +been\b
 R Do you care? ;-)
 R Just fine, thanks.
 R I'm doing great!
