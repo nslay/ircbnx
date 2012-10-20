@@ -27,6 +27,7 @@
 #define IRCCLIENT_H
 
 #include <string>
+#include "IrcTraits.h"
 #include "event2/event.h"
 
 class IrcClient {
@@ -43,6 +44,7 @@ public:
 	const std::string & GetCurrentNickname() const;
 	const std::string & GetCurrentServer() const;
 	const std::string & GetCurrentPort() const;
+	const IrcTraits & GetIrcTraits() const;
 	bool IsRegistered() const;
 
 	virtual void SetNickname(const std::string &strNickname);
@@ -79,6 +81,8 @@ protected:
 private:
 	int m_socket;
 	std::string m_strNickname, m_strUsername, m_strRealName, m_strCurrentNickname, m_strCurrentServer, m_strCurrentPort;
+
+	IrcTraits m_clIrcTraits;
 
 	char m_stagingBuffer[4096];
 	size_t m_stagingBufferSize;

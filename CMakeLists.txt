@@ -11,6 +11,7 @@ ADD_EXECUTABLE(ircbnx Main.cpp Irc.h
 	IrcString.h IrcString.cpp
 	Ctcp.h Ctcp.cpp
 	IrcUser.h IrcUser.cpp
+	IrcTraits.h IrcTraits.cpp
 	IrcClient.h IrcClient.cpp 
 	BnxBot.h BnxBot.cpp 
 	BnxResponseRule.h 

@@ -79,6 +79,10 @@ const std::string & IrcClient::GetCurrentPort() const {
 	return m_strCurrentPort;
 }
 
+const IrcTraits & IrcClient::GetIrcTraits() const {
+	return m_clIrcTraits;
+}
+
 bool IrcClient::IsRegistered() const {
 	return !m_strCurrentNickname.empty();
 }
@@ -175,6 +179,8 @@ void IrcClient::Disconnect() {
 	m_strCurrentPort.clear();
 	m_strCurrentNickname.clear();
 
+	m_clIrcTraits.Reset();
+
 	// This is REALLY important since this can be called while OnRead() is still processing messages
 	m_stagingBufferSize = 0;
 
@@ -235,6 +241,11 @@ void IrcClient::OnNumeric(const char *pPrefix, int numeric, const char **pParams
 
 	switch (numeric) {
 	case RPL_ISUPPORT:
+		for (unsigned int i = 1; i < numParams; ++i) {
+			//printf("Parsing: %s\n", pParams[i]);
+			if (!m_clIrcTraits.Parse(pParams[i]))
+				fprintf(stderr, "Failed to parse '%s'\n", pParams[i]);
+		}
 		break;
 	case RPL_LUSERCLIENT:
 		if (!IsRegistered()) {
