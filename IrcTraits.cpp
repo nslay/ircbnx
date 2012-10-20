@@ -151,11 +151,7 @@ void IrcTraits::Reset() {
 	m_modes = 3;
 	m_strNetwork.clear();
 	m_nickLen = 9;
-
-	m_vPrefix.resize(2);
-	m_vPrefix[0] = std::make_pair('o','@');
-	m_vPrefix[1] = std::make_pair('v','+');
-
+	m_prefix = std::make_pair(std::string("ov"),std::string("@+"));
 	m_safeList = false;
 	m_strStatusMsg.clear();
 	m_topicLen = 510;
@@ -193,19 +189,19 @@ std::pair<std::string, unsigned int> IrcTraits::GetMaxList(char mode) const {
 }
 
 char IrcTraits::GetPrefixByMode(char mode) const {
-	for (size_t i = 0; i < m_vPrefix.size(); ++i) {
-		if (m_vPrefix[i].first == mode)
-			return m_vPrefix[i].second;
-	}
+	size_t p = m_prefix.first.find(mode);
+
+	if (p != std::string::npos)
+		return m_prefix.second[p];
 
 	return '\0';
 }
 
 char IrcTraits::GetModeByPrefix(char prefix) const {
-	for (size_t i = 0; i < m_vPrefix.size(); ++i) {
-		if (m_vPrefix[i].second == prefix)
-			return m_vPrefix[i].first;
-	}
+	size_t p = m_prefix.second.find(prefix);
+
+	if (p != std::string::npos)
+		return m_prefix.first[p];
 
 	return '\0';
 }
@@ -287,7 +283,8 @@ bool IrcTraits::ParseMaxList(const std::string &strValue) {
 }
 
 bool IrcTraits::ParsePrefix(const std::string &strValue) {
-	m_vPrefix.clear();
+	m_prefix.first.clear();
+	m_prefix.second.clear();
 
 	// No prefixes apparently
 	if (strValue.empty())
@@ -308,10 +305,7 @@ bool IrcTraits::ParsePrefix(const std::string &strValue) {
 	if (strModes.size() != strPrefixes.size())
 		return false;
 
-	m_vPrefix.resize(strModes.size());
-
-	for (size_t i = 0; i < strModes.size(); ++i)
-		m_vPrefix[i] = std::make_pair(strModes[i], strPrefixes[i]);
+	m_prefix = std::make_pair(strModes, strPrefixes);
 
 	return true;
 }

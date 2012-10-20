@@ -89,8 +89,8 @@ public:
 		return m_nickLen;
 	}
 
-	const std::vector<std::pair<char, char> > & GetPrefix() const {
-		return m_vPrefix;
+	const std::pair<std::string, std::string> & GetPrefix() const {
+		return m_prefix;
 	}
 
 	char GetPrefixByMode(char mode) const;
@@ -109,7 +109,7 @@ private:
 	std::vector<std::pair<std::string, unsigned int> > m_vChanLimit, m_vMaxList;
 	unsigned int m_channelLen, m_kickLen, m_modes, m_nickLen, m_topicLen;
 	char m_excepts, m_invex;
-	std::vector<std::pair<char, char> > m_vPrefix;
+	std::pair<std::string, std::string> m_prefix;
 	bool m_safeList;
 
 	bool ParseChanLimit(const std::string &strValue);
