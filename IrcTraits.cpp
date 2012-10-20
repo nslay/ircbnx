@@ -147,10 +147,10 @@ std::pair<std::string, unsigned int> IrcTraits::GetChanLimit(char prefix) const 
 	return std::make_pair(std::string(1,prefix),std::numeric_limits<unsigned int>::max());
 }
 
-IrcTraits::ChanModeType IrcTraits::ClassifyChanMode(char mode) const {
+IrcTraits::ChanModesType IrcTraits::ClassifyChanMode(char mode) const {
 	for (int i = 0; i < 4; ++i) {
 		if (m_strChanModes[i].find(mode) != std::string::npos)
-			return (ChanModeType)i;
+			return (ChanModesType)i;
 	}
 
 	return B;

@@ -8,7 +8,7 @@
 // Support for RPL_SUPPORT
 class IrcTraits {
 public:
-	enum ChanModeType { A = 0, B, C, D };
+	enum ChanModesType { A = 0, B, C, D };
 
 	IrcTraits() {
 		Reset();
@@ -24,11 +24,11 @@ public:
 		return m_vChanLimit;
 	}
 
-	const std::string & GetChanModes(ChanModeType type) const {
+	const std::string & GetChanModes(ChanModesType type) const {
 		return m_strChanModes[type];
 	}
 
-	ChanModeType ClassifyChanMode(char mode) const;
+	ChanModesType ClassifyChanMode(char mode) const;
 
 	unsigned int GetChannelLen() const {
 		return m_channelLen;
