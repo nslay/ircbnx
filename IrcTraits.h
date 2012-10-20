@@ -43,7 +43,7 @@ public:
 
 	void Reset();
 
-	std::pair<std::string, unsigned int> GetChanLimit(char prefix) const;
+	const std::pair<std::string, unsigned int> * GetChanLimit(char prefix) const;
 
 	const std::vector<std::pair<std::string, unsigned int> > & GetChanLimit() const {
 		return m_vChanLimit;
@@ -71,7 +71,7 @@ public:
 		return m_invex;
 	}
 
-	std::pair<std::string, unsigned int> GetMaxList(char mode) const;
+	const std::pair<std::string, unsigned int> * GetMaxList(char mode) const;
 
 	const std::vector<std::pair<std::string, unsigned int> > & GetMaxList() const {
 		return m_vMaxList;

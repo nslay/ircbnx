@@ -157,15 +157,15 @@ void IrcTraits::Reset() {
 	m_topicLen = 510;
 }
 
-std::pair<std::string, unsigned int> IrcTraits::GetChanLimit(char prefix) const {
+const std::pair<std::string, unsigned int> * IrcTraits::GetChanLimit(char prefix) const {
 	for (size_t i = 0; i < m_vChanLimit.size(); ++i) {
 		const std::string &strPrefixes = m_vChanLimit[i].first;
 
 		if (strPrefixes.find(prefix) != std::string::npos)
-			return m_vChanLimit[i];
+			return &m_vChanLimit[i];
 	}
 
-	return std::make_pair(std::string(1,prefix),std::numeric_limits<unsigned int>::max());
+	return NULL;
 }
 
 IrcTraits::ChanModesType IrcTraits::ClassifyChanMode(char mode) const {
@@ -177,15 +177,15 @@ IrcTraits::ChanModesType IrcTraits::ClassifyChanMode(char mode) const {
 	return B;
 }
 
-std::pair<std::string, unsigned int> IrcTraits::GetMaxList(char mode) const {
+const std::pair<std::string, unsigned int> * IrcTraits::GetMaxList(char mode) const {
 	for (size_t i = 0; i < m_vMaxList.size(); ++i) {
 		const std::string &strModes = m_vMaxList[i].first;
 
 		if (strModes.find(mode) != std::string::npos)
-			return m_vMaxList[i];
+			return &m_vMaxList[i];
 	}
 
-	return std::make_pair(std::string(1,mode),std::numeric_limits<unsigned int>::max());
+	return NULL;
 }
 
 char IrcTraits::GetPrefixByMode(char mode) const {
