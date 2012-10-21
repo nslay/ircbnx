@@ -26,15 +26,19 @@
 #ifndef IRCSTRING_H
 #define IRCSTRING_H
 
-int IrcToUpper(int c);
+enum IrcCaseMapping { RFC1459 = 0, STRICT_RFC1459, ASCII };
 
-int IrcToLower(int c);
+int IrcToUpper(int c, IrcCaseMapping mapping = ASCII);
 
-int IrcStrCaseCmp(const char *pString1, const char *pString2);
+int IrcToLower(int c, IrcCaseMapping mapping = ASCII);
 
-char * IrcStrCaseStr(const char *pBig, const char *pLittle);
+int IrcIsSpecial(int c);
 
-bool IrcMatch(const char *pPattern, const char *pString);
+int IrcStrCaseCmp(const char *pString1, const char *pString2, IrcCaseMapping mapping = ASCII);
+
+char * IrcStrCaseStr(const char *pBig, const char *pLittle, IrcCaseMapping mapping = ASCII);
+
+bool IrcMatch(const char *pPattern, const char *pString, IrcCaseMapping mapping = ASCII);
 
 #endif // !IRCSTRING_H
 

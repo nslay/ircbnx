@@ -29,11 +29,12 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include "IrcString.h"
 
 // Support for RPL_ISUPPORT
 class IrcTraits {
 public:
-	enum ChanModesType { A = 0, B, C, D };
+	enum ChanModesType { TYPE_A = 0, TYPE_B, TYPE_C, TYPE_D };
 
 	IrcTraits() {
 		Reset();
@@ -42,6 +43,10 @@ public:
 	bool Parse(const std::string &strParam);
 
 	void Reset();
+
+	IrcCaseMapping GetCaseMapping() const {
+		return m_caseMapping;
+	}
 
 	const std::pair<std::string, unsigned int> * GetChanLimit(char prefix) const;
 
@@ -69,6 +74,10 @@ public:
 
 	char GetInvex() const {
 		return m_invex;
+	}
+
+	unsigned int GetKickLen() const {
+		return m_kickLen;
 	}
 
 	const std::pair<std::string, unsigned int> * GetMaxList(char mode) const;
@@ -104,14 +113,20 @@ public:
 		return m_strStatusMsg;
 	}
 
+	unsigned int GetTopicLen() const {
+		return m_topicLen;
+	}
+
 private:
-	std::string m_strCaseMapping, m_strChanTypes, m_strNetwork, m_strStatusMsg, m_strChanModes[4];
+	IrcCaseMapping m_caseMapping;
+	std::string m_strChanTypes, m_strNetwork, m_strStatusMsg, m_strChanModes[4];
 	std::vector<std::pair<std::string, unsigned int> > m_vChanLimit, m_vMaxList;
 	unsigned int m_channelLen, m_kickLen, m_modes, m_nickLen, m_topicLen;
 	char m_excepts, m_invex;
 	std::pair<std::string, std::string> m_prefix;
 	bool m_safeList;
 
+	bool ParseCaseMapping(const std::string &strValue);
 	bool ParseChanLimit(const std::string &strValue);
 	bool ParseChanModes(const std::string &strValue);
 	bool ParseMaxList(const std::string &strValue);

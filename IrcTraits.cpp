@@ -41,8 +41,12 @@ bool IrcTraits::Parse(const std::string &strParam) {
 		return false;
 
 	if (strVariable == "CASEMAPPING") {
-		if (!(paramStream >> m_strCaseMapping))
+		std::string strValue;
+
+		if (!(paramStream >> strValue))
 			return false;
+
+		return ParseCaseMapping(strValue);
 	}
 	else if (strVariable == "CHANLIMIT") {
 		std::string strValue;
@@ -136,7 +140,7 @@ bool IrcTraits::Parse(const std::string &strParam) {
 }
 
 void IrcTraits::Reset() {
-	m_strCaseMapping = "rfc1459";
+	m_caseMapping = RFC1459;
 	m_vChanLimit.clear();
 	m_strChanModes[0].clear();
 	m_strChanModes[1].clear();
@@ -174,7 +178,7 @@ IrcTraits::ChanModesType IrcTraits::ClassifyChanMode(char mode) const {
 			return (ChanModesType)i;
 	}
 
-	return B;
+	return TYPE_B;
 }
 
 const std::pair<std::string, unsigned int> * IrcTraits::GetMaxList(char mode) const {
@@ -204,6 +208,21 @@ char IrcTraits::GetModeByPrefix(char prefix) const {
 		return m_prefix.first[p];
 
 	return '\0';
+}
+
+bool IrcTraits::ParseCaseMapping(const std::string &strValue) {
+	m_caseMapping = RFC1459;
+
+	if (strValue == "rfc1459")
+		m_caseMapping = RFC1459;
+	else if (strValue == "strict-rfc1459")
+		m_caseMapping = STRICT_RFC1459;
+	else if (strValue == "ascii")
+		m_caseMapping = ASCII;
+	else
+		return false;
+
+	return true;
 }
 
 bool IrcTraits::ParseChanLimit(const std::string &strValue) {

@@ -27,54 +27,103 @@
 #include <cctype>
 #include "IrcString.h"
 
-int IrcToUpper(int c) {
-	switch (c) {
-	case '{':
-		return '[';
-	case '}':
-		return ']';
-	case '|':
-		return '\\';
-	case '^':
-		return '~';
+int IrcToUpper(int c, IrcCaseMapping mapping) {
+	switch (mapping) {
+	case RFC1459:
+		switch (c) {
+		case '{':
+			return '[';
+		case '}':
+			return ']';
+		case '|':
+			return '\\';
+		case '^':
+			return '~';
+		}
+		break;
+	case STRICT_RFC1459:
+		switch (c) {
+		case '{':
+			return '[';
+		case '}':
+			return ']';
+		case '|':
+			return '\\';
+		}
+		break;
+	case ASCII:
+		break;
 	}
 
 	return toupper(c);
 }
 
-int IrcToLower(int c) {
-	switch (c) {
-	case '[':
-		return '{';
-	case ']':
-		return '}';
-	case '\\':
-		return '|';
-	case '~':
-		return '^';
+int IrcToLower(int c, IrcCaseMapping mapping) {
+	switch (mapping) {
+	case RFC1459:
+		switch (c) {
+		case '[':
+			return '{';
+		case ']':
+			return '}';
+		case '\\':
+			return '|';
+		case '~':
+			return '^';
+		}
+		break;
+	case STRICT_RFC1459:
+		switch (c) {
+		case '[':
+			return '{';
+		case ']':
+			return '}';
+		case '\\':
+			return '|';
+		}
+		break;
+	case ASCII:
+		break;
 	}
 
 	return tolower(c);
 }
 
-int IrcStrCaseCmp(const char *pString1, const char *pString2) {
-	for ( ; *pString1 != '\0' && 
-		*pString2 != '\0' && 
-		IrcToLower(*pString1) == IrcToLower(*pString2); ++pString1, ++pString2);
+int IrcIsSpecial(int c) {
+	switch (c) {
+	case '[':
+	case ']':
+	case '\\':
+	case '`':
+	case '_':
+	case '^':
+	case '{':
+	case '|':
+	case '}':
+		return 1;
+	}
 
-	return IrcToLower(*pString1)-IrcToLower(*pString2);
+	return 0;
 }
 
-char * IrcStrCaseStr(const char *pBig, const char *pLittle) {
+int IrcStrCaseCmp(const char *pString1, const char *pString2, IrcCaseMapping mapping) {
+	for ( ; *pString1 != '\0' && 
+		*pString2 != '\0' && 
+		IrcToLower(*pString1, mapping) == IrcToLower(*pString2, mapping); ++pString1, ++pString2);
+
+	return IrcToLower(*pString1, mapping)-IrcToLower(*pString2, mapping);
+}
+
+char * IrcStrCaseStr(const char *pBig, const char *pLittle, IrcCaseMapping mapping) {
 	const char *pMatch = NULL, *pLittleCurrent = pLittle;
 
 	for ( ; *pBig != '\0' && *pLittleCurrent != '\0'; ++pBig) {
-		if (IrcToLower(*pLittleCurrent) != IrcToLower(*pBig)) {
+		if (IrcToLower(*pLittleCurrent, mapping) != IrcToLower(*pBig, mapping)) {
 			pMatch = NULL;
 			pLittleCurrent = pLittle;
 		}
 
-		if (IrcToLower(*pLittleCurrent) == IrcToLower(*pBig)) {
+		if (IrcToLower(*pLittleCurrent, mapping) == IrcToLower(*pBig, mapping)) {
 			if (pMatch == NULL)
 				pMatch = pBig;
 
@@ -85,7 +134,7 @@ char * IrcStrCaseStr(const char *pBig, const char *pLittle) {
 	return *pLittleCurrent != '\0' ? NULL : (char *)pMatch;
 }
 
-bool IrcMatch(const char *pPattern, const char *pString) {
+bool IrcMatch(const char *pPattern, const char *pString, IrcCaseMapping mapping) {
 	if (pPattern == NULL || pString == NULL)
 		return false;
 
@@ -113,7 +162,7 @@ bool IrcMatch(const char *pPattern, const char *pString) {
 			if (*pPattern == '\\')
 				++pPattern;
 
-			if (IrcToLower(*pPattern) != IrcToLower(*pString)) {
+			if (IrcToLower(*pPattern, mapping) != IrcToLower(*pString, mapping)) {
 				if (pPatternLast == NULL || *pStringLast == '\0')
 					return false;
 
