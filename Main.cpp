@@ -36,9 +36,10 @@ int main(int argc, char **argv) {
 
 	BnxBot bnxBot;
 
-	bnxBot.SetServerAndPort("localhost");
+	bnxBot.SetServerAndPort("irc.rohitab.com");
 	bnxBot.SetNickname("enslay");
 	bnxBot.AddHomeChannel("#nslay");
+	bnxBot.AddHomeChannel("#asdf");
 	bnxBot.LoadResponseRules("response.txt");
 	bnxBot.LoadAccessList("access.lst");
 	

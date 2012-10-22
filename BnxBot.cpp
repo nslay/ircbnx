@@ -178,6 +178,30 @@ bool BnxBot::ProcessCommand(const char *pSource, const char *pTarget, const char
 		return true;
 	}
 
+	if (pclSession->GetAccessLevel() >= 75) {
+		if (strCommand == "join") {
+			std::string strChannels;
+
+			if (!(messageStream >> strChannels))
+				return false;
+
+			Send("JOIN %s\r\n", strChannels.c_str());
+
+			return true;
+		}
+
+		if (strCommand == "part") {
+			std::string strChannels;
+
+			if (!(messageStream >> strChannels))
+				return false;
+
+			Send("PART %s\r\n", strChannels.c_str());
+
+			return true;
+		}
+	}
+
 	if (pclSession->GetAccessLevel() == 100) {
 		if (strCommand == "shutdown") {
 			Send("PRIVMSG %s :Sir, if you don't mind, I'll close down for a while...\r\n", strSourceNick.c_str());
