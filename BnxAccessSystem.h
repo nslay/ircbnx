@@ -35,7 +35,8 @@
 
 class BnxAccessSystem {
 public:
-	enum { TIMEOUT = 30 };
+	// Original BNX appears to have a 10 minute timeout
+	enum { TIMEOUT = 600 };
 
 	class UserEntry {
 	public:
