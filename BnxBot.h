@@ -30,6 +30,7 @@
 #include <vector>
 #include "BnxResponseEngine.h"
 #include "BnxAccessSystem.h"
+#include "BnxChannel.h"
 #include "IrcClient.h"
 #include "IrcUser.h"
 
@@ -55,12 +56,20 @@ protected:
 	virtual bool ProcessCommand(const char *pSource, const char *pTarget, const char *pMessage);
 	virtual void ProcessMessage(const char *pSource, const char *pTarget, const char *pMessage);
 	virtual void Say(const char *pTarget, const char *pMessage);
+	BnxChannel * GetChannel(const char *pChannel);
 
+	// IRC events
 	virtual void OnConnect();
 	virtual void OnDisconnect();
 	virtual void OnRegistered();
+	virtual void OnNumeric(const char *pSource, int numeric, const char *pParams[], unsigned int numParams);
+	virtual void OnNick(const char *pSource, const char *pNewNick);
 	virtual void OnPrivmsg(const char *pSource, const char *pTarget, const char *pMessage);
+	virtual void OnJoin(const char *pSource, const char *pChannel);
+	virtual void OnPart(const char *pSource, const char *pChannel, const char *pReason);
+	virtual void OnQuit(const char *pSource, const char *pReason);
 
+	// CTCP events
 	virtual void OnCtcpAction(const char *pSource, const char *pTarget, const char *pMessage);
 	virtual void OnCtcpVersion(const char *pSource, const char *pTarget);
 
@@ -83,6 +92,7 @@ private:
 
 	std::vector<std::string> m_vHomeChannels;
 	std::vector<IrcUser> m_vIgnoredUsers;
+	std::vector<BnxChannel> m_vChannels;
 	BnxResponseEngine m_clResponseEngine;
 	BnxAccessSystem m_clAccessSystem;
 

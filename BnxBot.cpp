@@ -27,6 +27,7 @@
 #include <fstream>
 #include <sstream>
 #include "Ctcp.h"
+#include "Irc.h"
 #include "IrcString.h"
 #include "IrcUser.h"
 #include "BnxBot.h"
@@ -97,6 +98,7 @@ void BnxBot::Shutdown() {
 void BnxBot::Disconnect() {
 	IrcClient::Disconnect();
 
+	m_vChannels.clear();
 	m_vIgnoredUsers.clear();
 	m_clAccessSystem.ResetSessions();
 }
@@ -317,6 +319,16 @@ void BnxBot::Say(const char *pTarget, const char *pMessage) {
 	Send("PRIVMSG %s :%s\r\n", pTarget, pMessage);
 }
 
+BnxChannel * BnxBot::GetChannel(const char *pChannel) {
+	std::vector<BnxChannel>::iterator itr;
+	itr = std::find(m_vChannels.begin(), m_vChannels.end(), pChannel);
+
+	if (itr == m_vChannels.end())
+		return NULL;
+
+	return &(*itr);
+}
+
 void BnxBot::OnConnect() {
 	std::cout << "OnConnect" << std::endl;
 	IrcClient::OnConnect();
@@ -341,6 +353,77 @@ void BnxBot::OnRegistered() {
 
 	for (size_t i = 0; i < m_vHomeChannels.size(); ++i) {
 		Send("JOIN %s\r\n", m_vHomeChannels[i].c_str());
+	}
+}
+
+void BnxBot::OnNumeric(const char *pSource, int numeric, const char *pParams[], unsigned int numParams) {
+	IrcClient::OnNumeric(pSource, numeric, pParams, numParams);
+
+	const char *pChannel = NULL, *pTrailing = NULL, *pUsername = NULL, 
+		*pHostname = NULL, *pNickname = NULL;
+	BnxChannel *pclChannel = NULL;
+	BnxChannel::Member *pclMember = NULL;
+
+	switch (numeric) {
+	case RPL_NAMEREPLY:
+		if (!strcmp(pParams[1],"=") || !strcmp(pParams[1],"*") || !strcmp(pParams[1],"@")) {
+			// RFC2812
+			pChannel = pParams[2];
+			pTrailing = pParams[3];
+		}
+		else {
+			// RFC1459
+			pChannel = pParams[1];
+			pTrailing = pParams[2];
+		}
+
+		pclChannel = GetChannel(pChannel);
+
+		if (pclChannel == NULL)
+			return;
+
+		pclChannel->AddMembers(pTrailing);
+		break;
+	case RPL_WHOREPLY:
+		pChannel = pParams[1];
+		pUsername = pParams[2];
+		pHostname = pParams[3];
+		pNickname = pParams[5];
+
+		pclChannel = GetChannel(pChannel);
+
+		if (pclChannel == NULL)
+			return;
+
+		pclMember = pclChannel->GetMember(pNickname);
+
+		// What?
+		if (pclMember == NULL)
+			return;
+
+		pclMember->GetUser().SetUsername(pUsername);
+		pclMember->GetUser().SetHostname(pHostname);
+
+		std::cout << "Updated hostmask: " << pclMember->GetUser().GetHostmask() << std::endl;
+
+		break;
+	}
+}
+
+void BnxBot::OnNick(const char *pSource, const char *pNewNick) {
+	IrcClient::OnNick(pSource, pNewNick);
+
+	IrcUser clUser(pSource);
+
+	for (size_t i = 0; i < m_vChannels.size(); ++i) {
+		BnxChannel::Member *pclMember = m_vChannels[i].GetMember(clUser.GetNickname());
+
+		if (pclMember == NULL)
+			continue;
+
+		std::cout << "Setting nick: " << clUser.GetNickname() << " -> " << pNewNick << std::endl;
+
+		pclMember->GetUser().SetNickname(pNewNick);
 	}
 }
 
@@ -384,6 +467,67 @@ void BnxBot::OnPrivmsg(const char *pSource, const char *pTarget, const char *pMe
 
 	// Finally, process the message text
 	ProcessMessage(pSource, pTarget, pMessage);
+}
+
+void BnxBot::OnJoin(const char *pSource, const char *pChannel) {
+	IrcClient::OnJoin(pSource, pChannel);
+
+	IrcUser clUser(pSource);
+
+	BnxChannel *pclChannel = NULL;
+
+	if (clUser.GetNickname() == GetCurrentNickname()) {
+		m_vChannels.push_back(BnxChannel(pChannel));
+		pclChannel = &m_vChannels.back();
+
+		// Get hostmask information
+		Send("WHO %s\r\n", pChannel);
+	}
+	else {
+		pclChannel = GetChannel(pChannel);
+	}
+	
+
+	// What? Must be me on RFC2812
+	if (pclChannel == NULL)
+		return;
+	
+	pclChannel->AddMember(clUser);
+}
+
+void BnxBot::OnPart(const char *pSource, const char *pChannel, const char *pReason) {
+	IrcClient::OnPart(pSource, pChannel, pReason);
+
+	IrcUser clUser(pSource);
+
+	BnxChannel *pclChannel = NULL;
+
+	if (clUser.GetNickname() == GetCurrentNickname()) {
+		std::vector<BnxChannel>::iterator itr;
+		itr = std::find(m_vChannels.begin(), m_vChannels.end(), pChannel);
+
+		if (itr != m_vChannels.end())
+			m_vChannels.erase(itr);
+
+		return;
+	}
+
+	// What?
+	pclChannel = GetChannel(pChannel);
+
+	if (pclChannel == NULL)
+		return;
+
+	pclChannel->DeleteMember(clUser.GetNickname());
+}
+
+void BnxBot::OnQuit(const char *pSource, const char *pReason) {
+	IrcClient::OnQuit(pSource, pReason);
+
+	IrcUser clUser(pSource);
+
+	for (size_t i = 0; i < m_vChannels.size(); ++i)
+		m_vChannels[i].DeleteMember(clUser.GetNickname());
 }
 
 void BnxBot::OnCtcpAction(const char *pSource, const char *pTarget, const char *pMessage) {

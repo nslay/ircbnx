@@ -28,7 +28,8 @@ ADD_EXECUTABLE(ircbnx Main.cpp Irc.h
 	BnxBot.h BnxBot.cpp 
 	BnxResponseRule.h 
 	BnxResponseEngine.h BnxResponseEngine.cpp
-	BnxAccessSystem.h BnxAccessSystem.cpp)
+	BnxAccessSystem.h BnxAccessSystem.cpp
+	BnxChannel.h BnxChannel.cpp)
 
 TARGET_LINK_LIBRARIES(ircbnx ${LINK_LIBS}) 
 
