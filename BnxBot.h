@@ -67,6 +67,7 @@ protected:
 	virtual void OnPrivmsg(const char *pSource, const char *pTarget, const char *pMessage);
 	virtual void OnJoin(const char *pSource, const char *pChannel);
 	virtual void OnPart(const char *pSource, const char *pChannel, const char *pReason);
+	virtual void OnMode(const char *pSource, const char *pTarget, const char *pMode, const char *pParams[], unsigned int numParams);
 	virtual void OnQuit(const char *pSource, const char *pReason);
 
 	// CTCP events

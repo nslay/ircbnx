@@ -29,58 +29,6 @@
 #include <sstream>
 #include "BnxChannel.h"
 
-void BnxChannel::Member::AddPrefix(char prefix) {
-	size_t p = m_strPrefix.find(prefix);
-
-	if (p != std::string::npos)
-		return;
-
-	m_strPrefix.push_back(prefix);
-}
-
-void BnxChannel::Member::RemovePrefix(char prefix) {
-	size_t p = m_strPrefix.find(prefix);
-
-	if (p == std::string::npos)
-		return;
-
-	m_strPrefix.erase(p,1);
-}
-
-void BnxChannel::AddMembers(const std::string &strNameReply) {
-	std::stringstream nickStream;
-
-	nickStream.str(strNameReply);
-
-	std::string strNickWithPrefix, strNickname, strPrefix;
-	Member clMember;
-
-	while (nickStream >> strNickWithPrefix) {
-		size_t p;
-
-		for (p = 0; p < strNickWithPrefix.size() &&
-			!isalpha(strNickWithPrefix[p]) &&
-			!IrcIsSpecial(strNickWithPrefix[p]); ++p);
-
-		if (p >= strNickWithPrefix.size())
-			continue;
-
-		strPrefix = strNickWithPrefix.substr(0,p);
-		strNickname = strNickWithPrefix.substr(p);
-
-		if (GetMember(strNickname) != NULL)
-			continue;
-
-		std::cout << "Adding: " << strNickname << " with prefix " << strPrefix << std::endl;
-
-		clMember.Reset();
-		clMember.SetPrefix(strPrefix);
-		clMember.GetUser().SetNickname(strNickname);
-
-		m_vMembers.push_back(clMember);
-	}
-}
-
 void BnxChannel::AddMember(const IrcUser &clUser) {
 	std::vector<Member>::iterator itr;
 
@@ -129,6 +77,7 @@ void BnxChannel::ResetVoteBan() {
 void BnxChannel::Reset() {
 	m_strName.clear();
 	m_vMembers.clear();
+	m_bIsOperator = false;
 
 	ResetVoteBan();
 }

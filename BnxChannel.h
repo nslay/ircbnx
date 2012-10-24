@@ -47,17 +47,6 @@ public:
 			Reset();
 		}
 
-		void AddPrefix(char prefix);
-		void RemovePrefix(char prefix);
-
-		void SetPrefix(const std::string &strPrefix) {
-			m_strPrefix = strPrefix;
-		}
-
-		const std::string & GetPrefix() const {
-			return m_strPrefix;
-		}
-
 		const IrcUser & GetUser() const {
 			return m_clUser;
 		}
@@ -87,7 +76,6 @@ public:
 		}
 
 		void Reset() {
-			m_strPrefix.clear();
 			m_clUser.Reset();
 			m_timeStamp = time(NULL);
 			ResetVote();
@@ -102,7 +90,6 @@ public:
 		}
 
 	private:
-		std::string m_strPrefix;
 		IrcUser m_clUser;
 		time_t m_timeStamp;
 
@@ -119,13 +106,20 @@ public:
 		m_strName = strName;
 	}
 
-	void AddMembers(const std::string &strNameReply);
-
 	void AddMember(const IrcUser &clUser);
 
 	Member * GetMember(const std::string &strNickname);
 
 	void DeleteMember(const std::string &strNickname);
+
+	bool IsOperator() const {
+		return m_bIsOperator;
+	}
+
+	void SetOperator(bool bIsOperator) {
+		std::cout << "Operator = " << bIsOperator << std::endl;
+		m_bIsOperator = bIsOperator;
+	}
 
 	void VoteBan(const IrcUser &clUser);
 
@@ -170,6 +164,7 @@ public:
 private:
 	std::string m_strName;
 	std::vector<Member> m_vMembers;
+	bool m_bIsOperator;
 
 	// For voteban
 	bool m_bVoteBan;

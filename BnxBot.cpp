@@ -364,43 +364,64 @@ void BnxBot::OnNumeric(const char *pSource, int numeric, const char *pParams[], 
 	IrcClient::OnNumeric(pSource, numeric, pParams, numParams);
 
 	const char *pChannel = NULL, *pTrailing = NULL, *pUsername = NULL, 
-		*pHostname = NULL, *pNickname = NULL;
+		*pHostname = NULL, *pNickname = NULL, *pMode = NULL;
 	BnxChannel *pclChannel = NULL;
 	BnxChannel::Member *pclMember = NULL;
 
 	switch (numeric) {
 	case RPL_NAMEREPLY:
+		// Reference by last parameter since RFC2812 adds extra parameter
 		pTrailing = pParams[numParams-1];
 		pChannel = pParams[numParams-2];
 
-		pclChannel = GetChannel(pChannel);
-
-		if (pclChannel == NULL)
+		if (GetChannel(pChannel) != NULL)
 			return;
 
-		pclChannel->AddMembers(pTrailing);
+		// Check if we joined a channel
+
+		// RFC1459 only guarantees RPL_NAMEREPLY or RPL_TOPIC (with which there isn't always a topic)
+		{
+			std::stringstream nameStream;
+			nameStream.str(pTrailing);
+
+			std::string strNickname;
+
+			while (nameStream >> strNickname) {
+				size_t p;
+				for (p = 0; p < strNickname.size() &&
+						!isalpha(strNickname[p]) &&
+						!IrcIsSpecial(strNickname[p]); ++p);
+
+				if (p >= strNickname.size())
+					continue;
+
+				if (GetCurrentNickname() == strNickname.substr(p)) {
+					m_vChannels.push_back(BnxChannel(pChannel));
+
+					// Now really collect useful information
+					Send("WHO %s\r\n", pChannel);
+					return;
+				}
+			}
+		}
+
 		break;
 	case RPL_WHOREPLY:
 		pChannel = pParams[1];
 		pUsername = pParams[2];
 		pHostname = pParams[3];
 		pNickname = pParams[5];
+		pMode = pParams[6];
 
 		pclChannel = GetChannel(pChannel);
 
 		if (pclChannel == NULL)
 			return;
 
-		pclMember = pclChannel->GetMember(pNickname);
+		pclChannel->AddMember(IrcUser(pNickname,pUsername,pHostname));
 
-		// What?
-		if (pclMember == NULL)
-			return;
-
-		pclMember->GetUser().SetUsername(pUsername);
-		pclMember->GetUser().SetHostname(pHostname);
-
-		std::cout << "Updated hostmask: " << pclMember->GetUser().GetHostmask() << std::endl;
+		if (GetCurrentNickname() == pNickname && strchr(pMode,'@') != NULL)
+			pclChannel->SetOperator(true);
 
 		break;
 	}
@@ -468,25 +489,13 @@ void BnxBot::OnPrivmsg(const char *pSource, const char *pTarget, const char *pMe
 void BnxBot::OnJoin(const char *pSource, const char *pChannel) {
 	IrcClient::OnJoin(pSource, pChannel);
 
-	IrcUser clUser(pSource);
-
-	BnxChannel *pclChannel = NULL;
-
-	if (clUser.GetNickname() == GetCurrentNickname()) {
-		m_vChannels.push_back(BnxChannel(pChannel));
-		pclChannel = &m_vChannels.back();
-
-		// Get hostmask information
-		Send("WHO %s\r\n", pChannel);
-	}
-	else {
-		pclChannel = GetChannel(pChannel);
-	}
-	
+	BnxChannel *pclChannel = GetChannel(pChannel);
 
 	// What? Must be me on RFC2812
 	if (pclChannel == NULL)
 		return;
+
+	IrcUser clUser(pSource);
 
 	pclChannel->AddMember(clUser);
 
@@ -518,6 +527,58 @@ void BnxBot::OnPart(const char *pSource, const char *pChannel, const char *pReas
 		return;
 
 	pclChannel->DeleteMember(clUser.GetNickname());
+}
+
+void BnxBot::OnMode(const char *pSource, const char *pTarget, const char *pMode, const char *pParams[], unsigned int numParams) {
+	IrcClient::OnMode(pSource, pTarget, pMode, pParams, numParams);
+
+	if (pTarget != GetCurrentNickname()) {
+		// Targetting channel
+
+		BnxChannel *pclChannel = GetChannel(pTarget);
+
+		// What?
+		if (pclChannel == NULL)
+			return;
+
+		// Get traits from IRC (needed to process modes)
+		const IrcTraits &clTraits = GetIrcTraits();
+
+		bool bSetMode = (*pMode++ != '-');
+
+		for ( ;*pMode != '\0'; ++pMode) {
+			switch (*pMode) {
+			case 'o':
+				if (*pParams == GetCurrentNickname())
+					pclChannel->SetOperator(bSetMode);
+
+				++pParams;
+				--numParams;
+				break;
+			default:
+				// Process all other modes
+				switch (clTraits.ClassifyChanMode(*pMode)) {
+				case IrcTraits::TYPE_A:
+				case IrcTraits::TYPE_B:
+					++pParams;
+					--numParams;
+					break;
+				case IrcTraits::TYPE_C:
+					if (bSetMode) {
+						++pParams;
+						--numParams;
+					}
+					break;
+				case IrcTraits::TYPE_D:
+					break;
+				}
+			}
+		}
+
+		if (numParams != 0) {
+			std::cerr << "Didn't process modes correctly!" << std::endl;
+		}
+	}
 }
 
 void BnxBot::OnQuit(const char *pSource, const char *pReason) {
