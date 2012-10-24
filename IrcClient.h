@@ -42,6 +42,7 @@ public:
 	struct event_base * GetEventBase() const;
 
 	const std::string & GetCurrentNickname() const;
+	const std::string & GetCurrentHostname() const;
 	const std::string & GetCurrentServer() const;
 	const std::string & GetCurrentPort() const;
 	const IrcTraits & GetIrcTraits() const;
@@ -80,7 +81,8 @@ protected:
 
 private:
 	int m_socket;
-	std::string m_strNickname, m_strUsername, m_strRealName, m_strCurrentNickname, m_strCurrentServer, m_strCurrentPort;
+	std::string m_strNickname, m_strUsername, m_strRealName, m_strCurrentNickname, 
+		m_strCurrentHostname, m_strCurrentServer, m_strCurrentPort;
 
 	IrcTraits m_clIrcTraits;
 

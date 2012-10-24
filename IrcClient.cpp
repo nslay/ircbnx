@@ -35,6 +35,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <cctype>
+#include <iostream>
+#include <sstream>
 #include "IrcClient.h"
 #include "IrcUser.h"
 #include "Irc.h"
@@ -69,6 +71,10 @@ struct event_base * IrcClient::GetEventBase() const {
 
 const std::string & IrcClient::GetCurrentNickname() const {
 	return m_strCurrentNickname;
+}
+
+const std::string & IrcClient::GetCurrentHostname() const {
+	return m_strCurrentHostname;
 }
 
 const std::string & IrcClient::GetCurrentServer() const {
@@ -178,6 +184,7 @@ void IrcClient::Disconnect() {
 	m_strCurrentServer.clear();
 	m_strCurrentPort.clear();
 	m_strCurrentNickname.clear();
+	m_strCurrentHostname.clear();
 
 	m_clIrcTraits.Reset();
 
@@ -250,7 +257,42 @@ void IrcClient::OnNumeric(const char *pPrefix, int numeric, const char **pParams
 	case RPL_LUSERCLIENT:
 		if (!IsRegistered()) {
 			m_strCurrentNickname = pParams[0];
+
+			// Get self hostname
+			Send("USERHOST %s\r\n", m_strCurrentNickname.c_str());
+
 			OnRegistered();
+		}
+		break;
+	case RPL_USERHOST:
+		{
+			std::stringstream maskStream;
+			maskStream.str(pParams[1]);
+
+			std::string strHostmask, strNickname;
+			while (maskStream >> strHostmask) {
+				size_t p = strHostmask.find('=');
+
+				if (p == std::string::npos)
+					continue;
+
+				strNickname = strHostmask.substr(0,p);
+
+				if (*strNickname.rbegin() == '*')
+					strNickname.resize(strNickname.size()-1);
+
+				if (strNickname != GetCurrentNickname())
+					continue;
+
+				p = strHostmask.find('@',p);
+
+				if (p == std::string::npos || p+1 >= strHostmask.size())
+					continue;
+
+				m_strCurrentHostname = strHostmask.substr(p+1);
+
+				break;
+			}
 		}
 		break;
 	case ERR_NICKNAMEINUSE:
