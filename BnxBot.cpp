@@ -252,8 +252,12 @@ void BnxBot::ProcessMessage(const char *pSource, const char *pTarget, const char
 	std::string strPrefix;
 
 	if (pTarget != GetCurrentNickname()) {
-		if (IrcStrCaseStr(pMessage,GetCurrentNickname().c_str()) == NULL)
+		BnxChannel *pclChannel = GetChannel(pTarget);
+
+		if ((pclChannel != NULL && pclChannel->GetSize() != 2) && 
+			IrcStrCaseStr(pMessage,GetCurrentNickname().c_str()) == NULL) {
 			return;
+		}
 
 		pReplyTo = pTarget;
 		strPrefix = strSourceNick + ": ";
@@ -366,16 +370,8 @@ void BnxBot::OnNumeric(const char *pSource, int numeric, const char *pParams[], 
 
 	switch (numeric) {
 	case RPL_NAMEREPLY:
-		if (!strcmp(pParams[1],"=") || !strcmp(pParams[1],"*") || !strcmp(pParams[1],"@")) {
-			// RFC2812
-			pChannel = pParams[2];
-			pTrailing = pParams[3];
-		}
-		else {
-			// RFC1459
-			pChannel = pParams[1];
-			pTrailing = pParams[2];
-		}
+		pTrailing = pParams[numParams-1];
+		pChannel = pParams[numParams-2];
 
 		pclChannel = GetChannel(pChannel);
 
@@ -491,8 +487,11 @@ void BnxBot::OnJoin(const char *pSource, const char *pChannel) {
 	// What? Must be me on RFC2812
 	if (pclChannel == NULL)
 		return;
-	
+
 	pclChannel->AddMember(clUser);
+
+	if (pclChannel->GetSize() == 2)
+		Send("PRIVMSG %s :Hi!\r\n", pChannel);
 }
 
 void BnxBot::OnPart(const char *pSource, const char *pChannel, const char *pReason) {
@@ -512,9 +511,9 @@ void BnxBot::OnPart(const char *pSource, const char *pChannel, const char *pReas
 		return;
 	}
 
-	// What?
 	pclChannel = GetChannel(pChannel);
 
+	// What?
 	if (pclChannel == NULL)
 		return;
 
