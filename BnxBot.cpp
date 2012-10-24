@@ -392,10 +392,7 @@ void BnxBot::OnNumeric(const char *pSource, int numeric, const char *pParams[], 
 						!isalpha(strNickname[p]) &&
 						!IrcIsSpecial(strNickname[p]); ++p);
 
-				if (p >= strNickname.size())
-					continue;
-
-				if (GetCurrentNickname() == strNickname.substr(p)) {
+				if (p < strNickname.size() && GetCurrentNickname() == strNickname.substr(p)) {
 					m_vChannels.push_back(BnxChannel(pChannel));
 
 					// Now really collect useful information
@@ -435,12 +432,8 @@ void BnxBot::OnNick(const char *pSource, const char *pNewNick) {
 	for (size_t i = 0; i < m_vChannels.size(); ++i) {
 		BnxChannel::Member *pclMember = m_vChannels[i].GetMember(clUser.GetNickname());
 
-		if (pclMember == NULL)
-			continue;
-
-		std::cout << "Setting nick: " << clUser.GetNickname() << " -> " << pNewNick << std::endl;
-
-		pclMember->GetUser().SetNickname(pNewNick);
+		if (pclMember != NULL)
+			pclMember->GetUser().SetNickname(pNewNick);
 	}
 }
 
@@ -450,14 +443,9 @@ void BnxBot::OnPrivmsg(const char *pSource, const char *pTarget, const char *pMe
 	CtcpDecoder clDecoder(pMessage);
 	CtcpMessage message;
 
-	while (clDecoder.Decode(message)) {
-		// Ignore empty CTCP messages
-		if (message.tagSize == 0 && message.dataSize == 0)
-			continue;
-
-		// Let's just process the first one
-		break;
-	}
+	// Get first non-empty message
+	while (clDecoder.Decode(message) && 
+		(message.tagSize == 0 && message.dataSize == 0));
 
 	if (message.tagSize > 0) {
 		const char *pTag = (const char *)message.tag;
@@ -470,20 +458,16 @@ void BnxBot::OnPrivmsg(const char *pSource, const char *pTarget, const char *pMe
 			if (message.dataSize > 0)
 				OnCtcpAction(pSource, pTarget, pMessage);
 		}
-
-		return;
 	}
+	else if (message.dataSize > 0) {
+		pMessage = (const char *)message.data;
 
-	if (message.dataSize == 0)
-		return;
+		if (ProcessCommand(pSource, pTarget, pMessage))
+			return;
 
-	pMessage = (const char *)message.data;
-
-	if (ProcessCommand(pSource, pTarget, pMessage))
-		return;
-
-	// Finally, process the message text
-	ProcessMessage(pSource, pTarget, pMessage);
+		// Finally, process the message text
+		ProcessMessage(pSource, pTarget, pMessage);
+	}
 }
 
 void BnxBot::OnJoin(const char *pSource, const char *pChannel) {
