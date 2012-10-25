@@ -35,8 +35,6 @@ void BnxChannel::AddMember(const IrcUser &clUser) {
 	if (GetMember(clUser.GetNickname()) != NULL)
 		return;
 
-	std::cout << "Adding: " << clUser.GetHostmask() << std::endl;
-
 	m_vMembers.push_back(Member(clUser));
 }
 
@@ -58,8 +56,6 @@ void BnxChannel::DeleteMember(const std::string &strNickname) {
 
 	if (itr == m_vMembers.end())
 		return;
-
-	std::cout << "Removing: " << strNickname << std::endl;
 
 	m_vMembers.erase(itr);
 }

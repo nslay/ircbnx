@@ -117,7 +117,6 @@ public:
 	}
 
 	void SetOperator(bool bIsOperator) {
-		std::cout << "Operator = " << bIsOperator << std::endl;
 		m_bIsOperator = bIsOperator;
 	}
 

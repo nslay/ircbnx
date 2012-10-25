@@ -36,6 +36,8 @@
 
 class BnxBot : public IrcClient {
 public:
+	typedef BnxAccessSystem::UserSession UserSession;
+
 	BnxBot()
 	: m_pConnectTimer(NULL), m_bChatter(true) { }
 
@@ -64,6 +66,7 @@ protected:
 	virtual void OnRegistered();
 	virtual void OnNumeric(const char *pSource, int numeric, const char *pParams[], unsigned int numParams);
 	virtual void OnNick(const char *pSource, const char *pNewNick);
+	virtual void OnKick(const char *pSource, const char *pChannel, const char *pUser, const char *pReason);
 	virtual void OnPrivmsg(const char *pSource, const char *pTarget, const char *pMessage);
 	virtual void OnJoin(const char *pSource, const char *pChannel);
 	virtual void OnPart(const char *pSource, const char *pChannel, const char *pReason);
@@ -73,6 +76,20 @@ protected:
 	// CTCP events
 	virtual void OnCtcpAction(const char *pSource, const char *pTarget, const char *pMessage);
 	virtual void OnCtcpVersion(const char *pSource, const char *pTarget);
+
+	// User command events
+	virtual bool OnCommandLogin(const IrcUser &clUser, const std::string &strPassword);
+	virtual bool OnCommandLogout(UserSession &clSession);
+	virtual bool OnCommandSay(UserSession &clSession, const std::string &strTarget, const std::string &strMessage);
+	virtual bool OnCommandChatter(UserSession &clSession);
+	virtual bool OnCommandShutUp(UserSession &clSession);
+	virtual bool OnCommandJoin(UserSession &clSession, const std::string &strChannels);
+	virtual bool OnCommandPart(UserSession &clSession, const std::string &strChannels);
+	virtual bool OnCommandShutdown(UserSession &clSession);
+	virtual bool OnCommandUserList(UserSession &clSession);
+	virtual bool OnCommandWhere(UserSession &clSession);
+	virtual bool OnCommandKick(UserSession &clSession, const std::string &strChannel, 
+					const std::string &strHostmask, const std::string &strReason);
 
 private:
 	struct MaskMatches {
@@ -93,7 +110,7 @@ private:
 
 	std::vector<std::string> m_vHomeChannels;
 	std::vector<IrcUser> m_vIgnoredUsers;
-	std::vector<BnxChannel> m_vChannels;
+	std::vector<BnxChannel> m_vCurrentChannels;
 	BnxResponseEngine m_clResponseEngine;
 	BnxAccessSystem m_clAccessSystem;
 
@@ -103,6 +120,8 @@ private:
 		(pObject->*Method)(fd, what);
 	}
 
+	void AddChannel(const char *pChannel);
+	void DeleteChannel(const char *pChannel);
 	void OnConnectTimer(int fd, short what);
 
 };

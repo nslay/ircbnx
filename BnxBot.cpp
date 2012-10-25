@@ -98,7 +98,7 @@ void BnxBot::Shutdown() {
 void BnxBot::Disconnect() {
 	IrcClient::Disconnect();
 
-	m_vChannels.clear();
+	m_vCurrentChannels.clear();
 	m_vIgnoredUsers.clear();
 	m_clAccessSystem.ResetSessions();
 }
@@ -122,116 +122,77 @@ bool BnxBot::ProcessCommand(const char *pSource, const char *pTarget, const char
 	if (strCommand == "login") {
 		std::string strPassword;
 
-		if (!(messageStream >> strPassword) || !m_clAccessSystem.Login(clUser, strPassword)) {
-			return false;
-		}
-
-		Send("PRIVMSG %s :Your wish is my command, master.\r\n", strSourceNick.c_str());
-
-		return true;
+		return (messageStream >> strPassword) &&
+			OnCommandLogin(clUser, strPassword);
 	}
 
-	BnxAccessSystem::UserSession *pclSession = m_clAccessSystem.GetSession(clUser);
+	UserSession *pclSession = m_clAccessSystem.GetSession(clUser);
 
 	if (pclSession == NULL)
 		return false;
 
-	// Commands for all access levels
 	if (strCommand == "logout") {
-		m_clAccessSystem.Logout(clUser);
-
-		Send("PRIVMSG %s :Fare the well...\r\n", strSourceNick.c_str());
-
-		return true;
+		return OnCommandLogout(*pclSession);
 	}
 
 	if (strCommand == "say") {
-		std::string strSayTarget, strLine;
+		std::string strSayTarget, strMessage;
 		
 		if (!(messageStream >> strSayTarget)) 
 			return false;
 
 		messageStream.get();
 
-		if (!std::getline(messageStream, strLine))
+		if (!std::getline(messageStream, strMessage))
 			return false;
 
-		Say(strSayTarget.c_str(), strLine.c_str());
-
-		return true;
+		return OnCommandSay(*pclSession, strSayTarget, strMessage);
 	}
 
 	if (strCommand == "chatter") {
-		m_bChatter = true;
-
-		// The original BNX would ignore users indefinitely, here we'll clear the list on "chatter"
-		m_vIgnoredUsers.clear();
-
-		Send("PRIVMSG %s :Permission to speak freely, sir?\r\n", strSourceNick.c_str());
-
-		return true;
+		return OnCommandChatter(*pclSession);
 	}
 
 	if (strCommand == "shutup") {
-		m_bChatter = false;
-
-		Send("PRIVMSG %s :Aww... Why can't I talk anymore?\r\n", strSourceNick.c_str());
-
-		return true;
+		return OnCommandShutUp(*pclSession);
 	}
 
-	if (pclSession->GetAccessLevel() >= 75) {
-		if (strCommand == "join") {
-			std::string strChannels;
-
-			if (!(messageStream >> strChannels))
-				return false;
-
-			Send("JOIN %s\r\n", strChannels.c_str());
-
-			return true;
-		}
-
-		if (strCommand == "part") {
-			std::string strChannels;
-
-			if (!(messageStream >> strChannels))
-				return false;
-
-			Send("PART %s\r\n", strChannels.c_str());
-
-			return true;
-		}
+	if (strCommand == "join") {
+		std::string strChannels;
+		return (messageStream >> strChannels) &&
+			OnCommandJoin(*pclSession, strChannels);
 	}
 
-	if (pclSession->GetAccessLevel() == 100) {
-		if (strCommand == "shutdown") {
-			Send("PRIVMSG %s :Sir, if you don't mind, I'll close down for a while...\r\n", strSourceNick.c_str());
-
-			Shutdown();
-
-			return true;
-		}
-
-		if (strCommand == "userlist") {
-			const std::vector<BnxAccessSystem::UserEntry> &vUserEntries = m_clAccessSystem.GetAllEntries();
-
-			Send("PRIVMSG %s :Access List:\r\n", strSourceNick.c_str());
-
-			for (size_t i = 0; i < vUserEntries.size(); ++i) {
-				const IrcUser &clMask = vUserEntries[i].GetHostmask();
-				std::string strMask = clMask.GetHostmask();
-				int iAccessLevel = vUserEntries[i].GetAccessLevel();
-
-				Send("PRIVMSG %s :%s %d\r\n", strSourceNick.c_str(), strMask.c_str(), iAccessLevel);
-			}
-
-			Send("PRIVMSG %s :End of Access List.\r\n", strSourceNick.c_str());
-
-			return true;
-		}
+	if (strCommand == "part") {
+		std::string strChannels;
+		return (messageStream >> strChannels) &&
+			OnCommandPart(*pclSession, strChannels);
 	}
 
+	if (strCommand == "shutdown") {
+		return OnCommandShutdown(*pclSession);
+	}
+
+	if (strCommand == "userlist") {
+		return OnCommandUserList(*pclSession);
+	}
+
+	if (strCommand == "where") {
+		return OnCommandWhere(*pclSession);
+	}
+
+	if (strCommand == "kick") {
+		std::string strChannel, strHostmask, strReason;
+
+		if (!(messageStream >> strChannel >> strHostmask))
+			return false;
+
+		messageStream.get();
+
+		std::getline(messageStream, strReason);
+
+		return OnCommandKick(*pclSession, strChannel, strHostmask, strReason);
+	}
 
 	return false;
 }
@@ -325,9 +286,9 @@ void BnxBot::Say(const char *pTarget, const char *pMessage) {
 
 BnxChannel * BnxBot::GetChannel(const char *pChannel) {
 	std::vector<BnxChannel>::iterator itr;
-	itr = std::find(m_vChannels.begin(), m_vChannels.end(), pChannel);
+	itr = std::find(m_vCurrentChannels.begin(), m_vCurrentChannels.end(), pChannel);
 
-	if (itr == m_vChannels.end())
+	if (itr == m_vCurrentChannels.end())
 		return NULL;
 
 	return &(*itr);
@@ -393,7 +354,7 @@ void BnxBot::OnNumeric(const char *pSource, int numeric, const char *pParams[], 
 						!IrcIsSpecial(strNickname[p]); ++p);
 
 				if (p < strNickname.size() && GetCurrentNickname() == strNickname.substr(p)) {
-					m_vChannels.push_back(BnxChannel(pChannel));
+					AddChannel(pChannel);
 
 					// Now really collect useful information
 					Send("WHO %s\r\n", pChannel);
@@ -429,12 +390,29 @@ void BnxBot::OnNick(const char *pSource, const char *pNewNick) {
 
 	IrcUser clUser(pSource);
 
-	for (size_t i = 0; i < m_vChannels.size(); ++i) {
-		BnxChannel::Member *pclMember = m_vChannels[i].GetMember(clUser.GetNickname());
+	for (size_t i = 0; i < m_vCurrentChannels.size(); ++i) {
+		BnxChannel::Member *pclMember = m_vCurrentChannels[i].GetMember(clUser.GetNickname());
 
 		if (pclMember != NULL)
 			pclMember->GetUser().SetNickname(pNewNick);
 	}
+}
+
+void BnxBot::OnKick(const char *pSource, const char *pChannel, const char *pUser, const char *pReason) {
+	IrcClient::OnKick(pSource, pChannel, pUser, pReason);
+
+	BnxChannel *pclChannel = GetChannel(pChannel);
+
+	// What?
+	if (pclChannel == NULL)
+		return;
+
+	if (pUser == GetCurrentNickname()) {
+		DeleteChannel(pChannel);
+		return;
+	}
+
+	pclChannel->DeleteMember(pUser);
 }
 
 void BnxBot::OnPrivmsg(const char *pSource, const char *pTarget, const char *pMessage) {
@@ -495,12 +473,8 @@ void BnxBot::OnPart(const char *pSource, const char *pChannel, const char *pReas
 	BnxChannel *pclChannel = NULL;
 
 	if (clUser.GetNickname() == GetCurrentNickname()) {
-		std::vector<BnxChannel>::iterator itr;
-		itr = std::find(m_vChannels.begin(), m_vChannels.end(), pChannel);
-
-		if (itr != m_vChannels.end())
-			m_vChannels.erase(itr);
-
+		// TODO: Add kicker to shitlist
+		DeleteChannel(pChannel);
 		return;
 	}
 
@@ -570,8 +544,8 @@ void BnxBot::OnQuit(const char *pSource, const char *pReason) {
 
 	IrcUser clUser(pSource);
 
-	for (size_t i = 0; i < m_vChannels.size(); ++i)
-		m_vChannels[i].DeleteMember(clUser.GetNickname());
+	for (size_t i = 0; i < m_vCurrentChannels.size(); ++i)
+		m_vCurrentChannels[i].DeleteMember(clUser.GetNickname());
 }
 
 void BnxBot::OnCtcpAction(const char *pSource, const char *pTarget, const char *pMessage) {
@@ -587,6 +561,177 @@ void BnxBot::OnCtcpVersion(const char *pSource, const char *pTarget) {
 	const std::string &strSourceNick = clUser.GetNickname();
 
 	Send("NOTICE %s :%s\r\n", strSourceNick.c_str(), clEncoder.GetRaw());
+}
+
+bool BnxBot::OnCommandLogin(const IrcUser &clUser, const std::string &strPassword) {
+
+	if (m_clAccessSystem.Login(clUser, strPassword)) {
+		Send("PRIVMSG %s :Your wish is my command, master.\r\n", clUser.GetNickname().c_str());
+
+		return true;
+	}
+
+	return false;
+}
+
+bool BnxBot::OnCommandLogout(UserSession &clSession) {
+	const IrcUser &clUser = clSession.GetUser();
+
+	Send("PRIVMSG %s :Fare the well...\r\n", clUser.GetNickname().c_str());
+
+	m_clAccessSystem.Logout(clUser);
+
+	// XXX: clUser and clSession are dead references now!
+
+	return true;
+}
+
+bool BnxBot::OnCommandSay(UserSession &clSession, const std::string &strTarget, const std::string &strMessage) {
+
+	Say(strTarget.c_str(), strMessage.c_str());
+
+	return true;
+}
+
+bool BnxBot::OnCommandChatter(UserSession &clSession) {
+	const IrcUser &clUser = clSession.GetUser();
+
+	m_bChatter = true;
+
+	// The original BNX would ignore users indefinitely, here we'll clear the list on "chatter"
+	m_vIgnoredUsers.clear();
+
+	Send("PRIVMSG %s :Permission to speak freely, sir?\r\n", clUser.GetNickname().c_str());
+
+	return true;
+}
+
+bool BnxBot::OnCommandShutUp(UserSession &clSession) {
+	const IrcUser &clUser = clSession.GetUser();
+
+	m_bChatter = false;
+
+	Send("PRIVMSG %s :Aww... Why can't I talk anymore?\r\n", clUser.GetNickname().c_str());
+
+	return true;
+}
+
+bool BnxBot::OnCommandJoin(UserSession &clSession, const std::string &strChannels) {
+	if (clSession.GetAccessLevel() < 75)
+		return false;
+
+	Send("JOIN %s\r\n", strChannels.c_str());
+
+	return true;
+}
+
+bool BnxBot::OnCommandPart(UserSession &clSession, const std::string &strChannels) {
+	if (clSession.GetAccessLevel() < 75)
+		return false;
+
+	Send("PART %s\r\n", strChannels.c_str());
+
+	return true;
+}
+
+bool BnxBot::OnCommandShutdown(UserSession &clSession) {
+	if (clSession.GetAccessLevel() < 100)
+		return false;
+
+	const IrcUser &clUser = clSession.GetUser();
+
+	Send("PRIVMSG %s :Sir, if you don't mind, I'll close down for a while...\r\n", clUser.GetNickname().c_str());
+
+	Shutdown();
+
+	return true;
+}
+
+bool BnxBot::OnCommandUserList(UserSession &clSession) {
+	if (clSession.GetAccessLevel() < 100)
+		return false;
+
+	const IrcUser &clUser = clSession.GetUser();
+
+	const std::vector<BnxAccessSystem::UserEntry> &vUserEntries = m_clAccessSystem.GetAllEntries();
+
+	Send("PRIVMSG %s :Access List:\r\n", clUser.GetNickname().c_str());
+
+	for (size_t i = 0; i < vUserEntries.size(); ++i) {
+		const IrcUser &clMask = vUserEntries[i].GetHostmask();
+		std::string strMask = clMask.GetHostmask();
+		int iAccessLevel = vUserEntries[i].GetAccessLevel();
+
+		Send("PRIVMSG %s :%s %d\r\n", clUser.GetNickname().c_str(), strMask.c_str(), iAccessLevel);
+	}
+
+	Send("PRIVMSG %s :End of Access List.\r\n", clUser.GetNickname().c_str());
+
+	return true;
+}
+
+bool BnxBot::OnCommandWhere(UserSession &clSession) {
+	const IrcUser &clUser = clSession.GetUser();
+
+	std::string strChannels;
+
+	if (m_vCurrentChannels.empty()) {
+		// NOTE: The Void was a no-where channel on Battle.net
+		strChannels = "The Void";
+	}
+	else {
+		strChannels = m_vCurrentChannels[0].GetName();
+
+		for (size_t i = 1; i < m_vCurrentChannels.size(); ++i) {
+			strChannels += ", ";
+			strChannels += m_vCurrentChannels[i].GetName();
+		}
+	}
+
+	Send("PRIVMSG %s :I am in channels: %s\r\n", clUser.GetNickname().c_str(), strChannels.c_str());
+
+	return true;
+}
+
+bool BnxBot::OnCommandKick(UserSession &clSession, const std::string &strChannel, 
+				const std::string &strHostmask, const std::string &strReason) {
+
+	const IrcUser &clUser = clSession.GetUser();
+
+	BnxChannel *pclChannel = GetChannel(strChannel.c_str());
+
+	if (pclChannel == NULL)
+		return false;
+
+	if (!pclChannel->IsOperator()) {
+		Send("PRIVMSG %s :I don't have OP!\r\n", clUser.GetNickname().c_str());
+		return true;
+	}
+
+	if (strReason.empty())
+		Send("KICK %s %s\r\n", strChannel.c_str(), strHostmask.c_str());
+	else
+		Send("KICK %s %s :%s\r\n", strChannel.c_str(), strHostmask.c_str(), strReason.c_str());
+
+	Send("PRIVMSG %s :OK, kicked his ass.\r\n", clUser.GetNickname().c_str());
+
+	return true;
+}
+
+void BnxBot::AddChannel(const char *pChannel) {
+	if (std::find(m_vCurrentChannels.begin(), m_vCurrentChannels.end(), pChannel) != m_vCurrentChannels.end())
+		return;
+
+	m_vCurrentChannels.push_back(BnxChannel(pChannel));
+}
+
+void BnxBot::DeleteChannel(const char *pChannel) {
+	std::vector<BnxChannel>::iterator itr;
+	itr = std::find(m_vCurrentChannels.begin(), m_vCurrentChannels.end(), pChannel);
+
+	if (itr != m_vCurrentChannels.end())
+		m_vCurrentChannels.erase(itr);
+
 }
 
 void BnxBot::OnConnectTimer(int fd, short what) {
