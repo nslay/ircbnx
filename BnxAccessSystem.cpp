@@ -52,7 +52,7 @@ bool BnxAccessSystem::LoadFromStream(std::istream &is) {
 			return false;
 		}
 
-		AddUser(IrcUser(strHostmask), strPassword, iAccessLevel);
+		AddUser(IrcUser(strHostmask), iAccessLevel, strPassword);
 	}
 
 	return true;
@@ -65,7 +65,7 @@ void BnxAccessSystem::SaveToStream(std::ostream &os) {
 	}
 }
 
-void BnxAccessSystem::AddUser(const IrcUser &clHostmask, const std::string &strPassword, int iAccessLevel) {
+void BnxAccessSystem::AddUser(const IrcUser &clHostmask, int iAccessLevel, const std::string &strPassword) {
 	std::vector<UserEntry>::iterator itr;
 
 	itr = std::find(m_vUserEntries.begin(), m_vUserEntries.end(), clHostmask);
@@ -131,6 +131,17 @@ BnxAccessSystem::UserSession * BnxAccessSystem::GetSession(const IrcUser &clUser
 	}
 
 	itr->Update();
+
+	return &(*itr);
+}
+
+BnxAccessSystem::UserEntry * BnxAccessSystem::GetEntry(const IrcUser &clHostmask) {
+	std::vector<UserEntry>::iterator itr;
+
+	itr = std::find(m_vUserEntries.begin(), m_vUserEntries.end(), clHostmask);
+
+	if (itr == m_vUserEntries.end())
+		return NULL;
 
 	return &(*itr);
 }

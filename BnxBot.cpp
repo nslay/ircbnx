@@ -41,15 +41,15 @@ void BnxBot::SetServerAndPort(const std::string &strServer, const std::string &s
 	m_strPort = strPort;
 }
 
-void BnxBot::AddHomeChannel(const std::string &channel) {
-	if (std::find(m_vHomeChannels.begin(), m_vHomeChannels.end(), channel) != m_vHomeChannels.end())
+void BnxBot::AddHomeChannel(const std::string &strChannel) {
+	if (std::find(m_vHomeChannels.begin(), m_vHomeChannels.end(), strChannel) != m_vHomeChannels.end())
 		return;
 
-	m_vHomeChannels.push_back(channel);
+	m_vHomeChannels.push_back(strChannel);
 }
 
-void BnxBot::DeleteHomeChannel(const std::string &channel) {
-	std::vector<std::string>::iterator itr = std::find(m_vHomeChannels.begin(), m_vHomeChannels.end(), channel);
+void BnxBot::DeleteHomeChannel(const std::string &strChannel) {
+	std::vector<std::string>::iterator itr = std::find(m_vHomeChannels.begin(), m_vHomeChannels.end(), strChannel);
 
 	if (itr != m_vHomeChannels.end())
 		m_vHomeChannels.erase(itr);
@@ -99,7 +99,7 @@ void BnxBot::Disconnect() {
 	IrcClient::Disconnect();
 
 	m_vCurrentChannels.clear();
-	m_vIgnoredUsers.clear();
+	m_vSquelchedUsers.clear();
 	m_clAccessSystem.ResetSessions();
 }
 
@@ -109,8 +109,6 @@ bool BnxBot::ProcessCommand(const char *pSource, const char *pTarget, const char
 
 	IrcUser clUser(pSource);
 
-	const std::string &strSourceNick = clUser.GetNickname();
-	
 	std::stringstream messageStream;
 	messageStream.str(pMessage);
 
@@ -194,6 +192,36 @@ bool BnxBot::ProcessCommand(const char *pSource, const char *pTarget, const char
 		return OnCommandKick(*pclSession, strChannel, strHostmask, strReason);
 	}
 
+	if (strCommand == "squelch" || strCommand == "ignore") {
+		std::string strHostmask;
+
+		return (messageStream >> strHostmask) &&
+			OnCommandSquelch(*pclSession, strHostmask);
+	}
+
+	// Original BNX didn't seem to have an unignore command despite having an ignore command
+	if (strCommand == "unsquelch") {
+		std::string strHostmask;
+
+		return (messageStream >> strHostmask) &&
+			OnCommandUnsquelch(*pclSession, strHostmask);
+	}
+
+	if (strCommand == "useradd") {
+		std::string strHostmask, strPassword;
+		int iAccessLevel;
+		
+		return (messageStream >> strHostmask >> iAccessLevel >> strPassword) &&
+			OnCommandUserAdd(*pclSession, strHostmask, iAccessLevel, strPassword);
+	}
+
+	if (strCommand == "userdel") {
+		std::string strHostmask;
+
+		return (messageStream >> strHostmask) &&
+			OnCommandUserDel(*pclSession, strHostmask);
+	}
+
 	return false;
 }
 
@@ -221,14 +249,15 @@ void BnxBot::ProcessMessage(const char *pSource, const char *pTarget, const char
 		}
 
 		pReplyTo = pTarget;
-		strPrefix = strSourceNick + ": ";
+		strPrefix = strSourceNick;
+		strPrefix += ": ";
 	}
 
-	if (std::find_if(m_vIgnoredUsers.begin(), m_vIgnoredUsers.end(), MaskMatches(clUser)) != m_vIgnoredUsers.end())
+	if (IsSquelched(clUser))
 		return;
 
 	if (IrcMatch("*shut*up*", pMessage)) {
-		m_vIgnoredUsers.push_back(IrcUser("*","*",clUser.GetHostname()));
+		Squelch(IrcUser("*", "*", clUser.GetHostname()));
 
 		Send("PRIVMSG %s :%sOK, I won't talk to you anymore.\r\n", pReplyTo, strPrefix.c_str());
 		return;
@@ -261,7 +290,7 @@ void BnxBot::Say(const char *pTarget, const char *pMessage) {
 
 		ss >> strCommand;
 
-		if (strCommand == "/me") {
+		if (strCommand == "/me" || strCommand == "/action") {
 
 			std::string strLine;
 
@@ -292,6 +321,10 @@ BnxChannel * BnxBot::GetChannel(const char *pChannel) {
 		return NULL;
 
 	return &(*itr);
+}
+
+bool BnxBot::IsSquelched(const IrcUser &clUser) {
+	return std::find_if(m_vSquelchedUsers.begin(), m_vSquelchedUsers.end(), MaskMatches(clUser)) != m_vSquelchedUsers.end();
 }
 
 void BnxBot::OnConnect() {
@@ -594,12 +627,15 @@ bool BnxBot::OnCommandSay(UserSession &clSession, const std::string &strTarget, 
 }
 
 bool BnxBot::OnCommandChatter(UserSession &clSession) {
+	if (clSession.GetAccessLevel() < 75)
+		return false;
+
 	const IrcUser &clUser = clSession.GetUser();
 
 	m_bChatter = true;
 
 	// The original BNX would ignore users indefinitely, here we'll clear the list on "chatter"
-	m_vIgnoredUsers.clear();
+	m_vSquelchedUsers.clear();
 
 	Send("PRIVMSG %s :Permission to speak freely, sir?\r\n", clUser.GetNickname().c_str());
 
@@ -607,6 +643,9 @@ bool BnxBot::OnCommandChatter(UserSession &clSession) {
 }
 
 bool BnxBot::OnCommandShutUp(UserSession &clSession) {
+	if (clSession.GetAccessLevel() < 75)
+		return false;
+
 	const IrcUser &clUser = clSession.GetUser();
 
 	m_bChatter = false;
@@ -695,6 +734,8 @@ bool BnxBot::OnCommandWhere(UserSession &clSession) {
 
 bool BnxBot::OnCommandKick(UserSession &clSession, const std::string &strChannel, 
 				const std::string &strHostmask, const std::string &strReason) {
+	if (clSession.GetAccessLevel() < 60)
+		return false;
 
 	const IrcUser &clUser = clSession.GetUser();
 
@@ -718,6 +759,76 @@ bool BnxBot::OnCommandKick(UserSession &clSession, const std::string &strChannel
 	return true;
 }
 
+bool BnxBot::OnCommandSquelch(UserSession &clSession, const std::string &strHostmask) {
+	if (clSession.GetAccessLevel() < 75)
+		return false;
+
+	const IrcUser &clUser = clSession.GetUser();
+
+	Squelch(IrcUser(strHostmask));
+
+	Send("PRIVMSG %s :OK, ignoring...\r\n", clUser.GetNickname().c_str());
+
+	return true;
+}
+
+bool BnxBot::OnCommandUnsquelch(UserSession &clSession, const std::string &strHostmask) {
+	if (clSession.GetAccessLevel() < 75)
+		return false;
+
+	const IrcUser &clUser = clSession.GetUser();
+
+	Unsquelch(IrcUser(strHostmask));
+
+	Send("PRIVMSG %s :OK, unignoring...\r\n", clUser.GetNickname().c_str());
+
+	return true;
+}
+
+bool BnxBot::OnCommandUserAdd(UserSession &clSession, const std::string &strHostmask, 
+				int iAccessLevel, const std::string &strPassword) {
+	if(clSession.GetAccessLevel() < 100)
+		return false;
+
+	const IrcUser &clUser = clSession.GetUser();
+
+	IrcUser clMask(strHostmask);
+
+	m_clAccessSystem.AddUser(clMask, iAccessLevel, strPassword);
+
+	Send("PRIVMSG %s :Added %s, level %d, pass %s\r\n", clUser.GetNickname().c_str(), 
+		clMask.GetHostmask().c_str(), iAccessLevel, strPassword.c_str());
+
+	return true;
+}
+
+bool BnxBot::OnCommandUserDel(UserSession &clSession, const std::string &strHostmask) {
+	if (clSession.GetAccessLevel() < 100)
+		return false;
+
+	const IrcUser &clUser = clSession.GetUser();
+	IrcUser clMask(strHostmask);
+
+	BnxAccessSystem::UserEntry *pclEntry = m_clAccessSystem.GetEntry(clMask);
+
+	if (pclEntry == NULL) {
+		Send("PRIVMSG %s :Cannot delete %s\r\n", clUser.GetNickname().c_str(), clMask.GetHostmask().c_str());
+		return true;
+	}
+
+	if (clSession.GetAccessLevel() <= pclEntry->GetAccessLevel()) {
+		Send("PRIVMSG %s :Insufficient privilege.\r\n", clUser.GetNickname().c_str());
+		return true;
+	}
+
+	pclEntry = NULL; // It will be invalid after DeleteUser()
+	m_clAccessSystem.DeleteUser(clMask);
+
+	Send("PRIVMSG %s :Deleted %s\r\n", clUser.GetNickname().c_str(), clMask.GetHostmask().c_str());
+
+	return true;
+}
+
 void BnxBot::AddChannel(const char *pChannel) {
 	if (std::find(m_vCurrentChannels.begin(), m_vCurrentChannels.end(), pChannel) != m_vCurrentChannels.end())
 		return;
@@ -732,6 +843,20 @@ void BnxBot::DeleteChannel(const char *pChannel) {
 	if (itr != m_vCurrentChannels.end())
 		m_vCurrentChannels.erase(itr);
 
+}
+
+void BnxBot::Squelch(const IrcUser &clUser) {
+	if (!IsSquelched(clUser))
+		m_vSquelchedUsers.push_back(clUser);
+}
+
+void BnxBot::Unsquelch(const IrcUser &clUser) {
+	std::vector<IrcUser>::iterator itr;
+
+	itr = std::find(m_vSquelchedUsers.begin(), m_vSquelchedUsers.end(), clUser);
+
+	if (itr != m_vSquelchedUsers.end())
+		m_vSquelchedUsers.erase(itr);
 }
 
 void BnxBot::OnConnectTimer(int fd, short what) {

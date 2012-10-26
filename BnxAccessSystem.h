@@ -118,13 +118,14 @@ public:
 	bool LoadFromStream(std::istream &is);
 	void SaveToStream(std::ostream &os);
 
-	void AddUser(const IrcUser &clHostmask, const std::string &strPassword, int iAccessLevel);
+	void AddUser(const IrcUser &clHostmask, int iAccessLevel, const std::string &strPassword);
 	bool DeleteUser(const IrcUser &clHostmask);
 
 	bool Login(const IrcUser &clUser, const std::string &strPassword);
 	void Logout(const IrcUser &clUser);
 
 	UserSession * GetSession(const IrcUser &clUser);
+	UserEntry * GetEntry(const IrcUser &clHostmask);
 
 	const std::vector<UserSession> & GetAllSessions() const {
 		return m_vUserSessions;

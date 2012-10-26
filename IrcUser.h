@@ -50,15 +50,15 @@ public:
 	}
 
 	void SetNickname(const std::string &strNickname) {
-		m_strNickname = strNickname;
+		m_strNickname = strNickname.empty() ? "*" : strNickname;
 	}
 
 	void SetUsername(const std::string &strUsername) {
-		m_strUsername = strUsername;
+		m_strUsername = strUsername.empty() ? "*" : strUsername;
 	}
 
 	void SetHostname(const std::string &strHostname) {
-		m_strHostname = strHostname;
+		m_strHostname = strHostname.empty() ? "*" : strHostname;
 	}
 
 	const std::string & GetNickname() const {
@@ -74,15 +74,18 @@ public:
 	}
 
 	const std::string GetHostmask() const {
-		return (GetNickname().empty() ? "*" : GetNickname()) + "!" +
-			(GetUsername().empty() ? "*" : GetUsername()) + "@" +
-			(GetHostname().empty() ? "*" : GetHostname());
+		std::string strHostmask = GetNickname();
+		strHostmask += '!';
+		strHostmask += GetUsername();
+		strHostmask += '@';
+		strHostmask += GetHostname();
+		return strHostmask;
 	}
 
 	void Reset() {
-		m_strNickname.clear();
-		m_strUsername.clear();
-		m_strHostname.clear();
+		m_strNickname = '*';
+		m_strUsername = '*';
+		m_strHostname = '*';
 	}
 
 	bool Matches(const IrcUser &clUser) const {

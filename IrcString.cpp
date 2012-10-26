@@ -25,6 +25,7 @@
 
 #include <cstddef>
 #include <cctype>
+#include <cstring>
 #include "IrcString.h"
 
 int IrcToUpper(int c, IrcCaseMapping mapping) {
@@ -104,6 +105,23 @@ int IrcIsSpecial(int c) {
 	}
 
 	return 0;
+}
+
+bool IrcIsHostmask(const char *pString) {
+	if (pString == NULL || *pString == '!')
+		return false;
+
+	pString = strchr(pString,'!');
+
+	if (pString == NULL || *(++pString) == '@')
+		return false;
+
+	pString = strchr(pString,'@');
+
+	if (pString == NULL || *(++pString) == '\0')
+		return false;
+
+	return true;
 }
 
 int IrcStrCaseCmp(const char *pString1, const char *pString2, IrcCaseMapping mapping) {

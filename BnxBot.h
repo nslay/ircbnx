@@ -59,6 +59,7 @@ protected:
 	virtual void ProcessMessage(const char *pSource, const char *pTarget, const char *pMessage);
 	virtual void Say(const char *pTarget, const char *pMessage);
 	BnxChannel * GetChannel(const char *pChannel);
+	bool IsSquelched(const IrcUser &clUser);
 
 	// IRC events
 	virtual void OnConnect();
@@ -90,6 +91,11 @@ protected:
 	virtual bool OnCommandWhere(UserSession &clSession);
 	virtual bool OnCommandKick(UserSession &clSession, const std::string &strChannel, 
 					const std::string &strHostmask, const std::string &strReason);
+	virtual bool OnCommandSquelch(UserSession &clSession, const std::string &strHostmask);
+	virtual bool OnCommandUnsquelch(UserSession &clSession, const std::string &strHostmask);
+	virtual bool OnCommandUserAdd(UserSession &clSession, const std::string &strHostmask, 
+					int iAccessLevel, const std::string &strPassword);
+	virtual bool OnCommandUserDel(UserSession &clSession, const std::string &strHostmask);
 
 private:
 	struct MaskMatches {
@@ -109,7 +115,7 @@ private:
 	bool m_bChatter;
 
 	std::vector<std::string> m_vHomeChannels;
-	std::vector<IrcUser> m_vIgnoredUsers;
+	std::vector<IrcUser> m_vSquelchedUsers;
 	std::vector<BnxChannel> m_vCurrentChannels;
 	BnxResponseEngine m_clResponseEngine;
 	BnxAccessSystem m_clAccessSystem;
@@ -122,6 +128,9 @@ private:
 
 	void AddChannel(const char *pChannel);
 	void DeleteChannel(const char *pChannel);
+	void Squelch(const IrcUser &clUser);
+	void Unsquelch(const IrcUser &clser);
+
 	void OnConnectTimer(int fd, short what);
 
 };
