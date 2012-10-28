@@ -101,6 +101,7 @@ protected:
 	virtual bool OnCommandShitAdd(UserSession &clSession, const std::string &strHostmask);
 	virtual bool OnCommandShitDel(UserSession &clSession, const std::string &strHostmask);
 	virtual bool OnCommandShitList(UserSession &clSession);
+	virtual bool OnCommandNick(UserSession &clSession, const std::string &strNickname);
 
 private:
 	struct MaskMatches {

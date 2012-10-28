@@ -55,7 +55,7 @@ void BnxShitList::Save() const {
 				continue;
 
 			if (std::find(m_vHostmasks.begin(), m_vHostmasks.end(), clMask) != m_vHostmasks.end()) {
-				tmpListStream << clMask.GetHostmask() << std::endl;
+				tmpListStream << clMask << std::endl;
 				vMasksWritten.push_back(clMask);
 			}
 		}
@@ -72,7 +72,7 @@ void BnxShitList::Save() const {
 		for (size_t i = 0; i < m_vHostmasks.size(); ++i) {
 			if (std::find(vMasksWritten.begin(), vMasksWritten.end(), 
 					m_vHostmasks[i]) == vMasksWritten.end()) {
-				outListStream << m_vHostmasks[i].GetHostmask() << std::endl;
+				outListStream << m_vHostmasks[i] << std::endl;
 			}
 		}
 	}
@@ -80,7 +80,7 @@ void BnxShitList::Save() const {
 		std::ofstream outListStream(GetShitListFile().c_str());
 
 		for (size_t i = 0; i < m_vHostmasks.size(); ++i)
-			outListStream << m_vHostmasks[i].GetHostmask() << std::endl;
+			outListStream << m_vHostmasks[i] << std::endl;
 	}
 
 }

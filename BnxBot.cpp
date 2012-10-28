@@ -245,6 +245,13 @@ bool BnxBot::ProcessCommand(const char *pSource, const char *pTarget, const char
 		return OnCommandShitList(*pclSession);
 	}
 
+	if (strCommand == "nick") {
+		std::string strNickname;
+
+		return (messageStream >> strNickname) &&
+			OnCommandNick(*pclSession, strNickname);
+	}
+
 	return false;
 }
 
@@ -908,6 +915,17 @@ bool BnxBot::OnCommandShitList(UserSession &clSession) {
 		Send("PRIVMSG %s :%s\r\n", clUser.GetNickname().c_str(), vMasks[i].GetHostmask().c_str());
 
 	Send("PRIVMSG %s :End of Shit List.\r\n", clUser.GetNickname().c_str());
+
+	return true;
+}
+
+bool BnxBot::OnCommandNick(UserSession &clSession, const std::string &strNickname) {
+	if (clSession.GetAccessLevel() < 100)
+		return false;
+
+	const IrcUser &clUser = clSession.GetUser();
+
+	Send("NICK %s\r\n", strNickname.c_str());
 
 	return true;
 }
