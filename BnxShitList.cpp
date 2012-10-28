@@ -19,14 +19,14 @@ bool BnxShitList::Load() {
 
 		lineStream.str(strLine);
 
-		std::string strHostmask;
+		IrcUser clMask;
 
-		if (!(lineStream >> strHostmask)) {
+		if (!(lineStream >> clMask)) {
 			Reset();
 			return false;
 		}
 
-		AddMask(IrcUser(strLine));
+		AddMask(clMask);
 	}
 
 	return true;
@@ -50,11 +50,10 @@ void BnxShitList::Save() const {
 			std::stringstream lineStream;
 			lineStream.str(strLine);
 
-			std::string strHostmask;
-			if (!(lineStream >> strHostmask))
+			IrcUser clMask;
+			if (!(lineStream >> clMask))
 				continue;
 
-			IrcUser clMask(strHostmask);
 			if (std::find(m_vHostmasks.begin(), m_vHostmasks.end(), clMask) != m_vHostmasks.end()) {
 				tmpListStream << clMask.GetHostmask() << std::endl;
 				vMasksWritten.push_back(clMask);

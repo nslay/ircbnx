@@ -26,6 +26,7 @@
 #ifndef IRCUSER_H
 #define IRCUSER_H
 
+#include <iostream>
 #include <string>
 #include "IrcString.h"
 
@@ -109,6 +110,19 @@ public:
 private:
 	std::string m_strNickname, m_strUsername, m_strHostname;
 };
+
+inline std::istream & operator>>(std::istream &is, IrcUser &clUser) {
+	std::string strHostmask;
+	is >> strHostmask;
+
+	clUser.Parse(strHostmask);
+
+	return is;
+}
+
+inline std::ostream & operator<<(std::ostream &os, const IrcUser &clUser) {
+	return os << clUser.GetHostmask();
+}
 
 #endif // !IRCUSER_H
 

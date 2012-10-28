@@ -28,17 +28,18 @@
 #include "BnxAccessSystem.h"
 
 std::istream & operator>>(std::istream &is, BnxAccessSystem::UserEntry &clEntry) {
-	std::string strHostmask, strPassword;
+	IrcUser clMask;
 	int iAccessLevel;
+	std::string strPassword;
 
-	if (is >> strHostmask >> iAccessLevel >> strPassword)
-		clEntry = BnxAccessSystem::UserEntry(IrcUser(strHostmask), iAccessLevel, strPassword);
+	if (is >> clMask >> iAccessLevel >> strPassword)
+		clEntry = BnxAccessSystem::UserEntry(clMask, iAccessLevel, strPassword);
 
 	return is;
 }
 
 std::ostream & operator<<(std::ostream &os, const BnxAccessSystem::UserEntry &clEntry) {
-	return os << clEntry.GetHostmask().GetHostmask() << ' ' << 
+	return os << clEntry.GetHostmask() << ' ' << 
 			clEntry.GetAccessLevel() << ' ' <<
 			clEntry.GetPassword();
 			
