@@ -30,8 +30,6 @@
 #include "BnxChannel.h"
 
 void BnxChannel::AddMember(const IrcUser &clUser) {
-	std::vector<Member>::iterator itr;
-
 	if (GetMember(clUser.GetNickname()) != NULL)
 		return;
 

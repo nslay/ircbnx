@@ -27,14 +27,16 @@
 #define IRCCLIENT_H
 
 #include <string>
+#include <deque>
 #include "IrcTraits.h"
+#include "IrcCounter.h"
 #include "event2/event.h"
 
 class IrcClient {
 public:
 	IrcClient()
 	: m_socket(-1), m_strUsername("IrcClient"), m_strRealName("IrcClient"), m_stagingBufferSize(0),
-	m_pEventBase(NULL), m_pReadEvent(NULL), m_pWriteEvent(NULL) { }
+	m_pEventBase(NULL), m_pReadEvent(NULL), m_pWriteEvent(NULL), m_pSendTimer(NULL) { }
 
 	virtual ~IrcClient();
 
@@ -57,6 +59,8 @@ public:
 
 protected:
 	virtual void Send(const char *pFormat, ...);
+	virtual void SendNow(const char *pFormat, ...);
+	virtual void SendLater(const char *pFormat, ...);
 	virtual void SendRaw(const void *pData, size_t dataSize);
 
 	virtual void OnConnect();
@@ -84,12 +88,14 @@ private:
 		m_strCurrentServer, m_strCurrentPort;
 
 	IrcTraits m_clIrcTraits;
+	IrcCounter m_clSendCounter;
+	std::deque<std::string> m_dqSendQueue;
 
 	char m_stagingBuffer[4096];
 	size_t m_stagingBufferSize;
 
 	struct event_base *m_pEventBase;
-	struct event *m_pReadEvent, *m_pWriteEvent;
+	struct event *m_pReadEvent, *m_pWriteEvent, *m_pSendTimer;
 
 	static char * PopToken(char *&pStr);
 
@@ -104,6 +110,7 @@ private:
 	// Libevent callbacks
 	void OnWrite(int fd, short what);
 	void OnRead(int fd, short what);
+	void OnSendTimer(int fd, short what);
 
 };
 

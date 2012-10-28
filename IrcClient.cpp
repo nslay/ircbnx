@@ -159,6 +159,7 @@ bool IrcClient::Connect(const std::string &strServer, const std::string &strPort
 	// XXX: Handle errors?
 	m_pWriteEvent = event_new(m_pEventBase, m_socket, EV_WRITE, &Dispatch<&IrcClient::OnWrite>, this);
 	m_pReadEvent = event_new(m_pEventBase, m_socket, EV_READ | EV_PERSIST, &Dispatch<&IrcClient::OnRead>, this);
+	m_pSendTimer = event_new(m_pEventBase, -1, EV_PERSIST, &Dispatch<&IrcClient::OnSendTimer>, this);
 
 	event_add(m_pWriteEvent, NULL);
 
@@ -182,6 +183,9 @@ void IrcClient::Disconnect() {
 	m_strCurrentNickname.clear();
 
 	m_clIrcTraits.Reset();
+	m_clSendCounter.Reset();
+
+	m_dqSendQueue.clear();
 
 	// This is REALLY important since this can be called while OnRead() is still processing messages
 	m_stagingBufferSize = 0;
@@ -202,9 +206,18 @@ void IrcClient::Disconnect() {
 		event_free(m_pReadEvent);
 		m_pReadEvent = NULL;
 	}
+
+	if (m_pSendTimer != NULL) {
+		event_del(m_pSendTimer);
+		event_free(m_pSendTimer);
+		m_pSendTimer = NULL;
+	}
 }
 
 void IrcClient::Send(const char *pFormat, ...) {
+	if (m_socket == -1)
+		return;
+
 	char buff[513];
 
 	va_list ap;
@@ -212,21 +225,57 @@ void IrcClient::Send(const char *pFormat, ...) {
 	int buffSize = vsnprintf(buff, sizeof(buff), pFormat, ap);
 	va_end(ap);
 
-	printf("-> %s", buff);
+	// TODO: Tunable for bursting
+	if (!m_dqSendQueue.empty() || m_clSendCounter.GetCurrentCount() > 4) {
+		m_dqSendQueue.push_back(buff);
+		return;
+	}
 
 	SendRaw(buff, buffSize);
+}
+
+void IrcClient::SendNow(const char *pFormat, ...) {
+	if (m_socket == -1)
+		return;
+
+	char buff[513];
+
+	va_list ap;
+	va_start(ap, pFormat);
+	int buffSize = vsnprintf(buff, sizeof(buff), pFormat, ap);
+	va_end(ap);
+
+	SendRaw(buff, buffSize);
+}
+
+void IrcClient::SendLater(const char *pFormat, ...) {
+	if (m_socket == -1)
+		return;
+
+	char buff[513];
+
+	va_list ap;
+	va_start(ap, pFormat);
+	int buffSize = vsnprintf(buff, sizeof(buff), pFormat, ap);
+	va_end(ap);
+
+	m_dqSendQueue.push_back(buff);
 }
 
 void IrcClient::SendRaw(const void *pData, size_t dataSize) {
 	if (m_socket == -1)
 		return;
 
+	printf("-> %s", (const char *)pData);
+
+	m_clSendCounter.Hit();
+
 	send(m_socket, pData, dataSize, 0);
 }
 
 void IrcClient::OnConnect() {
-	Send("NICK %s\r\n", m_strNickname.c_str());
-	Send("USER %s localhost localhost :%s\r\n", m_strUsername.c_str(), m_strRealName.c_str());
+	SendNow("NICK %s\r\n", m_strNickname.c_str());
+	SendNow("USER %s localhost localhost :%s\r\n", m_strUsername.c_str(), m_strRealName.c_str());
 
 	m_stagingBufferSize = 0;
 }
@@ -313,7 +362,7 @@ void IrcClient::OnNotice(const char *pSource, const char *pTarget, const char *p
 }
 
 void IrcClient::OnPing(const char *pServer) {
-	Send("PONG :%s\r\n", pServer);
+	SendNow("PONG :%s\r\n", pServer);
 }
 
 void IrcClient::OnPong(const char *pServer1, const char *pServer2) {
@@ -403,6 +452,14 @@ void IrcClient::ProcessLine(char *pLine) {
 void IrcClient::OnWrite(int fd, short what) {
 	event_add(m_pReadEvent, NULL);
 
+	// TODO: Tunable for send timer
+	struct timeval tv;
+	tv.tv_sec = 0;
+	tv.tv_usec = 500000;
+
+	event_add(m_pSendTimer, &tv);
+	m_clSendCounter.SetTimeStep(0.5f);
+
 	OnConnect();
 }
 
@@ -434,5 +491,19 @@ void IrcClient::OnRead(int fd, short what) {
 	}
 
 	memmove(m_stagingBuffer, p, m_stagingBufferSize);
+}
+
+void IrcClient::OnSendTimer(int fd, short what) {
+	float fRate = m_clSendCounter.SampleRate();
+
+	// TODO: Tunable for rate
+	if (fRate > 2 || m_dqSendQueue.empty())
+		return;
+
+	const std::string &strMessage = m_dqSendQueue.front();
+
+	SendRaw(strMessage.c_str(), strMessage.size());
+
+	m_dqSendQueue.pop_front();
 }
 

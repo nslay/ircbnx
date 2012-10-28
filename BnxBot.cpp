@@ -715,7 +715,7 @@ bool BnxBot::OnCommandShutdown(UserSession &clSession) {
 
 	const IrcUser &clUser = clSession.GetUser();
 
-	Send("PRIVMSG %s :Sir, if you don't mind, I'll close down for a while...\r\n", clUser.GetNickname().c_str());
+	SendNow("PRIVMSG %s :Sir, if you don't mind, I'll close down for a while...\r\n", clUser.GetNickname().c_str());
 
 	Shutdown();
 
