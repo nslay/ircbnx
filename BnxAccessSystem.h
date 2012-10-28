@@ -43,7 +43,7 @@ public:
 		UserEntry()
 		: m_iAccessLevel(0) { }
 
-		UserEntry(const IrcUser &clHostmask, const std::string &strPassword, int iLevel)
+		UserEntry(const IrcUser &clHostmask, int iLevel, const std::string &strPassword)
 		: m_clHostmask(clHostmask), m_strPassword(strPassword), m_iAccessLevel(iLevel) { }
 
 		const IrcUser & GetHostmask() const {
@@ -70,10 +70,22 @@ public:
 			return !(*this == clUser);
 		}
 
+		void SetHostmask(const IrcUser &clMask) {
+			m_clHostmask = clMask;
+		}
+
+		void SetPassword(const std::string &strPassword) {
+			m_strPassword = strPassword;
+		}
+
+		void SetAccessLevel(int iAccessLevel) {
+			m_iAccessLevel = iAccessLevel;
+		}
+
 	private:
 		IrcUser m_clHostmask;
-		std::string m_strPassword;
 		int m_iAccessLevel;
+		std::string m_strPassword;
 	};
 
 	class UserSession {
@@ -114,11 +126,22 @@ public:
 		time_t m_lastAccessTime;
 	};
 
+	void SetAccessListFile(const std::string &strAccessListFile) {
+		m_strAccessListFile = strAccessListFile;
+	}
 
-	bool LoadFromStream(std::istream &is);
-	void SaveToStream(std::ostream &os);
+	const std::string & GetAccessListFile() const {
+		return m_strAccessListFile;
+	}
 
-	void AddUser(const IrcUser &clHostmask, int iAccessLevel, const std::string &strPassword);
+	bool Load();
+	void Save();
+
+	void AddUser(const UserEntry &clEntry);
+	void AddUser(const IrcUser &clHostmask, int iAccessLevel, const std::string &strPassword) {
+		AddUser(UserEntry(clHostmask, iAccessLevel, strPassword));
+	}
+
 	bool DeleteUser(const IrcUser &clHostmask);
 
 	bool Login(const IrcUser &clUser, const std::string &strPassword);
@@ -158,10 +181,13 @@ private:
 		const IrcUser &clUser;
 	};
 
+	std::string m_strAccessListFile;
 	std::vector<UserEntry> m_vUserEntries;
 	std::vector<UserSession> m_vUserSessions;
-
 };
+
+std::istream & operator>>(std::istream &is, BnxAccessSystem::UserEntry &clEntry);
+std::ostream & operator<<(std::ostream &os, const BnxAccessSystem::UserEntry &clEntry);
 
 #endif // !BNXACCESSSYSTEM_H
 

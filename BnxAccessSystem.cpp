@@ -23,57 +23,123 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <fstream>
 #include <sstream>
 #include "BnxAccessSystem.h"
 
-bool BnxAccessSystem::LoadFromStream(std::istream &is) {
-	if (!is) {
-		std::cerr << "Bad stream." << std::endl;
-		return false;
-	}
+std::istream & operator>>(std::istream &is, BnxAccessSystem::UserEntry &clEntry) {
+	std::string strHostmask, strPassword;
+	int iAccessLevel;
+
+	if (is >> strHostmask >> iAccessLevel >> strPassword)
+		clEntry = BnxAccessSystem::UserEntry(IrcUser(strHostmask), iAccessLevel, strPassword);
+
+	return is;
+}
+
+std::ostream & operator<<(std::ostream &os, const BnxAccessSystem::UserEntry &clEntry) {
+	return os << clEntry.GetHostmask().GetHostmask() << ' ' << 
+			clEntry.GetAccessLevel() << ' ' <<
+			clEntry.GetPassword();
+			
+}
+
+bool BnxAccessSystem::Load() {
+	std::ifstream inAccessStream(GetAccessListFile().c_str());
 
 	Reset();
 
 	std::string strLine;
-	while (std::getline(is, strLine)) {
+	while (std::getline(inAccessStream, strLine)) {
 		if (strLine.empty() || strLine[0] == ';')
 			continue;
 
-		std::stringstream ss;
+		std::stringstream lineStream;
 
-		ss.str(strLine);
+		lineStream.str(strLine);
 
-		std::string strHostmask, strPassword;
-		int iAccessLevel;
+		UserEntry clEntry;
 
-		if (!(ss >> strHostmask >> iAccessLevel >> strPassword)) {
-			std::cerr << "Could not read host mask, access level or password." << std::endl;
+		if (!(lineStream >> clEntry)) {
+			std::cerr << "Could not read user entry." << std::endl;
 			Reset();
 			return false;
 		}
 
-		AddUser(IrcUser(strHostmask), iAccessLevel, strPassword);
+		AddUser(clEntry);
 	}
 
 	return true;
 }
 
-void BnxAccessSystem::SaveToStream(std::ostream &os) {
-	for (size_t i = 0; i < m_vUserEntries.size(); ++i) {
-		UserEntry &clEntry = m_vUserEntries[i];
-		os << clEntry.GetHostmask().GetHostmask() << " " << clEntry.GetAccessLevel() << " " << clEntry.GetPassword() << std::endl;
+void BnxAccessSystem::Save() {
+	std::ifstream inAccessStream(GetAccessListFile().c_str());
+
+	if (inAccessStream) {
+		// Try to preserve comments and formatting
+		std::stringstream tmpAccessStream;
+		std::vector<IrcUser> vEntriesWritten;
+
+		std::string strLine;
+
+		while (std::getline(inAccessStream, strLine)) {
+			if (strLine.empty() || strLine[0] == ';') {
+				tmpAccessStream << strLine << std::endl;
+				continue;
+			}
+
+			std::stringstream lineStream;
+			lineStream.str(strLine);
+
+			UserEntry clTmpEntry;
+
+			if (!(lineStream >> clTmpEntry)) {
+				std::cerr << "Could not read user entry ... ignoring" << std::endl;
+				continue;
+			}
+
+			BnxAccessSystem::UserEntry *pclEntry = GetEntry(clTmpEntry.GetHostmask());
+			if (pclEntry != NULL) {
+				vEntriesWritten.push_back(pclEntry->GetHostmask());
+				tmpAccessStream << *pclEntry << std::endl;
+			}
+		}
+
+		// End with a comment or entry?
+		if (!strLine.empty())
+			tmpAccessStream << std::endl;
+
+		inAccessStream.close();
+
+		std::ofstream outAccessStream(GetAccessListFile().c_str());
+
+		outAccessStream << tmpAccessStream.str();
+
+		for (size_t i = 0; i < m_vUserEntries.size(); ++i) {
+			const UserEntry &clEntry = m_vUserEntries[i];
+
+			if (std::find(vEntriesWritten.begin(), vEntriesWritten.end(), 
+					clEntry.GetHostmask()) == vEntriesWritten.end()) {
+				outAccessStream << clEntry << std::endl;
+			}
+		}
+	}
+	else {
+		// No such file
+		std::ofstream outAccessStream(GetAccessListFile().c_str());
+
+		for (size_t i = 0; i < m_vUserEntries.size(); ++i)
+			outAccessStream << m_vUserEntries[i] << std::endl;
 	}
 }
 
-void BnxAccessSystem::AddUser(const IrcUser &clHostmask, int iAccessLevel, const std::string &strPassword) {
-	std::vector<UserEntry>::iterator itr;
+void BnxAccessSystem::AddUser(const UserEntry &clNewEntry) {
+	UserEntry *pclEntry = GetEntry(clNewEntry.GetHostmask());
 
-	itr = std::find(m_vUserEntries.begin(), m_vUserEntries.end(), clHostmask);
-
-	if (itr == m_vUserEntries.end())
-		m_vUserEntries.push_back(UserEntry(clHostmask, strPassword, iAccessLevel));
+	if (pclEntry == NULL)
+		m_vUserEntries.push_back(clNewEntry);
 	else
-		*itr = UserEntry(clHostmask, strPassword, iAccessLevel);
+		*pclEntry = clNewEntry;
 }
 
 bool BnxAccessSystem::DeleteUser(const IrcUser &clHostmask) {

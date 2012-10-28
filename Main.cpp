@@ -34,18 +34,19 @@ int main(int argc, char **argv) {
 
 	pEventBase = event_base_new();
 
-	BnxBot bnxBot;
+	BnxBot clBnxBot;
 
-	bnxBot.SetServerAndPort("irc.rohitab.com");
-	bnxBot.SetNickname("enslay");
-	bnxBot.AddHomeChannel("#nslay");
-	bnxBot.AddHomeChannel("#asdf");
-	bnxBot.LoadResponseRules("response.txt");
-	bnxBot.LoadAccessList("access.lst");
+	clBnxBot.SetServerAndPort("irc.rohitab.com");
+	clBnxBot.SetNickname("enslay");
+	clBnxBot.AddHomeChannel("#nslay");
+	clBnxBot.AddHomeChannel("#asdf");
+	clBnxBot.LoadResponseRules("response.txt");
+	clBnxBot.LoadAccessList("access.lst");
+	clBnxBot.LoadShitList("shit.lst");
 	
-	bnxBot.SetEventBase(pEventBase);
+	clBnxBot.SetEventBase(pEventBase);
 
-	bnxBot.StartUp();
+	clBnxBot.StartUp();
 
 	event_base_dispatch(pEventBase);
 

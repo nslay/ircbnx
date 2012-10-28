@@ -65,12 +65,15 @@ bool BnxBot::LoadResponseRules(const std::string &strFilename) {
 }
 
 bool BnxBot::LoadAccessList(const std::string &strFilename) {
-	std::ifstream accessStream(strFilename.c_str());
+	m_clAccessSystem.SetAccessListFile(strFilename);
 
-	if (!accessStream)
-		return false;
+	return m_clAccessSystem.Load();
+}
 
-	return m_clAccessSystem.LoadFromStream(accessStream);
+bool BnxBot::LoadShitList(const std::string &strFilename) {
+	m_clShitList.SetShitListFile(strFilename);
+
+	return m_clShitList.Load();
 }
 
 void BnxBot::StartUp() {
@@ -220,6 +223,26 @@ bool BnxBot::ProcessCommand(const char *pSource, const char *pTarget, const char
 
 		return (messageStream >> strHostmask) &&
 			OnCommandUserDel(*pclSession, strHostmask);
+	}
+
+	if (strCommand == "shitadd") {
+		std::string strHostmask;
+
+		return (messageStream >> strHostmask) &&
+			OnCommandShitAdd(*pclSession, strHostmask);
+
+	}
+
+	if (strCommand == "shitdel") {
+		std::string strHostmask;
+
+		return (messageStream >> strHostmask) &&
+			OnCommandShitDel(*pclSession, strHostmask);
+
+	}
+
+	if (strCommand == "shitlist") {
+		return OnCommandShitList(*pclSession);
 	}
 
 	return false;
@@ -440,7 +463,14 @@ void BnxBot::OnKick(const char *pSource, const char *pChannel, const char *pUser
 	if (pclChannel == NULL)
 		return;
 
+	IrcUser clUser(pSource);
+
 	if (pUser == GetCurrentNickname()) {
+		m_clShitList.AddMask(IrcUser("*","*",clUser.GetHostname()));
+		m_clShitList.Save();
+
+		// TODO: Log that this user was shitlisted
+
 		DeleteChannel(pChannel);
 		return;
 	}
@@ -506,7 +536,6 @@ void BnxBot::OnPart(const char *pSource, const char *pChannel, const char *pReas
 	BnxChannel *pclChannel = NULL;
 
 	if (clUser.GetNickname() == GetCurrentNickname()) {
-		// TODO: Add kicker to shitlist
 		DeleteChannel(pChannel);
 		return;
 	}
@@ -795,6 +824,7 @@ bool BnxBot::OnCommandUserAdd(UserSession &clSession, const std::string &strHost
 	IrcUser clMask(strHostmask);
 
 	m_clAccessSystem.AddUser(clMask, iAccessLevel, strPassword);
+	m_clAccessSystem.Save();
 
 	Send("PRIVMSG %s :Added %s, level %d, pass %s\r\n", clUser.GetNickname().c_str(), 
 		clMask.GetHostmask().c_str(), iAccessLevel, strPassword.c_str());
@@ -823,8 +853,61 @@ bool BnxBot::OnCommandUserDel(UserSession &clSession, const std::string &strHost
 
 	pclEntry = NULL; // It will be invalid after DeleteUser()
 	m_clAccessSystem.DeleteUser(clMask);
+	m_clAccessSystem.Save();
 
 	Send("PRIVMSG %s :Deleted %s\r\n", clUser.GetNickname().c_str(), clMask.GetHostmask().c_str());
+
+	return true;
+}
+
+bool BnxBot::OnCommandShitAdd(UserSession &clSession, const std::string &strHostmask) {
+	if (clSession.GetAccessLevel() < 75)
+		return false;
+
+	const IrcUser &clUser = clSession.GetUser();
+
+	IrcUser clMask(strHostmask);
+
+	m_clShitList.AddMask(clMask);
+	m_clShitList.Save();
+
+	Send("PRIVMSG %s :%s shitlisted.\r\n", clUser.GetNickname().c_str(), clMask.GetHostmask().c_str());
+
+	return true;
+}
+
+bool BnxBot::OnCommandShitDel(UserSession &clSession, const std::string &strHostmask) {
+	if (clSession.GetAccessLevel() < 75)
+		return false;
+
+	const IrcUser &clUser = clSession.GetUser();
+
+	IrcUser clMask(strHostmask);
+
+	if (m_clShitList.DeleteMask(clMask)) {
+		Send("PRIVMSG %s :Deleted %s\r\n", clUser.GetNickname().c_str(), clMask.GetHostmask().c_str());
+		m_clShitList.Save();
+	}
+	else {
+		Send("PRIVMSG %s :Cannot delete %s\r\n", clUser.GetNickname().c_str(), clMask.GetHostmask().c_str());
+	}
+
+	return true;
+}
+
+bool BnxBot::OnCommandShitList(UserSession &clSession) {
+	if (clSession.GetAccessLevel() < 75)
+		return false;
+
+	const IrcUser &clUser = clSession.GetUser();
+
+	Send("PRIVMSG %s :Shit List:\r\n", clUser.GetNickname().c_str());
+
+	const std::vector<IrcUser> &vMasks = m_clShitList.GetMasks();
+	for (size_t i = 0; i < vMasks.size(); ++i)
+		Send("PRIVMSG %s :%s\r\n", clUser.GetNickname().c_str(), vMasks[i].GetHostmask().c_str());
+
+	Send("PRIVMSG %s :End of Shit List.\r\n", clUser.GetNickname().c_str());
 
 	return true;
 }

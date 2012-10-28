@@ -30,6 +30,7 @@
 #include <vector>
 #include "BnxResponseEngine.h"
 #include "BnxAccessSystem.h"
+#include "BnxShitList.h"
 #include "BnxChannel.h"
 #include "IrcClient.h"
 #include "IrcUser.h"
@@ -48,6 +49,7 @@ public:
 	void DeleteHomeChannel(const std::string &channel);
 	bool LoadResponseRules(const std::string &strFileName);
 	bool LoadAccessList(const std::string &strFilename);
+	bool LoadShitList(const std::string &strFilename);
 
 	void StartUp();
 	void Shutdown();
@@ -96,6 +98,9 @@ protected:
 	virtual bool OnCommandUserAdd(UserSession &clSession, const std::string &strHostmask, 
 					int iAccessLevel, const std::string &strPassword);
 	virtual bool OnCommandUserDel(UserSession &clSession, const std::string &strHostmask);
+	virtual bool OnCommandShitAdd(UserSession &clSession, const std::string &strHostmask);
+	virtual bool OnCommandShitDel(UserSession &clSession, const std::string &strHostmask);
+	virtual bool OnCommandShitList(UserSession &clSession);
 
 private:
 	struct MaskMatches {
@@ -119,6 +124,7 @@ private:
 	std::vector<BnxChannel> m_vCurrentChannels;
 	BnxResponseEngine m_clResponseEngine;
 	BnxAccessSystem m_clAccessSystem;
+	BnxShitList m_clShitList;
 
 	template<void (BnxBot::*Method)(int, short)>
 	static void Dispatch(int fd, short what, void *arg) {
