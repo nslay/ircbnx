@@ -32,7 +32,9 @@
 
 class IrcUser {
 public:
-	IrcUser() { }
+	IrcUser() { 
+		Reset();
+	}
 
 	explicit IrcUser(const std::string &strHostmask) {
 		Parse(strHostmask);

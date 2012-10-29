@@ -7,7 +7,7 @@ SET(LIBEVENT2_LIB "/usr/local/lib/event2" CACHE PATH "libevent2 library director
 SET(PCRE_INCLUDE "/usr/local/include" CACHE PATH "PCRE include directory")
 SET(PCRE_LIB "/usr/local/lib" CACHE PATH "PCRE library directory")
 
-SET(LINK_LIBS "event" CACHE INTERNAL "")
+SET(LINK_LIBS event)
 
 INCLUDE_DIRECTORIES(${LIBEVENT2_INCLUDE})
 LINK_DIRECTORIES(${LIBEVENT2_LIB})
@@ -21,10 +21,11 @@ ENDIF (USE_PCRE)
 
 ADD_EXECUTABLE(ircbnx Main.cpp Irc.h 
 	IrcString.h IrcString.cpp
-	Ctcp.h Ctcp.cpp
 	IrcUser.h IrcUser.cpp
 	IrcTraits.h IrcTraits.cpp
 	IrcClient.h IrcClient.cpp 
+	IrcCounter.h
+	Ctcp.h Ctcp.cpp
 	BnxBot.h BnxBot.cpp 
 	BnxResponseRule.h 
 	BnxResponseEngine.h BnxResponseEngine.cpp
