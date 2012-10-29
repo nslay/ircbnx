@@ -81,6 +81,7 @@ void BnxBot::StartUp() {
 		return;
 
 	m_pConnectTimer = evtimer_new(GetEventBase(), &Dispatch<&BnxBot::OnConnectTimer>, this);
+	m_pFloodTimer = event_new(GetEventBase(), -1, EV_PERSIST, &Dispatch<&BnxBot::OnFloodTimer>, this);
 
 	struct timeval tv;
 	tv.tv_sec = tv.tv_usec = 0;
@@ -96,14 +97,24 @@ void BnxBot::Shutdown() {
 		event_free(m_pConnectTimer);
 		m_pConnectTimer = NULL;
 	}
+
+	if (m_pFloodTimer != NULL) {
+		event_del(m_pFloodTimer);
+		event_free(m_pFloodTimer);
+		m_pFloodTimer = NULL;
+	}
 }
 
 void BnxBot::Disconnect() {
 	IrcClient::Disconnect();
 
+	if (m_pFloodTimer != NULL)
+		event_del(m_pFloodTimer);
+
 	m_vCurrentChannels.clear();
 	m_vSquelchedUsers.clear();
 	m_clAccessSystem.ResetSessions();
+	m_clFloodDetector.Reset();
 }
 
 bool BnxBot::ProcessCommand(const char *pSource, const char *pTarget, const char *pMessage) {
@@ -293,6 +304,8 @@ void BnxBot::ProcessMessage(const char *pSource, const char *pTarget, const char
 		return;
 	}
 
+	m_clFloodDetector.Hit(clUser);
+
 	const std::string &strResponse = m_clResponseEngine.ComputeResponse(pMessage);
 
 	if (strResponse[0] == '/')
@@ -354,7 +367,9 @@ BnxChannel * BnxBot::GetChannel(const char *pChannel) {
 }
 
 bool BnxBot::IsSquelched(const IrcUser &clUser) {
-	return std::find_if(m_vSquelchedUsers.begin(), m_vSquelchedUsers.end(), MaskMatches(clUser)) != m_vSquelchedUsers.end();
+	return std::find_if(m_vSquelchedUsers.begin(), 
+				m_vSquelchedUsers.end(), 
+				MaskMatches(clUser)) != m_vSquelchedUsers.end();
 }
 
 void BnxBot::OnConnect() {
@@ -378,6 +393,12 @@ void BnxBot::OnDisconnect() {
 
 void BnxBot::OnRegistered() {
 	IrcClient::OnRegistered();
+
+	struct timeval tv;
+	tv.tv_sec = 1;
+	tv.tv_usec = 0;
+
+	event_add(m_pFloodTimer, &tv);
 
 	for (size_t i = 0; i < m_vHomeChannels.size(); ++i) {
 		Send("JOIN %s\r\n", m_vHomeChannels[i].c_str());
@@ -963,5 +984,16 @@ void BnxBot::Unsquelch(const IrcUser &clUser) {
 void BnxBot::OnConnectTimer(int fd, short what) {
 	std::cout << "OnConnectTimer" << std::endl;
 	Connect(m_strServer, m_strPort);
+}
+
+void BnxBot::OnFloodTimer(int fd, short what) {
+	std::vector<IrcUser> vFlooders;
+
+	m_clFloodDetector.Detect(vFlooders);
+
+	for (size_t i = 0; i < vFlooders.size(); ++i) {
+		std::cout << "Ignoring " << vFlooders[i] << std::endl;
+		Squelch(IrcUser("*","*",vFlooders[i].GetHostname()));
+	}
 }
 

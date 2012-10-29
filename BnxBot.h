@@ -27,11 +27,13 @@
 #define BNXBOT_H
 
 #include <string>
+#include <utility>
 #include <vector>
 #include "BnxResponseEngine.h"
 #include "BnxAccessSystem.h"
 #include "BnxShitList.h"
 #include "BnxChannel.h"
+#include "BnxFloodDetector.h"
 #include "IrcClient.h"
 #include "IrcUser.h"
 
@@ -40,7 +42,7 @@ public:
 	typedef BnxAccessSystem::UserSession UserSession;
 
 	BnxBot()
-	: m_pConnectTimer(NULL), m_bChatter(true) { }
+	: m_pConnectTimer(NULL), m_pFloodTimer(NULL), m_bChatter(true) { }
 
 	virtual ~BnxBot();
 
@@ -116,7 +118,7 @@ private:
 	};
 
 	std::string m_strServer, m_strPort;
-	struct event *m_pConnectTimer;
+	struct event *m_pConnectTimer, *m_pFloodTimer;
 
 	bool m_bChatter;
 
@@ -126,6 +128,7 @@ private:
 	BnxResponseEngine m_clResponseEngine;
 	BnxAccessSystem m_clAccessSystem;
 	BnxShitList m_clShitList;
+	BnxFloodDetector m_clFloodDetector;
 
 	template<void (BnxBot::*Method)(int, short)>
 	static void Dispatch(int fd, short what, void *arg) {
@@ -138,8 +141,8 @@ private:
 	void Squelch(const IrcUser &clUser);
 	void Unsquelch(const IrcUser &clser);
 
+	void OnFloodTimer(int fd, short what);
 	void OnConnectTimer(int fd, short what);
-
 };
 
 #endif // !BNXBOT_H
