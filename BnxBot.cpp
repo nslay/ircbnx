@@ -398,6 +398,10 @@ void BnxBot::OnRegistered() {
 	tv.tv_sec = 1;
 	tv.tv_usec = 0;
 
+	// TODO: Make this configurable
+	m_clFloodDetector.SetThreshold(3.0f);
+	m_clFloodDetector.SetTimeStep(1.0f);
+
 	event_add(m_pFloodTimer, &tv);
 
 	for (size_t i = 0; i < m_vHomeChannels.size(); ++i) {
@@ -991,9 +995,7 @@ void BnxBot::OnFloodTimer(int fd, short what) {
 
 	m_clFloodDetector.Detect(vFlooders);
 
-	for (size_t i = 0; i < vFlooders.size(); ++i) {
-		std::cout << "Ignoring " << vFlooders[i] << std::endl;
+	for (size_t i = 0; i < vFlooders.size(); ++i)
 		Squelch(IrcUser("*","*",vFlooders[i].GetHostname()));
-	}
 }
 

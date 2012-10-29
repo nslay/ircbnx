@@ -141,8 +141,8 @@ private:
 	void Squelch(const IrcUser &clUser);
 	void Unsquelch(const IrcUser &clser);
 
-	void OnFloodTimer(int fd, short what);
 	void OnConnectTimer(int fd, short what);
+	void OnFloodTimer(int fd, short what);
 };
 
 #endif // !BNXBOT_H
