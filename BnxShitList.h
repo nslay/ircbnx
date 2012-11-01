@@ -33,6 +33,27 @@
 
 class BnxShitList {
 public:
+	typedef std::vector<IrcUser>::iterator Iterator;
+	typedef std::vector<IrcUser>::const_iterator ConstIterator;
+
+	BnxShitList()
+	: m_strShitListFile("shit.lst") { }
+
+	Iterator Begin() {
+		return m_vHostmasks.begin();
+	}
+
+	ConstIterator Begin() const {
+		return m_vHostmasks.begin();
+	}
+
+	Iterator End() {
+		return m_vHostmasks.end();
+	}
+
+	ConstIterator End() const {
+		return m_vHostmasks.end();
+	}
 
 	void SetShitListFile(const std::string &strShitListFile) {
 		m_strShitListFile = strShitListFile;
@@ -48,12 +69,24 @@ public:
 	bool AddMask(const IrcUser &clMask);
 	bool DeleteMask(const IrcUser &clMask);
 
-	const std::vector<IrcUser> & GetMasks() const {
-		return m_vHostmasks;
+	Iterator DeleteMask(Iterator maskItr) {
+		return m_vHostmasks.erase(maskItr);
 	}
 
-	bool IsListed(const IrcUser &clUser) const {
-		return std::find_if(m_vHostmasks.begin(), m_vHostmasks.end(), MaskMatches(clUser)) != m_vHostmasks.end();
+	Iterator GetMask(const IrcUser &clMask) {
+		return std::find(Begin(), End(), clMask);
+	}
+
+	ConstIterator GetMask(const IrcUser &clMask) const {
+		return std::find(Begin(), End(), clMask);
+	}
+
+	Iterator FindMatch(const IrcUser &clMask) {
+		return std::find_if(Begin(), End(), MaskMatches(clMask));
+	}
+
+	ConstIterator FindMatch(const IrcUser &clMask) const {
+		return std::find_if(Begin(), End(), MaskMatches(clMask));
 	}
 
 	void Reset() {

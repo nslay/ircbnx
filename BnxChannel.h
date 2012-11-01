@@ -97,6 +97,9 @@ public:
 		int m_iVote;
 	};
 
+	typedef std::vector<Member>::iterator Iterator;
+	typedef std::vector<Member>::const_iterator ConstIterator;
+
 	BnxChannel() {
 		Reset();
 	}
@@ -106,11 +109,37 @@ public:
 		m_strName = strName;
 	}
 
+	Iterator Begin() {
+		return m_vMembers.begin();
+	}
+
+	ConstIterator Begin() const {
+		return m_vMembers.begin();
+	}
+
+	Iterator End() {
+		return m_vMembers.end();
+	}
+
+	ConstIterator End() const {
+		return m_vMembers.end();
+	}
+
 	void AddMember(const IrcUser &clUser);
 
-	Member * GetMember(const std::string &strNickname);
+	Iterator GetMember(const std::string &strNickname) {
+		return std::find(m_vMembers.begin(), m_vMembers.end(), strNickname);
+	}
+
+	ConstIterator GetMember(const std::string &strNickname) const {
+		return std::find(m_vMembers.begin(), m_vMembers.end(), strNickname);
+	}
 
 	void DeleteMember(const std::string &strNickname);
+
+	Iterator DeleteMember(Iterator memberItr) {
+		return m_vMembers.erase(memberItr);
+	}
 
 	bool IsOperator() const {
 		return m_bIsOperator;

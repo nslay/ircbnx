@@ -73,7 +73,7 @@ bool BnxAccessSystem::Load() {
 	return true;
 }
 
-void BnxAccessSystem::Save() {
+void BnxAccessSystem::Save() const {
 	std::ifstream inAccessStream(GetAccessListFile().c_str());
 
 	if (inAccessStream) {
@@ -99,10 +99,10 @@ void BnxAccessSystem::Save() {
 				continue;
 			}
 
-			BnxAccessSystem::UserEntry *pclEntry = GetEntry(clTmpEntry.GetHostmask());
-			if (pclEntry != NULL) {
-				vEntriesWritten.push_back(pclEntry->GetHostmask());
-				tmpAccessStream << *pclEntry << std::endl;
+			ConstEntryIterator entryItr = GetEntry(clTmpEntry.GetHostmask());
+			if (entryItr != EntryEnd()) {
+				vEntriesWritten.push_back(entryItr->GetHostmask());
+				tmpAccessStream << *entryItr << std::endl;
 			}
 		}
 
@@ -135,92 +135,72 @@ void BnxAccessSystem::Save() {
 }
 
 void BnxAccessSystem::AddUser(const UserEntry &clNewEntry) {
-	UserEntry *pclEntry = GetEntry(clNewEntry.GetHostmask());
+	EntryIterator entryItr = GetEntry(clNewEntry.GetHostmask());
 
-	if (pclEntry == NULL)
+	if (entryItr == EntryEnd())
 		m_vUserEntries.push_back(clNewEntry);
 	else
-		*pclEntry = clNewEntry;
+		*entryItr = clNewEntry;
 }
 
 bool BnxAccessSystem::DeleteUser(const IrcUser &clHostmask) {
-	std::vector<UserEntry>::iterator itr;
+	EntryIterator entryItr = GetEntry(clHostmask);
 
-	itr = std::find(m_vUserEntries.begin(), m_vUserEntries.end(), clHostmask);
-
-	if (itr == m_vUserEntries.end())
+	if (entryItr == EntryEnd())
 		return false;
 
-	m_vUserEntries.erase(itr);
+	DeleteUser(entryItr);
 
 	return true;
 }
 
 bool BnxAccessSystem::Login(const IrcUser &clUser, const std::string &strPassword) {
-	std::vector<UserEntry>::const_iterator itr;
+	ConstEntryIterator entryItr;
 
-	itr = std::find_if(m_vUserEntries.begin(), m_vUserEntries.end(), EntryMatches(clUser));
+	entryItr = std::find_if(EntryBegin(), EntryEnd(), EntryMatches(clUser));
 
-	if (itr == m_vUserEntries.end() || !itr->CheckPassword(strPassword))
+	if (entryItr == EntryEnd() || !entryItr->CheckPassword(strPassword))
 		return false;
 
-	std::vector<UserSession>::iterator sessionItr;
-	sessionItr = std::find(m_vUserSessions.begin(), m_vUserSessions.end(), clUser);
+	SessionIterator sessionItr = GetSession(clUser);
 
-	if (sessionItr == m_vUserSessions.end())
-		m_vUserSessions.push_back(UserSession(clUser,itr->GetAccessLevel()));
+	if (sessionItr == SessionEnd())
+		m_vUserSessions.push_back(UserSession(clUser,entryItr->GetAccessLevel()));
 	else
-		*sessionItr = UserSession(clUser,itr->GetAccessLevel()); // The access level may have been updated
+		*sessionItr = UserSession(clUser,entryItr->GetAccessLevel()); // The access level may have been updated
 
 	return true;
 }
 
 void BnxAccessSystem::Logout(const IrcUser &clUser) {
-	std::vector<UserSession>::iterator itr;
+	SessionIterator itr = GetSession(clUser);
 
-	itr = std::find(m_vUserSessions.begin(), m_vUserSessions.end(), clUser);
-
-	if (itr != m_vUserSessions.end())
-		m_vUserSessions.erase(itr);
+	if (itr != SessionEnd())
+		Logout(itr);
 }
 
-BnxAccessSystem::UserSession * BnxAccessSystem::GetSession(const IrcUser &clUser) {
-	std::vector<UserSession>::iterator itr;
+BnxAccessSystem::SessionIterator BnxAccessSystem::GetSession(const IrcUser &clUser) {
+	SessionIterator itr = std::find(SessionBegin(), SessionEnd(), clUser);
 
-	itr = std::find(m_vUserSessions.begin(), m_vUserSessions.end(), clUser);
-
-	if (itr == m_vUserSessions.end())
-		return NULL;
+	if (itr == SessionEnd())
+		return SessionEnd();
 
 	if (itr->LastAccessTime() >= TIMEOUT) {
-		m_vUserSessions.erase(itr);
-		return NULL;
+		Logout(itr);
+		return SessionEnd();
 	}
 
 	itr->Update();
 
-	return &(*itr);
-}
-
-BnxAccessSystem::UserEntry * BnxAccessSystem::GetEntry(const IrcUser &clHostmask) {
-	std::vector<UserEntry>::iterator itr;
-
-	itr = std::find(m_vUserEntries.begin(), m_vUserEntries.end(), clHostmask);
-
-	if (itr == m_vUserEntries.end())
-		return NULL;
-
-	return &(*itr);
+	return itr;
 }
 
 void BnxAccessSystem::TimeoutSessions() {
-	std::vector<UserSession>::iterator itr;
-		
-	itr = m_vUserSessions.begin();
+	SessionIterator itr = m_vUserSessions.begin();
 
-	while (itr != m_vUserSessions.end()) {
+	while (itr != SessionEnd()) {
 		if (itr->LastAccessTime() >= TIMEOUT)
-			itr = m_vUserSessions.erase(itr);
+			itr = Logout(itr);
 		else
 			++itr;
 	}

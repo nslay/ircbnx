@@ -111,7 +111,7 @@ void BnxShitList::Save() const {
 }
 
 bool BnxShitList::AddMask(const IrcUser &clMask) {
-	if (std::find(m_vHostmasks.begin(), m_vHostmasks.end(), clMask) == m_vHostmasks.end()) {
+	if (GetMask(clMask) == End())  {
 		m_vHostmasks.push_back(clMask);
 		return true;
 	}
@@ -120,12 +120,10 @@ bool BnxShitList::AddMask(const IrcUser &clMask) {
 }
 
 bool BnxShitList::DeleteMask(const IrcUser &clMask) {
-	std::vector<IrcUser>::iterator itr;
+	Iterator itr = GetMask(clMask);
 
-	itr = std::find(m_vHostmasks.begin(), m_vHostmasks.end(), clMask);
-
-	if (itr != m_vHostmasks.end()) {
-		m_vHostmasks.erase(itr);
+	if (itr != End()) {
+		DeleteMask(itr);
 		return true;
 	}
 

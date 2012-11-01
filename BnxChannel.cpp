@@ -30,32 +30,17 @@
 #include "BnxChannel.h"
 
 void BnxChannel::AddMember(const IrcUser &clUser) {
-	if (GetMember(clUser.GetNickname()) != NULL)
+	if (GetMember(clUser.GetNickname()) != End())
 		return;
 
 	m_vMembers.push_back(Member(clUser));
 }
 
-BnxChannel::Member * BnxChannel::GetMember(const std::string &strNickname) {
-	std::vector<Member>::iterator itr;
-
-	itr = std::find(m_vMembers.begin(), m_vMembers.end(), strNickname);
-
-	if (itr == m_vMembers.end())
-		return NULL;
-
-	return &(*itr);
-}
-
 void BnxChannel::DeleteMember(const std::string &strNickname) {
-	std::vector<Member>::iterator itr;
+	Iterator memberItr = GetMember(strNickname);
 
-	itr = std::find(m_vMembers.begin(), m_vMembers.end(), strNickname);
-
-	if (itr == m_vMembers.end())
-		return;
-
-	m_vMembers.erase(itr);
+	if (memberItr != End())
+		DeleteMember(memberItr);
 }
 
 void BnxChannel::ResetVoteBan() {
@@ -85,30 +70,30 @@ void BnxChannel::VoteBan(const IrcUser &clUser) {
 }
 
 void BnxChannel::VoteYay(const std::string &strNickname) {
-	Member *pclMember = GetMember(strNickname);
+	Iterator memberItr = GetMember(strNickname);
 
 	// Only allow those members who were present prior to the voteban
-	if (pclMember == NULL || pclMember->GetTimeStamp() > m_voteBanTime)
+	if (memberItr == End() || memberItr->GetTimeStamp() > m_voteBanTime)
 		return;
 
-	int iOldVote = pclMember->GetVote();
+	int iOldVote = memberItr->GetVote();
 
-	pclMember->VoteYay();
+	memberItr->VoteYay();
 
-	m_iVoteCount += pclMember->GetVote() - iOldVote;
+	m_iVoteCount += memberItr->GetVote() - iOldVote;
 }
 
 void BnxChannel::VoteNay(const std::string &strNickname) {
-	Member *pclMember = GetMember(strNickname);
+	Iterator memberItr = GetMember(strNickname);
 
 	// Only allow those members who were present prior to the voteban
-	if (pclMember == NULL || pclMember->GetTimeStamp() > m_voteBanTime)
+	if (memberItr == End() || memberItr->GetTimeStamp() > m_voteBanTime)
 		return;
 
-	int iOldVote = pclMember->GetVote();
+	int iOldVote = memberItr->GetVote();
 
-	pclMember->VoteNay();
+	memberItr->VoteNay();
 
-	m_iVoteCount += pclMember->GetVote() - iOldVote;
+	m_iVoteCount += memberItr->GetVote() - iOldVote;
 }
 

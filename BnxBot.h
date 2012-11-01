@@ -59,10 +59,15 @@ public:
 	virtual void Disconnect();
 
 protected:
+	typedef std::vector<BnxChannel>::iterator ChannelIterator;
+
+	ChannelIterator ChannelBegin();
+	ChannelIterator ChannelEnd();
+
 	virtual bool ProcessCommand(const char *pSource, const char *pTarget, const char *pMessage);
 	virtual void ProcessMessage(const char *pSource, const char *pTarget, const char *pMessage);
 	virtual void Say(const char *pTarget, const char *pMessage);
-	BnxChannel * GetChannel(const char *pChannel);
+	ChannelIterator GetChannel(const char *pChannel);
 	bool IsSquelched(const IrcUser &clUser);
 
 	// IRC events
@@ -138,6 +143,7 @@ private:
 
 	void AddChannel(const char *pChannel);
 	void DeleteChannel(const char *pChannel);
+	ChannelIterator DeleteChannel(ChannelIterator channelItr);
 	void Squelch(const IrcUser &clUser);
 	void Unsquelch(const IrcUser &clser);
 

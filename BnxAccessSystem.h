@@ -88,6 +88,9 @@ public:
 		std::string m_strPassword;
 	};
 
+	typedef std::vector<UserEntry>::iterator EntryIterator;
+	typedef std::vector<UserEntry>::const_iterator ConstEntryIterator;
+
 	class UserSession {
 	public:
 		UserSession()
@@ -126,6 +129,44 @@ public:
 		time_t m_lastAccessTime;
 	};
 
+	typedef std::vector<UserSession>::iterator SessionIterator;
+	typedef std::vector<UserSession>::const_iterator ConstSessionIterator;
+
+	BnxAccessSystem()
+	: m_strAccessListFile("access.lst") { }
+
+	EntryIterator EntryBegin() {
+		return m_vUserEntries.begin();
+	}
+
+	ConstEntryIterator EntryBegin() const {
+		return m_vUserEntries.begin();
+	}
+
+	EntryIterator EntryEnd() {
+		return m_vUserEntries.end();
+	}
+
+	ConstEntryIterator EntryEnd() const {
+		return m_vUserEntries.end();
+	}
+
+	SessionIterator SessionBegin() {
+		return m_vUserSessions.begin();
+	}
+
+	ConstSessionIterator SessionBegin() const {
+		return m_vUserSessions.begin();
+	}
+
+	SessionIterator SessionEnd() {
+		return m_vUserSessions.end();
+	}
+
+	ConstSessionIterator SessionEnd() const {
+		return m_vUserSessions.end();
+	}
+
 	void SetAccessListFile(const std::string &strAccessListFile) {
 		m_strAccessListFile = strAccessListFile;
 	}
@@ -135,7 +176,7 @@ public:
 	}
 
 	bool Load();
-	void Save();
+	void Save() const;
 
 	void AddUser(const UserEntry &clEntry);
 	void AddUser(const IrcUser &clHostmask, int iAccessLevel, const std::string &strPassword) {
@@ -143,19 +184,25 @@ public:
 	}
 
 	bool DeleteUser(const IrcUser &clHostmask);
+	EntryIterator DeleteUser(EntryIterator entryItr) {
+		return m_vUserEntries.erase(entryItr);
+	}
 
 	bool Login(const IrcUser &clUser, const std::string &strPassword);
 	void Logout(const IrcUser &clUser);
 
-	UserSession * GetSession(const IrcUser &clUser);
-	UserEntry * GetEntry(const IrcUser &clHostmask);
-
-	const std::vector<UserSession> & GetAllSessions() const {
-		return m_vUserSessions;
+	SessionIterator Logout(SessionIterator sessionItr) {
+		return m_vUserSessions.erase(sessionItr);
 	}
 
-	const std::vector<UserEntry> & GetAllEntries() const {
-		return m_vUserEntries;
+	SessionIterator GetSession(const IrcUser &clUser);
+
+	EntryIterator GetEntry(const IrcUser &clHostmask) {
+		return std::find(EntryBegin(), EntryEnd(), clHostmask);
+	}
+
+	ConstEntryIterator GetEntry(const IrcUser &clHostmask) const {
+		return std::find(EntryBegin(), EntryEnd(), clHostmask);
 	}
 
 	void TimeoutSessions();

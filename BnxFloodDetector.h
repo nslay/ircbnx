@@ -56,10 +56,6 @@ public:
 		m_fThreshold = fThreshold;
 	}
 
-	const std::vector<std::pair<IrcUser, IrcCounter> > & GetCounters() const {
-		return m_vFloodCounters;
-	}
-
 	IrcCounter & GetCounter(const IrcUser &clUser);
 
 	void Hit(const IrcUser &clUser) {
