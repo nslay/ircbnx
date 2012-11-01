@@ -34,11 +34,11 @@ public:
 	}
 
 	void Hit() {
-		++m_iCounts[1];
+		++m_iCount;
 	}
 
 	int GetCurrentCount() const {
-		return m_iCounts[1];
+		return m_iCount;
 	}
 
 	float GetCurrentRate() const {
@@ -54,29 +54,19 @@ public:
 	}
 
 	float SampleRate() {
-		if (m_iCounts[0] < 0) {
-			// Forward difference
-			m_fRate = m_iCounts[1]/m_fTimeStep;
-		}
-		else {
-			// Center difference
-			m_fRate = 0.5f*(m_iCounts[0]+m_iCounts[1])/m_fTimeStep;
-		}
-
-		m_iCounts[0] = m_iCounts[1];
-		m_iCounts[1] = 0;
+		m_fRate = m_iCount/m_fTimeStep;
+		m_iCount = 0;
 
 		return m_fRate;
 	}
 
 	void Reset() {
-		m_iCounts[0] = -1;
-		m_iCounts[1] = 0;
+		m_iCount = 0;
 		m_fRate = 0.0f;
 	}
 
 private:
-	int m_iCounts[2];
+	int m_iCount;
 	float m_fTimeStep, m_fRate;
 };
 

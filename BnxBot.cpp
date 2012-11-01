@@ -647,14 +647,17 @@ void BnxBot::OnCtcpAction(const char *pSource, const char *pTarget, const char *
 }
 
 void BnxBot::OnCtcpVersion(const char *pSource, const char *pTarget) {
-	CtcpEncoder clEncoder;
+	IrcUser clUser(pSource);
 
+	if (IsSquelched(clUser))
+		return;
+
+	m_clFloodDetector.Hit(clUser);
+
+	CtcpEncoder clEncoder;
 	clEncoder.Encode(MakeCtcpMessage("VERSION", "IRCBNX Chatterbot"));
 
-	IrcUser clUser(pSource);
-	const std::string &strSourceNick = clUser.GetNickname();
-
-	Send("NOTICE %s :%s\r\n", strSourceNick.c_str(), clEncoder.GetRaw());
+	Send("NOTICE %s :%s\r\n", clUser.GetNickname().c_str(), clEncoder.GetRaw());
 }
 
 bool BnxBot::OnCommandLogin(const IrcUser &clUser, const std::string &strPassword) {
