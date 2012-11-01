@@ -81,12 +81,12 @@ public:
 		return std::find(Begin(), End(), clMask);
 	}
 
-	Iterator FindMatch(const IrcUser &clMask) {
-		return std::find_if(Begin(), End(), MaskMatches(clMask));
+	Iterator FindMatch(const IrcUser &clUser) {
+		return std::find_if(Begin(), End(), MaskMatches(clUser));
 	}
 
-	ConstIterator FindMatch(const IrcUser &clMask) const {
-		return std::find_if(Begin(), End(), MaskMatches(clMask));
+	ConstIterator FindMatch(const IrcUser &clUser) const {
+		return std::find_if(Begin(), End(), MaskMatches(clUser));
 	}
 
 	void Reset() {
