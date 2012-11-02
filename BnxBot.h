@@ -66,9 +66,11 @@ protected:
 
 	virtual bool ProcessCommand(const char *pSource, const char *pTarget, const char *pMessage);
 	virtual void ProcessMessage(const char *pSource, const char *pTarget, const char *pMessage);
-	virtual void Say(const char *pTarget, const char *pMessage);
+	virtual void Say(const char *pTarget, const char *pFormat, ...);
+	virtual void SayLater(const char *pTarget, const char *pFormat, ...);
 	ChannelIterator GetChannel(const char *pChannel);
 	bool IsSquelched(const IrcUser &clUser);
+	void SplatterKick(const char *pChannel, const IrcUser &clUser);
 
 	// IRC events
 	virtual void OnConnect();
@@ -109,6 +111,12 @@ protected:
 	virtual bool OnCommandShitDel(UserSession &clSession, const std::string &strHostmask);
 	virtual bool OnCommandShitList(UserSession &clSession);
 	virtual bool OnCommandNick(UserSession &clSession, const std::string &strNickname);
+	virtual bool OnCommandBan(UserSession &clSession, const std::string &strChannel, 
+					const std::string &strHostmask, const std::string &strReason);
+	virtual bool OnCommandUnban(UserSession &clSession, const std::string &strChannel, 
+					const std::string &strHostmask);
+	virtual bool OnCommandSplatterKick(UserSession &clSession, const std::string &strChannel,
+						const std::string &strNickname);
 
 private:
 	struct MaskMatches {

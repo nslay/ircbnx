@@ -271,6 +271,37 @@ bool BnxBot::ProcessCommand(const char *pSource, const char *pTarget, const char
 			OnCommandNick(*sessionItr, strNickname);
 	}
 
+	if (strCommand == "ban") {
+		std::string strChannel, strHostmask, strReason;
+
+		if (!(messageStream >> strChannel >> strHostmask))
+			return false;
+
+		messageStream.get();
+
+		std::getline(messageStream, strReason);
+
+		return OnCommandBan(*sessionItr, strChannel, strHostmask, strReason);
+	}
+
+	if (strCommand == "unban") {
+		std::string strChannel, strHostmask;
+
+		if (!(messageStream >> strChannel >> strHostmask))
+			return false;
+
+		return OnCommandUnban(*sessionItr, strChannel, strHostmask);
+	}
+
+	if (strCommand == "splatterkick") {
+		std::string strChannel, strNickname;
+
+		if (!(messageStream >> strChannel >> strNickname))
+			return false;
+
+		return OnCommandSplatterKick(*sessionItr, strChannel, strNickname);
+	}
+
 	return false;
 }
 
@@ -314,40 +345,47 @@ void BnxBot::ProcessMessage(const char *pSource, const char *pTarget, const char
 
 	m_clFloodDetector.Hit(clUser);
 
-	const std::string &strResponse = m_clResponseEngine.ComputeResponse(pMessage);
+	std::string strResponse = m_clResponseEngine.ComputeResponse(pMessage);
 
 	if (strResponse[0] == '/')
 		strPrefix.clear();
 
-	std::string strFormattedResponse = strPrefix + strResponse;
-
 	size_t findPos = 0;
-	while ((findPos = strFormattedResponse.find("%s", findPos)) != std::string::npos) {
-		strFormattedResponse.replace(findPos, 2, strSourceNick);
+	while ((findPos = strResponse.find("%s", findPos)) != std::string::npos) {
+		strResponse.replace(findPos, 2, strSourceNick);
 		findPos += strSourceNick.size();
 	}
 	
-	Say(pReplyTo, strFormattedResponse.c_str());
+	Say(pReplyTo, "%s%s", strPrefix.c_str(), strResponse.c_str());
 }
 
-void BnxBot::Say(const char *pTarget, const char *pMessage) {
+void BnxBot::Say(const char *pTarget, const char *pFormat, ...) {
 	CtcpEncoder clEncoder;
+	char aBuff[513];
+	va_list ap;
+
+	va_start(ap, pFormat);
+
+	vsnprintf(aBuff, sizeof(aBuff), pFormat, ap);
+
+	va_end(ap);
+
+	const char *pMessage = aBuff;
 
 	if (pMessage[0] == '/') {
-		std::stringstream ss;
-		ss.str(pMessage);
+		std::stringstream commandStream;
+		commandStream.str(aBuff);
 
 		std::string strCommand;
 
-		ss >> strCommand;
+		commandStream >> strCommand;
 
 		if (strCommand == "/me" || strCommand == "/action") {
-
 			std::string strLine;
 
-			ss.get();
+			commandStream.get();
 
-			if (!std::getline(ss,strLine))
+			if (!std::getline(commandStream,strLine))
 				return;
 
 			if (!clEncoder.Encode(MakeCtcpMessage("ACTION",strLine.c_str())))
@@ -364,6 +402,49 @@ void BnxBot::Say(const char *pTarget, const char *pMessage) {
 	Send("PRIVMSG %s :%s\r\n", pTarget, pMessage);
 }
 
+void BnxBot::SayLater(const char *pTarget, const char *pFormat, ...) {
+	CtcpEncoder clEncoder;
+	char aBuff[513];
+	va_list ap;
+
+	va_start(ap, pFormat);
+
+	vsnprintf(aBuff, sizeof(aBuff), pFormat, ap);
+
+	va_end(ap);
+
+	const char *pMessage = aBuff;
+
+	if (pMessage[0] == '/') {
+		std::stringstream commandStream;
+		commandStream.str(aBuff);
+
+		std::string strCommand;
+
+		commandStream >> strCommand;
+
+		if (strCommand == "/me" || strCommand == "/action") {
+			std::string strLine;
+
+			commandStream.get();
+
+			if (!std::getline(commandStream,strLine))
+				return;
+
+			if (!clEncoder.Encode(MakeCtcpMessage("ACTION",strLine.c_str())))
+				return;
+
+			pMessage = clEncoder.GetRaw();
+		}
+		else {
+			// Unrecognized command
+			return;
+		}
+	}
+
+	SendLater("PRIVMSG %s :%s\r\n", pTarget, pMessage);
+}
+
 BnxBot::ChannelIterator BnxBot::GetChannel(const char *pChannel) {
 	return std::find(ChannelBegin(), ChannelEnd(), pChannel);
 }
@@ -372,6 +453,97 @@ bool BnxBot::IsSquelched(const IrcUser &clUser) {
 	return std::find_if(m_vSquelchedUsers.begin(), 
 				m_vSquelchedUsers.end(), 
 				MaskMatches(clUser)) != m_vSquelchedUsers.end();
+}
+
+void BnxBot::SplatterKick(const char *pChannel, const IrcUser &clUser) {
+	const std::string &strNickname = clUser.GetNickname();
+
+	IrcUser clBanMask("*","*",clUser.GetHostname());
+
+	switch(rand() % 11) {
+	case 0:
+		SayLater(pChannel, "Congratulations, %s - you're the lucky winner of a one-way trip to The Void!", 
+				strNickname.c_str());
+		SendLater("MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		SendLater("KICK %s %s :don't forget to write!\r\n", pChannel, strNickname.c_str());
+		break;
+	case 1:
+		SayLater(pChannel, "%s: What is your real name?", strNickname.c_str());
+		SayLater(pChannel, "%s: What is your quest?", strNickname.c_str());
+		SayLater(pChannel, "%s: What is the average velocity of a coconut-laden swallow?", 
+				strNickname.c_str());
+		SendLater("MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		SendLater("KICK %s %s\r\n", pChannel, strNickname.c_str());
+		SayLater(pChannel, "I guess he didn't know!");
+		break;
+	case 2:
+		SayLater(pChannel, "/me smells something bad...");
+		SayLater(pChannel, "/me looks at %s...", strNickname.c_str());
+		SendLater("MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		SendLater("KICK %s %s :Ah! Smell's gone!!\r\n", pChannel, strNickname.c_str());
+		break;
+	case 3:
+		SayLater(pChannel, "/me says \"YER OUTTA HERE, PAL!\"");
+		SayLater(pChannel, "/me takes %s by the balls and throws him into The Void.", 
+				strNickname.c_str());
+		SendLater("MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		SendLater("KICK %s %s :AND STAY OUT!!\r\n", pChannel, strNickname.c_str());
+		break;
+	case 4:
+		SayLater(pChannel, "It's April, the season of growing, and the F-ing weeds are popping up everywhere.");
+		SayLater(pChannel, "/me spots a weed in %s", pChannel);
+		SayLater(pChannel, "/me grabs a bottle of Round-Up and spritzes %s liberally.", 
+				strNickname.c_str());
+		SendLater("MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		SendLater("KICK %s %s :FSSST! Weed's gone!\r\n", pChannel, strNickname.c_str());
+		break;
+	case 5:
+		SayLater(pChannel, "/me pulls out his portable chalkboard.");
+		SayLater(pChannel, "/me shows %s the function of relativity for chaos mathematics.", 
+				strNickname.c_str());
+		SayLater(pChannel, "/me watches as %s's brain shorts out with a puff of putrid smoke!", 
+				strNickname.c_str());
+		SendLater("MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		SendLater("KICK %s %s :zzzzzttttt!!!!\r\n", pChannel, strNickname.c_str());
+		break;
+	case 6:
+		SayLater(pChannel, "/me bashes %s's head in with a baseball bat *BOK*!!", 
+				strNickname.c_str());
+		SendLater("MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		SendLater("KICK %s %s\r\n", pChannel, strNickname.c_str());
+		SayLater(pChannel, "/me wipes the blood off on %s's hair.", strNickname.c_str());
+		break;
+	case 7:
+		SayLater(pChannel, "/me gags %s, stuffs him into a cow suit, then tosses him into a corral with a horny bull.", 
+				strNickname.c_str());
+		SendLater("MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		SendLater("KICK %s %s :Moooo!!!!!!!\r\n", pChannel, strNickname.c_str());
+		break;
+	case 8:
+		SayLater(pChannel, "/me grabs %s by the hair and jams his face into the toilet.", 
+				strNickname.c_str());
+		SayLater(pChannel, "/me does the royal flush.");
+		SendLater("MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		SendLater("KICK %s %s :KA-WIIIISSSHHHHHHHHH!!!\r\n", pChannel, strNickname.c_str());
+		break;
+	case 9:
+		SayLater(pChannel, "/me casts a Fireball that goes streaking across the channel at %s", 
+				strNickname.c_str());
+		SayLater(pChannel, "/me watches as %s's corporeal form is enveloped in flame!",
+				strNickname.c_str());
+		SendLater("MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		SendLater("KICK %s %s :poof!!\r\n", pChannel, strNickname.c_str());
+		break;
+	case 10:
+		SayLater(pChannel, "/me grabs %s's tongue and pulls it waaaaay out.", 
+			strNickname.c_str());
+		SayLater(pChannel, "/me takes out the locking ring and loops it through %s's tongue.",
+			strNickname.c_str());
+		SayLater(pChannel, "/me then fastens the ring to the bumper of his Porsche and drives off.");
+		SendLater("MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		SendLater("KICK %s %s :what a drag!\r\n", pChannel, strNickname.c_str());
+		break;
+	}
 }
 
 void BnxBot::OnConnect() {
@@ -684,7 +856,7 @@ bool BnxBot::OnCommandLogout(UserSession &clSession) {
 
 bool BnxBot::OnCommandSay(UserSession &clSession, const std::string &strTarget, const std::string &strMessage) {
 
-	Say(strTarget.c_str(), strMessage.c_str());
+	Say(strTarget.c_str(), "%s", strMessage.c_str());
 
 	return true;
 }
@@ -812,10 +984,7 @@ bool BnxBot::OnCommandKick(UserSession &clSession, const std::string &strChannel
 		return true;
 	}
 
-	if (strReason.empty())
-		Send("KICK %s %s\r\n", strChannel.c_str(), strHostmask.c_str());
-	else
-		Send("KICK %s %s :%s\r\n", strChannel.c_str(), strHostmask.c_str(), strReason.c_str());
+	Send("KICK %s %s :%s\r\n", strChannel.c_str(), strHostmask.c_str(), strReason.c_str());
 
 	Send("PRIVMSG %s :OK, kicked his ass.\r\n", clUser.GetNickname().c_str());
 
@@ -953,6 +1122,107 @@ bool BnxBot::OnCommandNick(UserSession &clSession, const std::string &strNicknam
 	const IrcUser &clUser = clSession.GetUser();
 
 	Send("NICK %s\r\n", strNickname.c_str());
+
+	return true;
+}
+
+bool BnxBot::OnCommandBan(UserSession &clSession, const std::string &strChannel, 
+				const std::string &strHostmask, const std::string &strReason) {
+	if (clSession.GetAccessLevel() < 60)
+		return false;
+
+	const IrcUser &clUser = clSession.GetUser();
+
+	ChannelIterator channelItr = GetChannel(strChannel.c_str());
+
+	if (channelItr == ChannelEnd())
+		return false;
+	
+	if (!channelItr->IsOperator()) {
+		Send("PRIVMSG %s :I don't have OP!\r\n", clUser.GetNickname().c_str());
+		return true;
+	}
+
+	std::string strKickNick;
+	IrcUser clBanMask(strHostmask);
+
+	if (!IrcIsHostmask(strHostmask.c_str())) {
+		// Nickname
+		BnxChannel::ConstIterator memberItr = channelItr->GetMember(strHostmask);
+
+		if (memberItr != channelItr->End()) {
+			const IrcUser &clMember = memberItr->GetUser();
+			strKickNick = clMember.GetNickname();
+			clBanMask.Set("*","*",clMember.GetHostname());
+		}
+	}
+
+	Send("MODE %s +b %s\r\n", strChannel.c_str(), clBanMask.GetHostmask().c_str());
+
+	if (!strKickNick.empty()) {
+		Send("KICK %s %s :%s\r\n", strChannel.c_str(), strKickNick.c_str(), strReason.c_str());
+	}
+
+	Send("PRIVMSG %s :He is forever banned.\r\n", clUser.GetNickname().c_str());
+
+	return true;
+}
+
+bool BnxBot::OnCommandUnban(UserSession &clSession, const std::string &strChannel, 
+				const std::string &strHostmask) {
+
+	if (clSession.GetAccessLevel() < 60)
+		return false;
+
+	const IrcUser &clUser = clSession.GetUser();
+
+	ChannelIterator channelItr = GetChannel(strChannel.c_str());
+
+	if (channelItr == ChannelEnd())
+		return false;
+
+	if (!channelItr->IsOperator()) {
+		Send("PRIVMSG %s :I don't have OP!\r\n", clUser.GetNickname().c_str());
+		return true;
+	}
+
+	IrcUser clMask(strHostmask);
+
+	Send("MODE %s -b %s\r\n", strChannel.c_str(), clMask.GetHostmask().c_str());
+	Send("PRIVMSG %s :Aw, do I have to let him back in?\r\n", clUser.GetNickname().c_str());
+
+	return true;
+}
+
+bool BnxBot::OnCommandSplatterKick(UserSession &clSession, const std::string &strChannel,
+					const std::string &strNickname) {
+	if (clSession.GetAccessLevel() < 60)
+		return false;
+
+	const IrcUser &clUser = clSession.GetUser();
+
+	ChannelIterator channelItr = GetChannel(strChannel.c_str());
+
+	if (channelItr == ChannelEnd())
+		return false;
+
+	if (!channelItr->IsOperator()) {
+		Send("PRIVMSG %s :I don't have OP!\r\n", clUser.GetNickname().c_str());
+		return true;
+	}
+
+	BnxChannel::ConstIterator memberItr = channelItr->GetMember(strNickname);
+
+	if (memberItr == channelItr->End()) {
+		// Original BNX doesn't check this
+		Send("PRIVMSG %s :%s is not here for me to ban!\r\n", clUser.GetNickname().c_str(), 
+			strNickname.c_str());
+		return true;
+	}
+
+	SplatterKick(strChannel.c_str(), memberItr->GetUser());
+
+	Send("PRIVMSG %s :Consider him splattered.\r\n", clUser.GetNickname().c_str());
 
 	return true;
 }
