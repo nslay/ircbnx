@@ -374,7 +374,7 @@ void BnxBot::Say(const char *pTarget, const char *pFormat, ...) {
 
 	if (pMessage[0] == '/') {
 		std::stringstream commandStream;
-		commandStream.str(aBuff);
+		commandStream.str(pMessage);
 
 		std::string strCommand;
 
@@ -417,7 +417,7 @@ void BnxBot::SayLater(const char *pTarget, const char *pFormat, ...) {
 
 	if (pMessage[0] == '/') {
 		std::stringstream commandStream;
-		commandStream.str(aBuff);
+		commandStream.str(pMessage);
 
 		std::string strCommand;
 
