@@ -23,12 +23,23 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef _MSC_VER
+// Disable vsnprintf warnings
+#pragma warning(disable:4996)
+#endif // _MSC_VER
+
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
 #include <fcntl.h>
 #include <errno.h>
+#endif
+
 #include <sstream>
 #include <cstdarg>
 #include <cstdio>
@@ -36,7 +47,6 @@
 #include <cstring>
 #include <cctype>
 #include <iostream>
-#include <sstream>
 #include "IrcClient.h"
 #include "IrcUser.h"
 #include "Irc.h"
@@ -102,26 +112,36 @@ void IrcClient::SetRealName(const std::string &strRealName) {
 }
 
 bool IrcClient::Connect(const std::string &strServer, const std::string &strPort) {
-	if (m_socket != -1)
+	if (m_socket != INVALID_SOCKET)
 		Disconnect();
 
 	m_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-	if (m_socket == -1) {
+	if (m_socket == INVALID_SOCKET) {
 		perror("socket");
 		return false;
 	}
 
+#ifdef _WIN32
+	u_long opt = 1;
+	if (ioctlsocket(m_socket, FIONBIO, &opt) != 0) {
+		perror("ioctlsocket");
+
+		CloseSocket();
+
+		return false;
+	}
+#else // _WIN32
 	int flags = fcntl(m_socket, F_GETFL);
 
 	if (fcntl(m_socket, F_SETFL, flags | O_NONBLOCK) == -1) {
 		perror("fcntl");
 
-		close(m_socket);
-		m_socket = -1;
+		CloseSocket();
 
 		return false;
 	}
+#endif // _WIN32
 
 	struct addrinfo hints, *pResults = NULL;
 	memset(&hints, 0, sizeof(hints));
@@ -134,25 +154,28 @@ bool IrcClient::Connect(const std::string &strServer, const std::string &strPort
 	int e = getaddrinfo(strServer.c_str(), strPort.c_str(), &hints, &pResults);
 	if (e != 0) {
 		fprintf(stderr, "%s\n", gai_strerror(e));
-
-		close(m_socket);
-		m_socket = -1;
-
+		CloseSocket();
 		return false;
 	}
 
-	e = connect(m_socket, pResults->ai_addr, pResults->ai_addrlen);
+	// NOTE: Cast to socklen_t since Windows make ai_addrlen size_t
+	e = connect(m_socket, pResults->ai_addr, (socklen_t)pResults->ai_addrlen);
 
-	if (e == -1 && errno != EINPROGRESS) {
+#ifdef _WIN32
+	if (e != 0 && WSAGetLastError() != WSAEWOULDBLOCK) {
 		perror("connect");
-
+		CloseSocket();
 		freeaddrinfo(pResults);
-
-		close(m_socket);
-		m_socket = -1;
-
 		return false;
 	}
+#else // _WIN32
+	if (e != 0 && errno != EINPROGRESS) {
+		perror("connect");
+		CloseSocket();
+		freeaddrinfo(pResults);
+		return false;
+	}
+#endif // !_WIN32
 
 	freeaddrinfo(pResults);
 
@@ -190,10 +213,7 @@ void IrcClient::Disconnect() {
 	// This is REALLY important since this can be called while OnRead() is still processing messages
 	m_stagingBufferSize = 0;
 
-	if (m_socket != -1) {
-		close(m_socket);
-		m_socket = -1;
-	}
+	CloseSocket();
 
 	if (m_pWriteEvent != NULL) {
 		event_del(m_pWriteEvent);
@@ -270,7 +290,11 @@ void IrcClient::SendRaw(const void *pData, size_t dataSize) {
 
 	m_clSendCounter.Hit();
 
+#ifdef _WIN32
+	send(m_socket, (const char *)pData, (int)dataSize, 0);
+#else // _WIN32
 	send(m_socket, pData, dataSize, 0);
+#endif // !_WIN32
 }
 
 void IrcClient::OnConnect() {
@@ -376,6 +400,19 @@ void IrcClient::OnWallops(const char *pSource, const char *pMessage) {
 
 }
 
+void IrcClient::CloseSocket() {
+	if (m_socket == INVALID_SOCKET)
+		return;
+
+#ifdef _WIN32
+	closesocket(m_socket);
+#else
+	close(m_socket);
+#endif
+
+	m_socket = INVALID_SOCKET;
+}
+
 void IrcClient::ProcessLine(char *pLine) {
 	const char *pPrefix = NULL, *pCommand = NULL, *pParams[15] = { NULL };
 	unsigned int numParams = 0;
@@ -449,7 +486,7 @@ void IrcClient::ProcessLine(char *pLine) {
 
 }
 
-void IrcClient::OnWrite(int fd, short what) {
+void IrcClient::OnWrite(evutil_socket_t fd, short what) {
 	event_add(m_pReadEvent, NULL);
 
 	// TODO: Tunable for send timer
@@ -463,8 +500,14 @@ void IrcClient::OnWrite(int fd, short what) {
 	OnConnect();
 }
 
-void IrcClient::OnRead(int fd, short what) {
-	ssize_t readSize = recv(m_socket, m_stagingBuffer + m_stagingBufferSize, sizeof(m_stagingBuffer)-1-m_stagingBufferSize,0);
+void IrcClient::OnRead(evutil_socket_t fd, short what) {
+#ifdef _WIN32
+	int readSize = recv(m_socket, m_stagingBuffer + m_stagingBufferSize, 
+		(int)(sizeof(m_stagingBuffer)-1-m_stagingBufferSize),0);
+#else // _WIN32
+	ssize_t readSize = recv(m_socket, m_stagingBuffer + m_stagingBufferSize, 
+		sizeof(m_stagingBuffer)-1-m_stagingBufferSize,0);
+#endif // !_WIN32
 
 	if (readSize <= 0) {
 		OnDisconnect();
@@ -493,7 +536,7 @@ void IrcClient::OnRead(int fd, short what) {
 	memmove(m_stagingBuffer, p, m_stagingBufferSize);
 }
 
-void IrcClient::OnSendTimer(int fd, short what) {
+void IrcClient::OnSendTimer(evutil_socket_t fd, short what) {
 	float fRate = m_clSendCounter.SampleRate();
 
 	// TODO: Tunable for rate

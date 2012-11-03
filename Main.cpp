@@ -23,14 +23,35 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+
+#include <windows.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#endif // _WIN32
+
 #include <signal.h>
+#include <iostream>
 #include "event2/event.h"
 #include "BnxBot.h"
 
 int main(int argc, char **argv) {
 	struct event_base *pEventBase;
 
+#ifdef _WIN32
+    WORD wsaVersion = MAKEWORD(2, 2);
+    WSADATA wsaData;
+	int e;
+
+	e = WSAStartup(wsaVersion, &wsaData);
+	if (e != 0) {
+		std::cerr << "WSAStartup failed with error: " << e << std::endl;
+		return -1;
+	}
+#else // _WIN32
 	signal(SIGPIPE, SIG_IGN);
+#endif // !_WIN32
 
 	pEventBase = event_base_new();
 
@@ -51,6 +72,10 @@ int main(int argc, char **argv) {
 	event_base_dispatch(pEventBase);
 
 	event_base_free(pEventBase);
+
+#ifdef _WIN32
+	WSACleanup();
+#endif // _WIN32
 
 	return 0;
 }

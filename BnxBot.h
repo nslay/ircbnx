@@ -143,8 +143,8 @@ private:
 	BnxShitList m_clShitList;
 	BnxFloodDetector m_clFloodDetector;
 
-	template<void (BnxBot::*Method)(int, short)>
-	static void Dispatch(int fd, short what, void *arg) {
+	template<void (BnxBot::*Method)(evutil_socket_t, short)>
+	static void Dispatch(evutil_socket_t fd, short what, void *arg) {
 		BnxBot *pObject = (BnxBot *)arg;
 		(pObject->*Method)(fd, what);
 	}
@@ -155,8 +155,8 @@ private:
 	void Squelch(const IrcUser &clUser);
 	void Unsquelch(const IrcUser &clser);
 
-	void OnConnectTimer(int fd, short what);
-	void OnFloodTimer(int fd, short what);
+	void OnConnectTimer(evutil_socket_t fd, short what);
+	void OnFloodTimer(evutil_socket_t fd, short what);
 };
 
 #endif // !BNXBOT_H

@@ -32,6 +32,11 @@
 #include "IrcUser.h"
 #include "BnxBot.h"
 
+#ifdef _MSC_VER
+// Disable warnings about safe string functions
+#pragma warning(disable:4996)
+#endif // _MSC_VER
+
 BnxBot::~BnxBot() {
 	Shutdown();
 }
@@ -1259,12 +1264,12 @@ void BnxBot::Unsquelch(const IrcUser &clUser) {
 		m_vSquelchedUsers.erase(itr);
 }
 
-void BnxBot::OnConnectTimer(int fd, short what) {
+void BnxBot::OnConnectTimer(evutil_socket_t fd, short what) {
 	std::cout << "OnConnectTimer" << std::endl;
 	Connect(m_strServer, m_strPort);
 }
 
-void BnxBot::OnFloodTimer(int fd, short what) {
+void BnxBot::OnFloodTimer(evutil_socket_t fd, short what) {
 	std::vector<IrcUser> vFlooders;
 
 	m_clFloodDetector.Detect(vFlooders);

@@ -7,7 +7,12 @@ SET(LIBEVENT2_LIB "/usr/local/lib/event2" CACHE PATH "libevent2 library director
 SET(PCRE_INCLUDE "/usr/local/include" CACHE PATH "PCRE include directory")
 SET(PCRE_LIB "/usr/local/lib" CACHE PATH "PCRE library directory")
 
-SET(LINK_LIBS event)
+IF (WIN32)
+	SET(LINK_LIBS libevent ws2_32)
+	ADD_DEFINITIONS(-DPCRE_STATIC)
+ELSE (WIN32)
+	SET(LINK_LIBS event)
+ENDIF (WIN32)
 
 INCLUDE_DIRECTORIES(${LIBEVENT2_INCLUDE})
 LINK_DIRECTORIES(${LIBEVENT2_LIB})

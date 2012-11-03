@@ -35,8 +35,9 @@
 class IrcClient {
 public:
 	IrcClient()
-	: m_socket(-1), m_strUsername("IrcClient"), m_strRealName("IrcClient"), m_stagingBufferSize(0),
-	m_pEventBase(NULL), m_pReadEvent(NULL), m_pWriteEvent(NULL), m_pSendTimer(NULL) { }
+	: m_socket(INVALID_SOCKET), m_strUsername("IrcClient"), m_strRealName("IrcClient"), 
+	m_stagingBufferSize(0), m_pEventBase(NULL), m_pReadEvent(NULL), m_pWriteEvent(NULL), 
+	m_pSendTimer(NULL) { }
 
 	virtual ~IrcClient();
 
@@ -83,7 +84,14 @@ protected:
 	virtual void OnWallops(const char *pSource, const char *pMessage);
 
 private:
-	int m_socket;
+#ifdef _WIN32
+	typedef SOCKET SocketType;
+#else
+	typedef int SocketType;
+	enum { INVALID_SOCKET = -1 };
+#endif
+
+	SocketType m_socket;
 	std::string m_strNickname, m_strUsername, m_strRealName, m_strCurrentNickname, 
 		m_strCurrentServer, m_strCurrentPort;
 
@@ -99,18 +107,20 @@ private:
 
 	static char * PopToken(char *&pStr);
 
-	template<void (IrcClient::*Method)(int, short)>
-	static void Dispatch(int fd, short what, void *arg) {
+	template<void (IrcClient::*Method)(evutil_socket_t, short)>
+	static void Dispatch(evutil_socket_t fd, short what, void *arg) {
 		IrcClient *pObject = (IrcClient *)arg;
 		(pObject->*Method)(fd, what);
 	}
 
+	void CloseSocket();
+
 	void ProcessLine(char *pLine);
 
 	// Libevent callbacks
-	void OnWrite(int fd, short what);
-	void OnRead(int fd, short what);
-	void OnSendTimer(int fd, short what);
+	void OnWrite(evutil_socket_t fd, short what);
+	void OnRead(evutil_socket_t fd, short what);
+	void OnSendTimer(evutil_socket_t fd, short what);
 
 };
 
