@@ -36,6 +36,8 @@
 
 class BnxChannel {
 public:
+	enum { VOTEBAN_TIMEOUT = 30 };
+
 	class Member {
 	public:
 		Member(const IrcUser &clUser) {
@@ -168,6 +170,10 @@ public:
 
 	time_t GetVoteBanTime() const {
 		return m_voteBanTime;
+	}
+
+	bool VoteBanExpired() const {
+		return time(NULL) - GetVoteBanTime() >= VOTEBAN_TIMEOUT;
 	}
 
 	void ResetVoteBan();

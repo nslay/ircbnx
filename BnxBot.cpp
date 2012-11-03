@@ -86,7 +86,7 @@ void BnxBot::StartUp() {
 		return;
 
 	m_pConnectTimer = evtimer_new(GetEventBase(), &Dispatch<&BnxBot::OnConnectTimer>, this);
-	m_pFloodTimer = event_new(GetEventBase(), -1, EV_PERSIST, &Dispatch<&BnxBot::OnFloodTimer>, this);
+	m_pStatusTimer = event_new(GetEventBase(), -1, EV_PERSIST, &Dispatch<&BnxBot::OnStatusTimer>, this);
 
 	struct timeval tv;
 	tv.tv_sec = tv.tv_usec = 0;
@@ -103,18 +103,18 @@ void BnxBot::Shutdown() {
 		m_pConnectTimer = NULL;
 	}
 
-	if (m_pFloodTimer != NULL) {
-		event_del(m_pFloodTimer);
-		event_free(m_pFloodTimer);
-		m_pFloodTimer = NULL;
+	if (m_pStatusTimer != NULL) {
+		event_del(m_pStatusTimer);
+		event_free(m_pStatusTimer);
+		m_pStatusTimer = NULL;
 	}
 }
 
 void BnxBot::Disconnect() {
 	IrcClient::Disconnect();
 
-	if (m_pFloodTimer != NULL)
-		event_del(m_pFloodTimer);
+	if (m_pStatusTimer != NULL)
+		event_del(m_pStatusTimer);
 
 	m_vCurrentChannels.clear();
 	m_vSquelchedUsers.clear();
@@ -307,6 +307,38 @@ bool BnxBot::ProcessCommand(const char *pSource, const char *pTarget, const char
 		return OnCommandSplatterKick(*sessionItr, strChannel, strNickname);
 	}
 
+	if (strCommand == "voteban") {
+		std::string strChannel, strNickname;
+
+		if (!(messageStream >> strChannel >> strNickname))
+			return false;
+
+		return OnCommandVoteBan(*sessionItr, strChannel, strNickname);
+	}
+
+	return false;
+}
+
+bool BnxBot::ProcessVoteBan(const char *pSource, const char *pTarget, const char *pMessage) {
+	if (pTarget == GetCurrentNickname())
+		return false;
+
+	ChannelIterator channelItr = GetChannel(pTarget);
+
+	if (channelItr == ChannelEnd() || !channelItr->IsVoteBanInProgress())
+		return false;
+
+	IrcUser clUser(pSource);
+
+	if (!IrcStrCaseCmp(pMessage,"yea")) {
+		channelItr->VoteYay(clUser.GetNickname());
+		return true;
+	}
+	else if (!IrcStrCaseCmp(pMessage,"nay")) {
+		channelItr->VoteNay(clUser.GetNickname());
+		return true;
+	}
+
 	return false;
 }
 
@@ -465,7 +497,7 @@ void BnxBot::SplatterKick(const char *pChannel, const IrcUser &clUser) {
 
 	IrcUser clBanMask("*","*",clUser.GetHostname());
 
-	switch(rand() % 11) {
+	switch(rand() % 12) {
 	case 0:
 		SayLater(pChannel, "Congratulations, %s - you're the lucky winner of a one-way trip to The Void!", 
 				strNickname.c_str());
@@ -548,6 +580,12 @@ void BnxBot::SplatterKick(const char *pChannel, const IrcUser &clUser) {
 		SendLater("MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
 		SendLater("KICK %s %s :what a drag!\r\n", pChannel, strNickname.c_str());
 		break;
+	case 11:
+		SayLater(pChannel, "/me pulls down the switch on the electric chair.");
+		SendLater("MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		SendLater("KICK %s %s\r\n", pChannel, strNickname.c_str());
+		SayLater(pChannel, "/me makes an omelette with %s's brains.", strNickname.c_str());
+		break;
 	}
 }
 
@@ -581,7 +619,7 @@ void BnxBot::OnRegistered() {
 	m_clFloodDetector.SetThreshold(3.0f);
 	m_clFloodDetector.SetTimeStep(1.0f);
 
-	event_add(m_pFloodTimer, &tv);
+	event_add(m_pStatusTimer, &tv);
 
 	for (size_t i = 0; i < m_vHomeChannels.size(); ++i) {
 		Send("JOIN %s\r\n", m_vHomeChannels[i].c_str());
@@ -714,6 +752,9 @@ void BnxBot::OnPrivmsg(const char *pSource, const char *pTarget, const char *pMe
 		pMessage = (const char *)message.data;
 
 		if (ProcessCommand(pSource, pTarget, pMessage))
+			return;
+
+		if (ProcessVoteBan(pSource, pTarget, pMessage))
 			return;
 
 		// Finally, process the message text
@@ -1232,6 +1273,45 @@ bool BnxBot::OnCommandSplatterKick(UserSession &clSession, const std::string &st
 	return true;
 }
 
+bool BnxBot::OnCommandVoteBan(UserSession &clSession, const std::string &strChannel,
+				const std::string &strNickname) {
+	if (clSession.GetAccessLevel() < 60)
+		return false;
+
+	const IrcUser &clUser = clSession.GetUser();
+
+	ChannelIterator channelItr = GetChannel(strChannel.c_str());
+
+	if (channelItr == ChannelEnd())
+		return false;
+
+	if (!channelItr->IsOperator()) {
+		Send("PRIVMSG %s :I don't have OP!\r\n", clUser.GetNickname().c_str());
+		return true;
+	}
+
+	if (channelItr->IsVoteBanInProgress())
+		return false;
+
+	BnxChannel::ConstIterator memberItr = channelItr->GetMember(strNickname);
+
+	if (memberItr == channelItr->End()) {
+		Send("PRIVMSG %s :%s is not here for me to ban!\r\n", clUser.GetNickname().c_str(), 
+			strNickname.c_str());
+		return true;
+	}
+
+	Send("PRIVMSG %s :If you want me to ban %s, say \"Yea\" - if not, say \"Nay\"\r\n", strChannel.c_str(),
+		strNickname.c_str());
+
+	Send("PRIVMSG %s :I will tally the votes in %d seconds.\r\n", strChannel.c_str(), 
+		BnxChannel::VOTEBAN_TIMEOUT);
+
+	channelItr->VoteBan(memberItr->GetUser());
+
+	return true;
+}
+
 void BnxBot::AddChannel(const char *pChannel) {
 	if (GetChannel(pChannel) != ChannelEnd())
 		return;
@@ -1269,12 +1349,32 @@ void BnxBot::OnConnectTimer(evutil_socket_t fd, short what) {
 	Connect(m_strServer, m_strPort);
 }
 
-void BnxBot::OnFloodTimer(evutil_socket_t fd, short what) {
+void BnxBot::OnStatusTimer(evutil_socket_t fd, short what) {
 	std::vector<IrcUser> vFlooders;
 
 	m_clFloodDetector.Detect(vFlooders);
 
 	for (size_t i = 0; i < vFlooders.size(); ++i)
 		Squelch(IrcUser("*","*",vFlooders[i].GetHostname()));
+
+	for (size_t i = 0; i < m_vCurrentChannels.size(); ++i) {
+		BnxChannel &clChannel = m_vCurrentChannels[i];
+
+		if (clChannel.IsVoteBanInProgress() && clChannel.VoteBanExpired()) {
+			const IrcUser &clUser = clChannel.GetVoteBanMask();
+
+			if (clChannel.TallyVote() >= 0) {
+				Send("PRIVMSG %s :Banning %s by popular request...\r\n", 
+					clChannel.GetName().c_str(), clUser.GetNickname().c_str());
+				SplatterKick(clChannel.GetName().c_str(), clUser);
+			}
+			else {
+				Send("PRIVMSG %s :OK, %s can stay.\r\n",
+					clChannel.GetName().c_str(), clUser.GetNickname().c_str());
+			}
+
+			clChannel.ResetVoteBan();
+		}
+	}
 }
 

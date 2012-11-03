@@ -42,7 +42,7 @@ public:
 	typedef BnxAccessSystem::UserSession UserSession;
 
 	BnxBot()
-	: m_pConnectTimer(NULL), m_pFloodTimer(NULL), m_bChatter(true) { }
+	: m_pConnectTimer(NULL), m_pStatusTimer(NULL), m_bChatter(true) { }
 
 	virtual ~BnxBot();
 
@@ -65,6 +65,7 @@ protected:
 	ChannelIterator ChannelEnd();
 
 	virtual bool ProcessCommand(const char *pSource, const char *pTarget, const char *pMessage);
+	virtual bool ProcessVoteBan(const char *pSource, const char *pTarget, const char *pMessage);
 	virtual void ProcessMessage(const char *pSource, const char *pTarget, const char *pMessage);
 	virtual void Say(const char *pTarget, const char *pFormat, ...);
 	virtual void SayLater(const char *pTarget, const char *pFormat, ...);
@@ -117,6 +118,8 @@ protected:
 					const std::string &strHostmask);
 	virtual bool OnCommandSplatterKick(UserSession &clSession, const std::string &strChannel,
 						const std::string &strNickname);
+	virtual bool OnCommandVoteBan(UserSession &clSession, const std::string &strChannel,
+					const std::string &strNickname);
 
 private:
 	struct MaskMatches {
@@ -131,7 +134,7 @@ private:
 	};
 
 	std::string m_strServer, m_strPort;
-	struct event *m_pConnectTimer, *m_pFloodTimer;
+	struct event *m_pConnectTimer, *m_pStatusTimer;
 
 	bool m_bChatter;
 
@@ -156,7 +159,7 @@ private:
 	void Unsquelch(const IrcUser &clser);
 
 	void OnConnectTimer(evutil_socket_t fd, short what);
-	void OnFloodTimer(evutil_socket_t fd, short what);
+	void OnStatusTimer(evutil_socket_t fd, short what);
 };
 
 #endif // !BNXBOT_H
