@@ -322,6 +322,24 @@ bool BnxBot::ProcessCommand(const char *pSource, const char *pTarget, const char
 		return OnCommandVoteBan(*sessionItr, strChannel, strNickname);
 	}
 
+	if (strCommand == "op") {
+		std::string strChannel, strNickname;
+
+		if (!(messageStream >> strChannel >> strNickname))
+			return false;
+
+		return OnCommandOp(*sessionItr, strChannel, strNickname);
+	}
+
+	if (strCommand == "deop") {
+		std::string strChannel, strNickname;
+
+		if (!(messageStream >> strChannel >> strNickname))
+			return false;
+
+		return OnCommandDeOp(*sessionItr, strChannel, strNickname);
+	}
+
 	return false;
 }
 
@@ -1357,6 +1375,50 @@ bool BnxBot::OnCommandVoteBan(UserSession &clSession, const std::string &strChan
 		BnxChannel::VOTEBAN_TIMEOUT);
 
 	channelItr->VoteBan(memberItr->GetUser());
+
+	return true;
+}
+
+bool BnxBot::OnCommandOp(UserSession &clSession, const std::string &strChannel,
+			const std::string &strNickname) {
+	if (clSession.GetAccessLevel() < 90)
+		return false;
+
+	const IrcUser &clUser = clSession.GetUser();
+
+	ChannelIterator channelItr = GetChannel(strChannel.c_str());
+
+	if (channelItr == ChannelEnd())
+		return false;
+
+	if (!channelItr->IsOperator()) {
+		Send("PRIVMSG %s :I don't have OP!\r\n", clUser.GetNickname().c_str());
+		return true;
+	}
+
+	Send("MODE %s +o %s\r\n", strChannel.c_str(), strNickname.c_str());
+
+	return true;
+}
+
+bool BnxBot::OnCommandDeOp(UserSession &clSession, const std::string &strChannel,
+			const std::string &strNickname) {
+	if (clSession.GetAccessLevel() < 90)
+		return false;
+
+	const IrcUser &clUser = clSession.GetUser();
+
+	ChannelIterator channelItr = GetChannel(strChannel.c_str());
+
+	if (channelItr == ChannelEnd())
+		return false;
+
+	if (!channelItr->IsOperator()) {
+		Send("PRIVMSG %s :I don't have OP!\r\n", clUser.GetNickname().c_str());
+		return true;
+	}
+
+	Send("MODE %s -o %s\r\n", strChannel.c_str(), strNickname.c_str());
 
 	return true;
 }

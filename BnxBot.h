@@ -122,6 +122,10 @@ protected:
 						const std::string &strNickname);
 	virtual bool OnCommandVoteBan(UserSession &clSession, const std::string &strChannel,
 					const std::string &strNickname);
+	virtual bool OnCommandOp(UserSession &clSession, const std::string &strChannel,
+					const std::string &strNickname);
+	virtual bool OnCommandDeOp(UserSession &clSession, const std::string &strChannel,
+					const std::string &strNickname);
 
 private:
 	struct MaskMatches {
