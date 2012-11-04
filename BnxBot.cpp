@@ -1301,8 +1301,8 @@ bool BnxBot::OnCommandVoteBan(UserSession &clSession, const std::string &strChan
 		return true;
 	}
 
-	Send("PRIVMSG %s :If you want me to ban %s, say \"Yea\" - if not, say \"Nay\"\r\n", strChannel.c_str(),
-		strNickname.c_str());
+	Send("PRIVMSG %s :If you want me to ban %s, say \"Yea\" - if not, say \"Nay\"\r\n", 
+		strChannel.c_str(), strNickname.c_str());
 
 	Send("PRIVMSG %s :I will tally the votes in %d seconds.\r\n", strChannel.c_str(), 
 		BnxChannel::VOTEBAN_TIMEOUT);

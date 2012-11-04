@@ -235,7 +235,7 @@ void IrcClient::Disconnect() {
 }
 
 void IrcClient::Send(const char *pFormat, ...) {
-	if (m_socket == -1)
+	if (m_socket == INVALID_SOCKET)
 		return;
 
 	char buff[513];
@@ -255,7 +255,7 @@ void IrcClient::Send(const char *pFormat, ...) {
 }
 
 void IrcClient::SendNow(const char *pFormat, ...) {
-	if (m_socket == -1)
+	if (m_socket == INVALID_SOCKET)
 		return;
 
 	char buff[513];
@@ -269,7 +269,7 @@ void IrcClient::SendNow(const char *pFormat, ...) {
 }
 
 void IrcClient::SendLater(const char *pFormat, ...) {
-	if (m_socket == -1)
+	if (m_socket == INVALID_SOCKET)
 		return;
 
 	char buff[513];
@@ -283,7 +283,7 @@ void IrcClient::SendLater(const char *pFormat, ...) {
 }
 
 void IrcClient::SendRaw(const void *pData, size_t dataSize) {
-	if (m_socket == -1)
+	if (m_socket == INVALID_SOCKET)
 		return;
 
 	printf("-> %s", (const char *)pData);
