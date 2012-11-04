@@ -23,50 +23,37 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
+#ifndef BNXMAIN_H
+#define BNXMAIN_H
 
-#include <windows.h>
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#endif // _WIN32
+#include <cstddef>
+#include <string>
+#include <vector>
+#include "IniFile.h"
+#include "BnxBot.h"
 
-#include <signal.h>
-#include <iostream>
-#include "BnxMain.h"
+class BnxMain {
+public:
+	BnxMain()
+	: m_strConfigFile("bot.ini") { }
 
-int main(int argc, char **argv) {
-	struct event_base *pEventBase;
+	~BnxMain();
 
-#ifdef _WIN32
-	WORD wsaVersion = MAKEWORD(2, 2);
-	WSADATA wsaData;
-	int e;
-
-	e = WSAStartup(wsaVersion, &wsaData);
-	if (e != 0) {
-		std::cerr << "WSAStartup failed with error: " << e << std::endl;
-		return -1;
-	}
-#else // _WIN32
-	signal(SIGPIPE, SIG_IGN);
-#endif // !_WIN32
-
-	BnxMain clBnxMain;
-
-	clBnxMain.SetConfigFile("bot.ini");
-
-	if (!clBnxMain.Load()) {
-		std::cerr << "Could not configuration file (or no profiles enabled)." << std::endl;
-		return -1;
+	void SetConfigFile(const std::string &strConfigFile) {
+		m_strConfigFile = strConfigFile;
 	}
 
-	clBnxMain.Run();
+	bool Load();
+	void Run();
+	void Shutdown();
+	void Reset();
 
-#ifdef _WIN32
-	WSACleanup();
-#endif // _WIN32
+private:
+	std::string m_strConfigFile;
+	std::vector<BnxBot *> m_vBots;
 
-	return 0;
-}
+	void LoadBot(const IniFile::Section &clSection);
+};
+
+#endif // !BNXMAIN_H
 

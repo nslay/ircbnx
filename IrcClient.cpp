@@ -31,14 +31,14 @@
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#else
+#else // _WIN32
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
 #include <fcntl.h>
 #include <errno.h>
-#endif
+#endif // !_WIN32
 
 #include <sstream>
 #include <cstdarg>
@@ -141,7 +141,7 @@ bool IrcClient::Connect(const std::string &strServer, const std::string &strPort
 
 		return false;
 	}
-#endif // _WIN32
+#endif // !_WIN32
 
 	struct addrinfo hints, *pResults = NULL;
 	memset(&hints, 0, sizeof(hints));
@@ -406,9 +406,9 @@ void IrcClient::CloseSocket() {
 
 #ifdef _WIN32
 	closesocket(m_socket);
-#else
+#else // _WIN32
 	close(m_socket);
-#endif
+#endif // !_WIN32
 
 	m_socket = INVALID_SOCKET;
 }
