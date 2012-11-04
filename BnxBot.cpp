@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <fstream>
 #include <sstream>
+#include <ctime>
 #include "Ctcp.h"
 #include "Irc.h"
 #include "IrcString.h"
@@ -743,6 +744,9 @@ void BnxBot::OnPrivmsg(const char *pSource, const char *pTarget, const char *pMe
 		if (!strcmp(pTag,"VERSION")) {
 			OnCtcpVersion(pSource, pTarget);
 		}
+		else if (!strcmp(pTag,"TIME")) {
+			OnCtcpTime(pSource, pTarget);
+		}
 		else if (!strcmp(pTag,"ACTION")) {
 			if (message.dataSize > 0)
 				OnCtcpAction(pSource, pTarget, pMessage);
@@ -873,6 +877,29 @@ void BnxBot::OnCtcpVersion(const char *pSource, const char *pTarget) {
 
 	CtcpEncoder clEncoder;
 	clEncoder.Encode(MakeCtcpMessage("VERSION", "IRCBNX Chatterbot"));
+
+	Send("NOTICE %s :%s\r\n", clUser.GetNickname().c_str(), clEncoder.GetRaw());
+}
+
+void BnxBot::OnCtcpTime(const char *pSource, const char *pTarget) {
+	IrcUser clUser(pSource);
+
+	if (IsSquelched(clUser))
+		return;
+
+	m_clFloodDetector.Hit(clUser);
+
+	time_t rawTime = 0;
+	time(&rawTime);
+
+	// XXX: Not thread-safe
+	struct tm *pLocalTime = localtime(&rawTime);
+
+	char aBuff[128] = "";
+	strftime(aBuff, sizeof(aBuff), "%c", pLocalTime);
+
+	CtcpEncoder clEncoder;
+	clEncoder.Encode(MakeCtcpMessage("TIME", aBuff));
 
 	Send("NOTICE %s :%s\r\n", clUser.GetNickname().c_str(), clEncoder.GetRaw());
 }

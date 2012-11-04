@@ -89,6 +89,7 @@ protected:
 	// CTCP events
 	virtual void OnCtcpAction(const char *pSource, const char *pTarget, const char *pMessage);
 	virtual void OnCtcpVersion(const char *pSource, const char *pTarget);
+	virtual void OnCtcpTime(const char *pSource, const char *pTarget);
 
 	// User command events
 	virtual bool OnCommandLogin(const IrcUser &clUser, const std::string &strPassword);
