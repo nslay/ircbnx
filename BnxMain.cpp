@@ -41,7 +41,7 @@ bool BnxMain::Load() {
 
 	const IniFile::Section &clGlobal = clConfig.GetSection("global");
 
-	std::string strEntries = clGlobal.GetValue<std::string>("profiles");
+	std::string strEntries = clGlobal.GetValue<std::string>("profiles", "");
 	if (strEntries.empty())
 		return false;
 
@@ -90,8 +90,8 @@ void BnxMain::LoadBot(const IniFile::Section &clSection) {
 	if (!bEnabled)
 		return;
 
-	std::string strServer = clSection.GetValue<std::string>("server");
-	std::string strNickname = clSection.GetValue<std::string>("nickname");
+	std::string strServer = clSection.GetValue<std::string>("server", "");
+	std::string strNickname = clSection.GetValue<std::string>("nickname", "");
 
 	if (strServer.empty() || strNickname.empty())
 		return;
@@ -104,9 +104,9 @@ void BnxMain::LoadBot(const IniFile::Section &clSection) {
 	std::string strAccessList = clSection.GetValue<std::string>("accesslist", "access.lst");
 	std::string strShitList = clSection.GetValue<std::string>("shitlist", "shit.lst");
 	std::string strResponseRules = clSection.GetValue<std::string>("responserules", "response.txt");
-	std::string strHomeChannels = clSection.GetValue<std::string>("homechannels");
-	std::string strNickServ = clSection.GetValue<std::string>("nickserv");
-	std::string strNickServPassword = clSection.GetValue<std::string>("nickservpassword");
+	std::string strHomeChannels = clSection.GetValue<std::string>("homechannels", "");
+	std::string strNickServ = clSection.GetValue<std::string>("nickserv", "");
+	std::string strNickServPassword = clSection.GetValue<std::string>("nickservpassword", "");
 	
 	pclBot->SetServerAndPort(strServer, strPort);
 	pclBot->SetNickServAndPassword(strNickServ, strNickServPassword);

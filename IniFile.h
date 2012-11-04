@@ -79,7 +79,7 @@ public:
 		}
 
 		template<typename T>
-		T GetValue(const std::string &strKey, const T &defaultValue = T()) const;
+		T GetValue(const std::string &strKey, const T &defaultValue) const;
 
 		template<typename T>
 		void SetValue(const std::string &strKey, const T &value);

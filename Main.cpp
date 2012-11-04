@@ -36,7 +36,6 @@
 #include "BnxMain.h"
 
 int main(int argc, char **argv) {
-	struct event_base *pEventBase;
 
 #ifdef _WIN32
 	WORD wsaVersion = MAKEWORD(2, 2);
