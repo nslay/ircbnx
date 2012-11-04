@@ -105,14 +105,16 @@ void BnxMain::LoadBot(const IniFile::Section &clSection) {
 	std::string strShitList = clSection.GetValue<std::string>("shitlist", "shit.lst");
 	std::string strResponseRules = clSection.GetValue<std::string>("responserules", "response.txt");
 	std::string strHomeChannels = clSection.GetValue<std::string>("homechannels");
+	std::string strNickServ = clSection.GetValue<std::string>("nickserv");
+	std::string strNickServPassword = clSection.GetValue<std::string>("nickservpassword");
 	
 	pclBot->SetServerAndPort(strServer, strPort);
+	pclBot->SetNickServAndPassword(strNickServ, strNickServPassword);
 	pclBot->SetNickname(strNickname);
 	pclBot->SetUsername(strUsername);
 	pclBot->LoadResponseRules(strResponseRules);
 	pclBot->LoadAccessList(strAccessList);
 	pclBot->LoadShitList(strShitList);
-
 
 	if (!strHomeChannels.empty()) {
 		std::stringstream homeStream;

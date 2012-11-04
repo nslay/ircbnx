@@ -47,6 +47,11 @@ void BnxBot::SetServerAndPort(const std::string &strServer, const std::string &s
 	m_strPort = strPort;
 }
 
+void BnxBot::SetNickServAndPassword(const std::string &strNickServ, const std::string &strPassword) {
+	m_strNickServ = strNickServ;
+	m_strNickServPassword = strPassword;
+}
+
 void BnxBot::AddHomeChannel(const std::string &strChannel) {
 	if (std::find(m_vHomeChannels.begin(), m_vHomeChannels.end(), strChannel) != m_vHomeChannels.end())
 		return;
@@ -621,6 +626,12 @@ void BnxBot::OnRegistered() {
 	m_clFloodDetector.SetTimeStep(1.0f);
 
 	event_add(m_pStatusTimer, &tv);
+
+	if (GetNickname() == GetCurrentNickname() && 
+		!m_strNickServ.empty() && !m_strNickServPassword.empty()) {
+		Send("PRIVMSG %s :identify %s\r\n", m_strNickServ.c_str(), 
+			m_strNickServPassword.c_str());
+	}
 
 	for (size_t i = 0; i < m_vHomeChannels.size(); ++i) {
 		Send("JOIN %s\r\n", m_vHomeChannels[i].c_str());

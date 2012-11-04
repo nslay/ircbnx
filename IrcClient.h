@@ -44,6 +44,8 @@ public:
 	void SetEventBase(struct event_base *pEventBase);
 	struct event_base * GetEventBase() const;
 
+	const std::string & GetNickname() const;
+
 	const std::string & GetCurrentNickname() const;
 	const std::string & GetCurrentServer() const;
 	const std::string & GetCurrentPort() const;

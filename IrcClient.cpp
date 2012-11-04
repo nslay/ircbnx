@@ -79,6 +79,10 @@ struct event_base * IrcClient::GetEventBase() const {
 	return m_pEventBase;
 }
 
+const std::string & IrcClient::GetNickname() const {
+	return m_strNickname;
+}
+
 const std::string & IrcClient::GetCurrentNickname() const {
 	return m_strCurrentNickname;
 }
@@ -246,7 +250,7 @@ void IrcClient::Send(const char *pFormat, ...) {
 	va_end(ap);
 
 	// TODO: Tunable for bursting
-	if (!m_dqSendQueue.empty() || m_clSendCounter.GetCurrentCount() > 4) {
+	if (!m_dqSendQueue.empty() || m_clSendCounter.GetCurrentCount() > 3) {
 		m_dqSendQueue.push_back(buff);
 		return;
 	}

@@ -47,6 +47,7 @@ public:
 	virtual ~BnxBot();
 
 	void SetServerAndPort(const std::string &strServer, const std::string &strPort = "6667");
+	void SetNickServAndPassword(const std::string &strNickServ, const std::string &strPassword);
 	void AddHomeChannel(const std::string &channel);
 	void DeleteHomeChannel(const std::string &channel);
 	bool LoadResponseRules(const std::string &strFileName);
@@ -134,7 +135,7 @@ private:
 		const IrcUser &clUser;
 	};
 
-	std::string m_strServer, m_strPort;
+	std::string m_strServer, m_strPort, m_strNickServ, m_strNickServPassword;
 	struct event *m_pConnectTimer, *m_pStatusTimer;
 
 	bool m_bChatter;
