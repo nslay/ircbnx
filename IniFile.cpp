@@ -38,7 +38,13 @@ bool IniFile::Load(const std::string &strFilename) {
 
 	std::string strLine;
 	while (std::getline(iniStream, strLine)) {
-		size_t p = strLine.find(';');
+		// Remove carriage return
+		size_t p = strLine.find('\r');
+
+		if (p != std::string::npos)
+			strLine.resize(p);
+
+		p = strLine.find(';');
 
 		if (p != std::string::npos) 
 			strLine.resize(p);
