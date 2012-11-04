@@ -763,8 +763,8 @@ void BnxBot::OnPrivmsg(const char *pSource, const char *pTarget, const char *pMe
 				OnCtcpAction(pSource, pTarget, pMessage);
 		}
 	}
-	else if (message.dataSize > 0) {
-		pMessage = (const char *)message.data;
+	else {
+		// Don't use the decoded non-tagged data since it strips lone backslash
 
 		if (ProcessCommand(pSource, pTarget, pMessage))
 			return;
@@ -789,6 +789,17 @@ void BnxBot::OnJoin(const char *pSource, const char *pChannel) {
 	IrcUser clUser(pSource);
 
 	channelItr->AddMember(clUser);
+
+	if (channelItr->IsOperator()) {
+		BnxShitList::ConstIterator shitItr = m_clShitList.FindMatch(clUser);
+
+		if (shitItr != m_clShitList.End()) {
+			Send("MODE %s +b %s\r\n", pChannel, shitItr->GetHostmask().c_str());
+			Send("KICK %s %s :because I don't like you\r\n", pChannel, 
+				clUser.GetNickname().c_str());
+			return;
+		}
+	}
 
 	if (channelItr->GetSize() == 2)
 		Send("PRIVMSG %s :Hi!\r\n", pChannel);
