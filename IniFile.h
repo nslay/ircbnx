@@ -37,7 +37,7 @@
 
 class IniFile {
 public:
-	struct StringEquals {
+	struct StringLessThan {
 		bool operator()(const std::string &strString1, const std::string &strString2) const {
 			return IrcStrCaseCmp(strString1.c_str(), strString2.c_str()) < 0;
 		}
@@ -45,7 +45,7 @@ public:
 
 	class Section {
 	public:
-		typedef std::map<std::string, std::string, StringEquals> MapType;
+		typedef std::map<std::string, std::string, StringLessThan> MapType;
 		typedef MapType::iterator KeyIterator;
 		typedef MapType::const_iterator ConstKeyIterator;
 
@@ -90,10 +90,10 @@ public:
 
 	private:
 		std::string m_strName;
-		std::map<std::string, std::string, StringEquals> m_mValueMap;
+		std::map<std::string, std::string, StringLessThan> m_mValueMap;
 	};
 
-	typedef std::map<std::string, Section, StringEquals> MapType;
+	typedef std::map<std::string, Section, StringLessThan> MapType;
 	typedef MapType::iterator SectionIterator;
 	typedef MapType::const_iterator ConstSectionIterator;
 
