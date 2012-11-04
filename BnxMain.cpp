@@ -100,7 +100,7 @@ void BnxMain::LoadBot(const IniFile::Section &clSection) {
 
 	std::string strPort = clSection.GetValue<std::string>("port", "6667");
 	std::string strUsername = clSection.GetValue<std::string>("username", "BnxBot");
-	std::string strRealname = clSection.GetValue<std::string>("realname", "BnxBot");
+	std::string strRealName = clSection.GetValue<std::string>("realname", "BnxBot");
 	std::string strAccessList = clSection.GetValue<std::string>("accesslist", "access.lst");
 	std::string strShitList = clSection.GetValue<std::string>("shitlist", "shit.lst");
 	std::string strResponseRules = clSection.GetValue<std::string>("responserules", "response.txt");
@@ -112,6 +112,7 @@ void BnxMain::LoadBot(const IniFile::Section &clSection) {
 	pclBot->SetNickServAndPassword(strNickServ, strNickServPassword);
 	pclBot->SetNickname(strNickname);
 	pclBot->SetUsername(strUsername);
+	pclBot->SetRealName(strRealName);
 	pclBot->LoadResponseRules(strResponseRules);
 	pclBot->LoadAccessList(strAccessList);
 	pclBot->LoadShitList(strShitList);
