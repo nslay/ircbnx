@@ -28,9 +28,7 @@
 #include "IrcTraits.h"
 
 bool IrcTraits::Parse(const std::string &strParam) {
-	std::stringstream paramStream;
-
-	paramStream.str(strParam);
+	std::stringstream paramStream(strParam);
 
 	if (paramStream.peek() == '-')
 		paramStream.get();
@@ -231,9 +229,7 @@ bool IrcTraits::ParseChanLimit(const std::string &strValue) {
 	if (strValue.empty())
 		return false;
 
-	std::stringstream limitStream, paramStream;
-
-	limitStream.str(strValue);
+	std::stringstream limitStream(strValue), paramStream;
 
 	std::string strParam, strPrefixes;
 	while (std::getline(limitStream,strParam,',')) {
@@ -262,8 +258,7 @@ bool IrcTraits::ParseChanModes(const std::string &strValue) {
 	if (strValue.empty())
 		return false;
 
-	std::stringstream paramStream;
-	paramStream.str(strValue);
+	std::stringstream paramStream(strValue);
 
 	for (int i = 0; i < 4; ++i) {
 		if (!std::getline(paramStream,m_strChanModes[i],','))
@@ -279,9 +274,7 @@ bool IrcTraits::ParseMaxList(const std::string &strValue) {
 	if (strValue.empty())
 		return false;
 
-	std::stringstream limitStream, paramStream;
-
-	limitStream.str(strValue);
+	std::stringstream limitStream(strValue), paramStream;
 
 	std::string strParam, strModes;
 	while (std::getline(limitStream,strParam,',')) {
@@ -309,9 +302,7 @@ bool IrcTraits::ParsePrefix(const std::string &strValue) {
 	if (strValue.empty())
 		return true;
 
-	std::stringstream paramStream;
-
-	paramStream.str(strValue);
+	std::stringstream paramStream(strValue);
 
 	if (paramStream.get() != '(')
 		return false;

@@ -329,16 +329,17 @@ void IrcClient::OnNumeric(const char *pPrefix, int numeric, const char **pParams
 	case RPL_LUSERCLIENT:
 		if (!IsRegistered()) {
 			m_strCurrentNickname = pParams[0];
+			// RFC1459 guarantees RPL_LUSERCLIENT after successful registration
 			OnRegistered();
 		}
 		break;
 	case ERR_NICKNAMEINUSE:
 		if (!IsRegistered())
 		{
-			std::stringstream ss;
-			ss << m_strNickname << (rand() % 1000);
+			std::stringstream nickStream;
+			nickStream << m_strNickname << (rand() % 1000);
 
-			Send("NICK %s\r\n", ss.str().c_str());
+			Send("NICK %s\r\n", nickStream.str().c_str());
 		}
 		break;
 	}

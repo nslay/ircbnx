@@ -45,8 +45,7 @@ bool BnxMain::Load() {
 	if (strEntries.empty())
 		return false;
 
-	std::stringstream profileStream;
-	profileStream.str(strEntries);
+	std::stringstream profileStream(strEntries);
 
 	std::string strProfile;
 	while (std::getline(profileStream,strProfile,',')) {
@@ -116,15 +115,7 @@ void BnxMain::LoadBot(const IniFile::Section &clSection) {
 	pclBot->LoadResponseRules(strResponseRules);
 	pclBot->LoadAccessList(strAccessList);
 	pclBot->LoadShitList(strShitList);
-
-	if (!strHomeChannels.empty()) {
-		std::stringstream homeStream;
-		homeStream.str(strHomeChannels);
-
-		std::string strChannel;
-		while (std::getline(homeStream,strChannel,','))
-			pclBot->AddHomeChannel(strChannel);
-	}
+	pclBot->AddHomeChannels(strHomeChannels);
 
 	m_vBots.push_back(pclBot);
 }

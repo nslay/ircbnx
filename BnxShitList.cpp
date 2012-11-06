@@ -40,9 +40,7 @@ bool BnxShitList::Load() {
 		if (strLine.empty() || strLine[0] == ';')
 			continue;
 
-		std::stringstream lineStream;
-
-		lineStream.str(strLine);
+		std::stringstream lineStream(strLine);
 
 		IrcUser clMask;
 
@@ -72,8 +70,7 @@ void BnxShitList::Save() const {
 				continue;
 			}
 
-			std::stringstream lineStream;
-			lineStream.str(strLine);
+			std::stringstream lineStream(strLine);
 
 			IrcUser clMask;
 			if (!(lineStream >> clMask))

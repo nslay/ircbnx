@@ -42,14 +42,15 @@ public:
 	typedef BnxAccessSystem::UserSession UserSession;
 
 	BnxBot()
-	: m_pConnectTimer(NULL), m_pStatusTimer(NULL), m_bChatter(true) { }
+	: m_pConnectTimer(NULL), m_pFloodTimer(NULL), m_pVoteBanTimer(NULL), 
+		m_pChannelsTimer(NULL), m_bChatter(true) { }
 
 	virtual ~BnxBot();
 
 	void SetServerAndPort(const std::string &strServer, const std::string &strPort = "6667");
 	void SetNickServAndPassword(const std::string &strNickServ, const std::string &strPassword);
-	void AddHomeChannel(const std::string &channel);
-	void DeleteHomeChannel(const std::string &channel);
+	void AddHomeChannels(const std::string &strChannels);
+	void DeleteHomeChannels(const std::string &strChannels);
 	bool LoadResponseRules(const std::string &strFileName);
 	bool LoadAccessList(const std::string &strFilename);
 	bool LoadShitList(const std::string &strFilename);
@@ -139,8 +140,20 @@ private:
 		const IrcUser &clUser;
 	};
 
+	struct StringEquals {
+		StringEquals(const std::string &strString1_)
+		: strString1(strString1_) { }
+
+		bool operator()(const std::string &strString2) const {
+			return !IrcStrCaseCmp(strString1.c_str(),strString2.c_str());
+		}
+
+		const std::string &strString1;
+	};
+
 	std::string m_strServer, m_strPort, m_strNickServ, m_strNickServPassword;
-	struct event *m_pConnectTimer, *m_pStatusTimer;
+	struct event *m_pConnectTimer, *m_pFloodTimer, *m_pVoteBanTimer, 
+			*m_pChannelsTimer;
 
 	bool m_bChatter;
 
@@ -165,7 +178,9 @@ private:
 	void Unsquelch(const IrcUser &clser);
 
 	void OnConnectTimer(evutil_socket_t fd, short what);
-	void OnStatusTimer(evutil_socket_t fd, short what);
+	void OnFloodTimer(evutil_socket_t fd, short what);
+	void OnVoteBanTimer(evutil_socket_t fd, short what);
+	void OnChannelsTimer(evutil_socket_t fd, short what);
 };
 
 #endif // !BNXBOT_H
