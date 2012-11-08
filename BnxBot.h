@@ -47,6 +47,9 @@ public:
 
 	virtual ~BnxBot();
 
+	void SetProfileName(const std::string &strProfileName);
+	const std::string & GetProfileName() const;
+
 	void SetServerAndPort(const std::string &strServer, const std::string &strPort = "6667");
 	void SetNickServAndPassword(const std::string &strNickServ, const std::string &strPassword);
 	void AddHomeChannels(const std::string &strChannels);
@@ -151,7 +154,8 @@ private:
 		const std::string &strString1;
 	};
 
-	std::string m_strServer, m_strPort, m_strNickServ, m_strNickServPassword;
+	std::string m_strProfileName, m_strServer, m_strPort, m_strNickServ, 
+			m_strNickServPassword;
 	struct event *m_pConnectTimer, *m_pFloodTimer, *m_pVoteBanTimer, 
 			*m_pChannelsTimer;
 

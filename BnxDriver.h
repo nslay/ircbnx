@@ -23,8 +23,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef BNXMAIN_H
-#define BNXMAIN_H
+#ifndef BNXDRIVER_H
+#define BNXDRIVER_H
 
 #include <cstddef>
 #include <string>
@@ -32,28 +32,54 @@
 #include "IniFile.h"
 #include "BnxBot.h"
 
-class BnxMain {
+class BnxDriver {
 public:
-	BnxMain()
-	: m_strConfigFile("bot.ini") { }
+	typedef std::vector<BnxBot *>::const_iterator BotIterator;
 
-	~BnxMain();
+	static BnxDriver & GetInstance() {
+		return ms_clDriver;
+	}
+
+	~BnxDriver();
 
 	void SetConfigFile(const std::string &strConfigFile) {
 		m_strConfigFile = strConfigFile;
 	}
 
+	void Usage();
+	bool ParseArgs(int argc, char *argv[]);
 	bool Load();
-	void Run();
+	bool Run();
 	void Shutdown();
 	void Reset();
 
+	BotIterator BotBegin() const {
+		return m_vBots.begin();
+	}
+
+	BotIterator BotEnd() const {
+		return m_vBots.end();
+	}
+
+	BnxBot * GetBot(const std::string &strProfile) const;
+
 private:
+	static BnxDriver ms_clDriver;
+
+	BnxDriver()
+	: m_strConfigFile("bot.ini") { }
+
+	// Disabled
+	BnxDriver(const BnxDriver &);
+
 	std::string m_strConfigFile;
 	std::vector<BnxBot *> m_vBots;
 
 	void LoadBot(const IniFile::Section &clSection);
+
+	// Disabled
+	BnxDriver & operator=(const BnxDriver &);
 };
 
-#endif // !BNXMAIN_H
+#endif // !BNXDRIVER_H
 

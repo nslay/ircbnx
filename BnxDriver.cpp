@@ -25,13 +25,23 @@
 
 #include <sstream>
 #include "event2/event.h"
-#include "BnxMain.h"
+#include "BnxDriver.h"
 
-BnxMain::~BnxMain() {
+BnxDriver BnxDriver::ms_clDriver;
+
+BnxDriver::~BnxDriver() {
 	Reset();
 }
 
-bool BnxMain::Load() {
+void BnxDriver::Usage() {
+
+}
+
+bool BnxDriver::ParseArgs(int argc, char *argv[]) {
+	return true;
+}
+
+bool BnxDriver::Load() {
 	Reset();
 
 	IniFile clConfig;
@@ -56,7 +66,10 @@ bool BnxMain::Load() {
 	return !m_vBots.empty();
 }
 
-void BnxMain::Run() {
+bool BnxDriver::Run() {
+	if (!Load())
+		return false;
+
 	struct event_base *pEventBase;
 
 	pEventBase = event_base_new();
@@ -69,21 +82,23 @@ void BnxMain::Run() {
 	event_base_dispatch(pEventBase);
 
 	event_base_free(pEventBase);
+
+	return true;
 }
 
-void BnxMain::Shutdown() {
+void BnxDriver::Shutdown() {
 	for (size_t i = 0; i < m_vBots.size(); ++i)
 		m_vBots[i]->Shutdown();
 }
 
-void BnxMain::Reset() {
+void BnxDriver::Reset() {
 	for (size_t i = 0; i < m_vBots.size(); ++i)
 		delete m_vBots[i];
 
 	m_vBots.clear();
 }
 
-void BnxMain::LoadBot(const IniFile::Section &clSection) {
+void BnxDriver::LoadBot(const IniFile::Section &clSection) {
 	bool bEnabled = clSection.GetValue<bool>("enabled", true);
 
 	if (!bEnabled)
@@ -95,7 +110,14 @@ void BnxMain::LoadBot(const IniFile::Section &clSection) {
 	if (strServer.empty() || strNickname.empty())
 		return;
 
-	BnxBot *pclBot = new BnxBot();
+	BnxBot *pclBot = GetBot(clSection.GetName());
+
+	if (pclBot == NULL) {
+		pclBot = new BnxBot();
+		pclBot->SetProfileName(clSection.GetName());
+
+		m_vBots.push_back(pclBot);
+	}
 
 	std::string strPort = clSection.GetValue<std::string>("port", "6667");
 	std::string strUsername = clSection.GetValue<std::string>("username", "BnxBot");
@@ -116,7 +138,14 @@ void BnxMain::LoadBot(const IniFile::Section &clSection) {
 	pclBot->LoadAccessList(strAccessList);
 	pclBot->LoadShitList(strShitList);
 	pclBot->AddHomeChannels(strHomeChannels);
+}
 
-	m_vBots.push_back(pclBot);
+BnxBot * BnxDriver::GetBot(const std::string &strProfile) const {
+	for (size_t i = 0; i < m_vBots.size(); ++i) {
+		if (strProfile == m_vBots[i]->GetProfileName())
+			return m_vBots[i];
+	}
+
+	return NULL;
 }
 

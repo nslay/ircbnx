@@ -42,6 +42,14 @@ BnxBot::~BnxBot() {
 	Shutdown();
 }
 
+void BnxBot::SetProfileName(const std::string &strProfileName) {
+	m_strProfileName = strProfileName;
+}
+
+const std::string & BnxBot::GetProfileName() const {
+	return m_strProfileName;
+}
+
 void BnxBot::SetServerAndPort(const std::string &strServer, const std::string &strPort) {
 	m_strServer = strServer;
 	m_strPort = strPort;

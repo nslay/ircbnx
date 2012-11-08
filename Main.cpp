@@ -33,7 +33,7 @@
 
 #include <signal.h>
 #include <iostream>
-#include "BnxMain.h"
+#include "BnxDriver.h"
 
 int main(int argc, char **argv) {
 
@@ -51,16 +51,11 @@ int main(int argc, char **argv) {
 	signal(SIGPIPE, SIG_IGN);
 #endif // !_WIN32
 
-	BnxMain clBnxMain;
+	BnxDriver &clBnxDriver = BnxDriver::GetInstance();
 
-	clBnxMain.SetConfigFile("bot.ini");
+	clBnxDriver.ParseArgs(argc, argv);
 
-	if (!clBnxMain.Load()) {
-		std::cerr << "Could not configuration file (or no profiles enabled)." << std::endl;
-		return -1;
-	}
-
-	clBnxMain.Run();
+	clBnxDriver.Run();
 
 #ifdef _WIN32
 	WSACleanup();
