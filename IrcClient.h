@@ -61,6 +61,7 @@ public:
 	virtual void Disconnect();
 
 protected:
+	virtual void Log(const char *pFormat, ...);
 	virtual void Send(const char *pFormat, ...);
 	virtual void SendNow(const char *pFormat, ...);
 	virtual void SendLater(const char *pFormat, ...);

@@ -122,14 +122,14 @@ bool IrcClient::Connect(const std::string &strServer, const std::string &strPort
 	m_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
 	if (m_socket == INVALID_SOCKET) {
-		perror("socket");
+		Log("socket failed (%d): %s", errno, strerror(errno));
 		return false;
 	}
 
 #ifdef _WIN32
 	u_long opt = 1;
 	if (ioctlsocket(m_socket, FIONBIO, &opt) != 0) {
-		perror("ioctlsocket");
+		Log("ioctlsocket failed (%d)", WSAGetLastError());
 
 		CloseSocket();
 
@@ -139,7 +139,7 @@ bool IrcClient::Connect(const std::string &strServer, const std::string &strPort
 	int flags = fcntl(m_socket, F_GETFL);
 
 	if (fcntl(m_socket, F_SETFL, flags | O_NONBLOCK) == -1) {
-		perror("fcntl");
+		Log("fcntl failed (%d): %s", errno, strerror(errno));
 
 		CloseSocket();
 
@@ -157,7 +157,7 @@ bool IrcClient::Connect(const std::string &strServer, const std::string &strPort
 
 	int e = getaddrinfo(strServer.c_str(), strPort.c_str(), &hints, &pResults);
 	if (e != 0) {
-		fprintf(stderr, "%s\n", gai_strerror(e));
+		Log("getaddrinfo failed (%d): %s", e, gai_strerror(e));
 		CloseSocket();
 		return false;
 	}
@@ -166,15 +166,17 @@ bool IrcClient::Connect(const std::string &strServer, const std::string &strPort
 	e = connect(m_socket, pResults->ai_addr, (socklen_t)pResults->ai_addrlen);
 
 #ifdef _WIN32
-	if (e != 0 && WSAGetLastError() != WSAEWOULDBLOCK) {
-		perror("connect");
+	int iLastError = WSAGetLastError();
+
+	if (e != 0 && iLastError != WSAEWOULDBLOCK) {
+		Log("connect() failed (%d)", iLastError);
 		CloseSocket();
 		freeaddrinfo(pResults);
 		return false;
 	}
 #else // _WIN32
 	if (e != 0 && errno != EINPROGRESS) {
-		perror("connect");
+		Log("connect() failed (%d): %s", errno, strerror(errno));
 		CloseSocket();
 		freeaddrinfo(pResults);
 		return false;
@@ -205,6 +207,9 @@ bool IrcClient::Reconnect() {
 }
 
 void IrcClient::Disconnect() {
+	if (m_socket != INVALID_SOCKET)
+		Log("Disconnect.");
+
 	m_strCurrentServer.clear();
 	m_strCurrentPort.clear();
 	m_strCurrentNickname.clear();
@@ -236,6 +241,27 @@ void IrcClient::Disconnect() {
 		event_free(m_pSendTimer);
 		m_pSendTimer = NULL;
 	}
+}
+
+void IrcClient::Log(const char *pFormat, ...) {
+	time_t rawTime = 0;
+	time(&rawTime);
+
+	// XXX: Not thread-safe
+	struct tm *pLocalTime = localtime(&rawTime);
+
+	char aBuff[128] = "";
+	strftime(aBuff, sizeof(aBuff), "%c ", pLocalTime);
+
+	fputs(aBuff, stdout);
+
+	va_list ap;
+
+	va_start(ap, pFormat);
+	vprintf(pFormat, ap);
+	va_end(ap);
+
+	putchar('\n');
 }
 
 void IrcClient::Send(const char *pFormat, ...) {
@@ -302,6 +328,8 @@ void IrcClient::SendRaw(const void *pData, size_t dataSize) {
 }
 
 void IrcClient::OnConnect() {
+	Log("Connected.");
+
 	SendNow("NICK %s\r\n", m_strNickname.c_str());
 	SendNow("USER %s localhost localhost :%s\r\n", m_strUsername.c_str(), m_strRealName.c_str());
 
@@ -323,7 +351,7 @@ void IrcClient::OnNumeric(const char *pPrefix, int numeric, const char **pParams
 		for (unsigned int i = 1; i < numParams; ++i) {
 			//printf("Parsing: %s\n", pParams[i]);
 			if (!m_clIrcTraits.Parse(pParams[i]))
-				fprintf(stderr, "Failed to parse '%s'\n", pParams[i]);
+				Log("Failed to parse RPL_ISUPPORT: '%s'", pParams[i]);
 		}
 		break;
 	case RPL_LUSERCLIENT:
@@ -514,7 +542,13 @@ void IrcClient::OnRead(evutil_socket_t fd, short what) {
 		sizeof(m_stagingBuffer)-1-m_stagingBufferSize,0);
 #endif // !_WIN32
 
-	if (readSize <= 0) {
+	if (readSize == 0) {
+		Log("Remote host closed the connection.");
+		OnDisconnect();
+		return;
+	}
+	else if (readSize < 0) {
+		Log("recv() failed (%d): %s", errno, strerror(errno));
 		OnDisconnect();
 		return;
 	}

@@ -42,8 +42,8 @@ public:
 	typedef BnxAccessSystem::UserSession UserSession;
 
 	BnxBot()
-	: m_pConnectTimer(NULL), m_pFloodTimer(NULL), m_pVoteBanTimer(NULL), 
-		m_pChannelsTimer(NULL), m_bChatter(true) { }
+	: m_strLogFile("bot.log"), m_pConnectTimer(NULL), m_pFloodTimer(NULL), 
+		m_pVoteBanTimer(NULL), m_pChannelsTimer(NULL), m_bChatter(true) { }
 
 	virtual ~BnxBot();
 
@@ -69,6 +69,7 @@ protected:
 	ChannelIterator ChannelBegin();
 	ChannelIterator ChannelEnd();
 
+	virtual void Log(const char *pFormat, ...);
 	virtual bool ProcessCommand(const char *pSource, const char *pTarget, const char *pMessage);
 	virtual bool ProcessVoteBan(const char *pSource, const char *pTarget, const char *pMessage);
 	virtual void ProcessMessage(const char *pSource, const char *pTarget, const char *pMessage);
@@ -155,7 +156,7 @@ private:
 	};
 
 	std::string m_strProfileName, m_strServer, m_strPort, m_strNickServ, 
-			m_strNickServPassword;
+			m_strNickServPassword, m_strLogFile;
 	struct event *m_pConnectTimer, *m_pFloodTimer, *m_pVoteBanTimer, 
 			*m_pChannelsTimer;
 

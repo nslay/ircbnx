@@ -115,6 +115,8 @@ void BnxBot::StartUp() {
 	if (m_pConnectTimer != NULL)
 		return;
 
+	Log("Starting up ...");
+
 	m_pConnectTimer = event_new(GetEventBase(), -1, 0, &Dispatch<&BnxBot::OnConnectTimer>, this);
 	m_pFloodTimer = event_new(GetEventBase(), -1, EV_PERSIST, &Dispatch<&BnxBot::OnFloodTimer>, this);
 	m_pVoteBanTimer = event_new(GetEventBase(), -1, EV_PERSIST, &Dispatch<&BnxBot::OnVoteBanTimer>, this);
@@ -128,6 +130,7 @@ void BnxBot::StartUp() {
 
 void BnxBot::Shutdown() {
 	SendNow("QUIT :Shutting down ...\r\n");
+	Log("Shutting down ...");
 
 	Disconnect();
 
@@ -180,6 +183,37 @@ BnxBot::ChannelIterator BnxBot::ChannelBegin() {
 
 BnxBot::ChannelIterator BnxBot::ChannelEnd() {
 	return m_vCurrentChannels.end();
+}
+
+void BnxBot::Log(const char *pFormat, ...) {
+	FILE *pFile = fopen(m_strLogFile.c_str(), "a");
+
+	if (pFile == NULL)
+		return;
+
+	time_t rawTime = 0;
+	time(&rawTime);
+	
+	// XXX: Not thread-safe
+	struct tm *pLocalTime = localtime(&rawTime);
+
+	char aBuff[128] = "";
+	strftime(aBuff, sizeof(aBuff), "%c ", pLocalTime);
+
+	fputs(aBuff, pFile);
+	fputs(GetProfileName().c_str(), pFile);
+
+	fputc(' ', pFile);
+
+	va_list ap;
+
+	va_start(ap, pFormat);
+	vfprintf(pFile, pFormat, ap);
+	va_end(ap);
+
+	fputc('\n', pFile);
+
+	fclose(pFile);
 }
 
 bool BnxBot::ProcessCommand(const char *pSource, const char *pTarget, const char *pMessage) {
@@ -812,7 +846,7 @@ void BnxBot::OnKick(const char *pSource, const char *pChannel, const char *pUser
 		m_clShitList.AddMask(IrcUser("*","*",clUser.GetHostname()));
 		m_clShitList.Save();
 
-		// TODO: Log that this user was shitlisted
+		Log("%s kicked me out of %s, so I shitlisted him.", pSource, pChannel);
 
 		DeleteChannel(channelItr);
 		return;
@@ -954,7 +988,7 @@ void BnxBot::OnMode(const char *pSource, const char *pTarget, const char *pMode,
 		}
 
 		if (numParams != 0) {
-			std::cerr << "Didn't process modes correctly!" << std::endl;
+			Log("Didn't process modes correctly!");
 		}
 	}
 }
@@ -1012,10 +1046,13 @@ void BnxBot::OnCtcpTime(const char *pSource, const char *pTarget) {
 bool BnxBot::OnCommandLogin(const IrcUser &clUser, const std::string &strPassword) {
 
 	if (m_clAccessSystem.Login(clUser, strPassword)) {
+		Log("%s validated.", clUser.GetHostmask().c_str());
 		Send("PRIVMSG %s :Your wish is my command, master.\r\n", clUser.GetNickname().c_str());
 
 		return true;
 	}
+
+	Log("Login attempt by %s, pass %s failed.", clUser.GetHostmask().c_str(), strPassword.c_str());
 
 	return false;
 }
@@ -1540,8 +1577,10 @@ void BnxBot::OnFloodTimer(evutil_socket_t fd, short what) {
 
 	m_clFloodDetector.Detect(vFlooders);
 
-	for (size_t i = 0; i < vFlooders.size(); ++i)
+	for (size_t i = 0; i < vFlooders.size(); ++i) {
+		Log("Ignoring %s for flooding", vFlooders[i].GetHostmask().c_str());
 		Squelch(IrcUser("*","*",vFlooders[i].GetHostname()));
+	}
 }
 
 void BnxBot::OnVoteBanTimer(evutil_socket_t fd, short what) {
