@@ -34,6 +34,8 @@
 // Support for RPL_ISUPPORT
 class IrcTraits {
 public:
+	typedef std::vector<std::pair<std::string, unsigned int> >::const_iterator LimitIterator;
+
 	enum ChanModesType { TYPE_A = 0, TYPE_B, TYPE_C, TYPE_D };
 
 	IrcTraits() {
@@ -48,10 +50,14 @@ public:
 		return m_caseMapping;
 	}
 
-	const std::pair<std::string, unsigned int> * GetChanLimit(char prefix) const;
+	LimitIterator GetChanLimit(char prefix) const;
 
-	const std::vector<std::pair<std::string, unsigned int> > & GetChanLimit() const {
-		return m_vChanLimit;
+	LimitIterator ChanLimitBegin() const {
+		return m_vChanLimit.begin();
+	}
+
+	LimitIterator ChanLimitEnd() const {
+		return m_vChanLimit.end();
 	}
 
 	const std::string & GetChanModes(ChanModesType type) const {
@@ -80,10 +86,14 @@ public:
 		return m_kickLen;
 	}
 
-	const std::pair<std::string, unsigned int> * GetMaxList(char mode) const;
+	LimitIterator GetMaxList(char mode) const;
 
-	const std::vector<std::pair<std::string, unsigned int> > & GetMaxList() const {
-		return m_vMaxList;
+	LimitIterator MaxListBegin() const {
+		return m_vMaxList.begin();
+	}
+
+	LimitIterator MaxListEnd() const {
+		return m_vMaxList.end();
 	}
 
 	unsigned int GetModes() const {

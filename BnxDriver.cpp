@@ -128,6 +128,7 @@ void BnxDriver::LoadBot(const IniFile::Section &clSection) {
 	std::string strHomeChannels = clSection.GetValue<std::string>("homechannels", "");
 	std::string strNickServ = clSection.GetValue<std::string>("nickserv", "");
 	std::string strNickServPassword = clSection.GetValue<std::string>("nickservpassword", "");
+	bool bLegacyAntiIdle = clSection.GetValue<bool>("antiidle", false);
 	
 	pclBot->SetServerAndPort(strServer, strPort);
 	pclBot->SetNickServAndPassword(strNickServ, strNickServPassword);
@@ -137,7 +138,8 @@ void BnxDriver::LoadBot(const IniFile::Section &clSection) {
 	pclBot->LoadResponseRules(strResponseRules);
 	pclBot->LoadAccessList(strAccessList);
 	pclBot->LoadShitList(strShitList);
-	pclBot->AddHomeChannels(strHomeChannels);
+	pclBot->SetHomeChannels(strHomeChannels);
+	pclBot->SetLegacyAntiIdle(bLegacyAntiIdle);
 }
 
 BnxBot * BnxDriver::GetBot(const std::string &strProfile) const {

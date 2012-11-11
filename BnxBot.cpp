@@ -60,6 +60,11 @@ void BnxBot::SetNickServAndPassword(const std::string &strNickServ, const std::s
 	m_strNickServPassword = strPassword;
 }
 
+void BnxBot::SetHomeChannels(const std::string &strChannels) {
+	m_vHomeChannels.clear();
+	AddHomeChannels(strChannels);
+}
+
 void BnxBot::AddHomeChannels(const std::string &strChannels) {
 	std::stringstream channelStream(strChannels);
 
@@ -111,6 +116,10 @@ bool BnxBot::LoadShitList(const std::string &strFilename) {
 	return m_clShitList.Load();
 }
 
+void BnxBot::SetLegacyAntiIdle(bool bLegacy) {
+	m_bLegacyAntiIdle = bLegacy;
+}
+
 void BnxBot::StartUp() {
 	if (m_pConnectTimer != NULL)
 		return;
@@ -121,6 +130,7 @@ void BnxBot::StartUp() {
 	m_pFloodTimer = event_new(GetEventBase(), -1, EV_PERSIST, &Dispatch<&BnxBot::OnFloodTimer>, this);
 	m_pVoteBanTimer = event_new(GetEventBase(), -1, EV_PERSIST, &Dispatch<&BnxBot::OnVoteBanTimer>, this);
 	m_pChannelsTimer = event_new(GetEventBase(), -1, EV_PERSIST, &Dispatch<&BnxBot::OnChannelsTimer>, this);
+	m_pAntiIdleTimer = event_new(GetEventBase(), -1, EV_PERSIST, &Dispatch<&BnxBot::OnAntiIdleTimer>, this);
 
 	struct timeval tv;
 	tv.tv_sec = tv.tv_usec = 0;
@@ -157,6 +167,12 @@ void BnxBot::Shutdown() {
 		event_free(m_pChannelsTimer);
 		m_pChannelsTimer = NULL;
 	}
+
+	if (m_pAntiIdleTimer != NULL) {
+		event_del(m_pAntiIdleTimer);
+		event_free(m_pAntiIdleTimer);
+		m_pAntiIdleTimer = NULL;
+	}
 }
 
 void BnxBot::Disconnect() {
@@ -170,6 +186,9 @@ void BnxBot::Disconnect() {
 
 	if (m_pChannelsTimer != NULL)
 		event_del(m_pChannelsTimer);
+
+	if (m_pAntiIdleTimer != NULL)
+		event_del(m_pAntiIdleTimer);
 
 	m_vCurrentChannels.clear();
 	m_vSquelchedUsers.clear();
@@ -738,8 +757,11 @@ void BnxBot::OnRegistered() {
 	event_add(m_pFloodTimer, &tv);
 	event_add(m_pVoteBanTimer, &tv);
 
-	tv.tv_sec = 30;
+	tv.tv_sec = 10;
 	event_add(m_pChannelsTimer, &tv);
+
+	tv.tv_sec = 300;
+	event_add(m_pAntiIdleTimer, &tv);
 
 	if (GetNickname() == GetCurrentNickname() && 
 		!m_strNickServ.empty() && !m_strNickServPassword.empty()) {
@@ -1611,6 +1633,16 @@ void BnxBot::OnChannelsTimer(evutil_socket_t fd, short what) {
 
 		if (channelItr == ChannelEnd())
 			Send("JOIN %s\r\n", m_vHomeChannels[i].c_str());
+	}
+}
+
+void BnxBot::OnAntiIdleTimer(evutil_socket_t fd, short what) {
+	if (!m_bLegacyAntiIdle || m_vCurrentChannels.empty()) {
+		Send("PING :%s\r\n", GetCurrentServer().c_str());
+	}
+	else {
+		for (size_t i = 0; i < m_vCurrentChannels.size(); ++i)
+			Say(m_vCurrentChannels[i].GetName().c_str(), "/me thinks anti-idle messages are annoying - don't you?");
 	}
 }
 

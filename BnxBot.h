@@ -43,7 +43,8 @@ public:
 
 	BnxBot()
 	: m_strLogFile("bot.log"), m_pConnectTimer(NULL), m_pFloodTimer(NULL), 
-		m_pVoteBanTimer(NULL), m_pChannelsTimer(NULL), m_bChatter(true) { }
+		m_pVoteBanTimer(NULL), m_pChannelsTimer(NULL), m_pAntiIdleTimer(NULL), 
+		m_bChatter(true), m_bLegacyAntiIdle(false) { }
 
 	virtual ~BnxBot();
 
@@ -52,11 +53,13 @@ public:
 
 	void SetServerAndPort(const std::string &strServer, const std::string &strPort = "6667");
 	void SetNickServAndPassword(const std::string &strNickServ, const std::string &strPassword);
+	void SetHomeChannels(const std::string &strChannels);
 	void AddHomeChannels(const std::string &strChannels);
 	void DeleteHomeChannels(const std::string &strChannels);
 	bool LoadResponseRules(const std::string &strFileName);
 	bool LoadAccessList(const std::string &strFilename);
 	bool LoadShitList(const std::string &strFilename);
+	void SetLegacyAntiIdle(bool bLegacy);
 
 	void StartUp();
 	void Shutdown();
@@ -158,9 +161,9 @@ private:
 	std::string m_strProfileName, m_strServer, m_strPort, m_strNickServ, 
 			m_strNickServPassword, m_strLogFile;
 	struct event *m_pConnectTimer, *m_pFloodTimer, *m_pVoteBanTimer, 
-			*m_pChannelsTimer;
+			*m_pChannelsTimer, *m_pAntiIdleTimer;
 
-	bool m_bChatter;
+	bool m_bChatter, m_bLegacyAntiIdle;
 
 	std::vector<std::string> m_vHomeChannels;
 	std::vector<IrcUser> m_vSquelchedUsers;
@@ -186,6 +189,7 @@ private:
 	void OnFloodTimer(evutil_socket_t fd, short what);
 	void OnVoteBanTimer(evutil_socket_t fd, short what);
 	void OnChannelsTimer(evutil_socket_t fd, short what);
+	void OnAntiIdleTimer(evutil_socket_t fd, short what);
 };
 
 #endif // !BNXBOT_H
