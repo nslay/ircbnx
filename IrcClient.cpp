@@ -356,6 +356,7 @@ void IrcClient::OnNumeric(const char *pPrefix, int numeric, const char **pParams
 		break;
 	case RPL_LUSERCLIENT:
 		if (!IsRegistered()) {
+			m_strCurrentServer = pPrefix;
 			m_strCurrentNickname = pParams[0];
 			// RFC1459 guarantees RPL_LUSERCLIENT after successful registration
 			OnRegistered();
