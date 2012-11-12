@@ -44,7 +44,7 @@ public:
 	BnxBot()
 	: m_strLogFile("bot.log"), m_pConnectTimer(NULL), m_pFloodTimer(NULL), 
 		m_pVoteBanTimer(NULL), m_pChannelsTimer(NULL), m_pAntiIdleTimer(NULL), 
-		m_bChatter(true), m_bLegacyAntiIdle(false) { }
+		m_bChatter(true) { }
 
 	virtual ~BnxBot();
 
@@ -59,7 +59,6 @@ public:
 	bool LoadResponseRules(const std::string &strFileName);
 	bool LoadAccessList(const std::string &strFilename);
 	bool LoadShitList(const std::string &strFilename);
-	void SetLegacyAntiIdle(bool bLegacy);
 
 	void StartUp();
 	void Shutdown();
@@ -163,7 +162,7 @@ private:
 	struct event *m_pConnectTimer, *m_pFloodTimer, *m_pVoteBanTimer, 
 			*m_pChannelsTimer, *m_pAntiIdleTimer;
 
-	bool m_bChatter, m_bLegacyAntiIdle;
+	bool m_bChatter;
 
 	std::vector<std::string> m_vHomeChannels;
 	std::vector<IrcUser> m_vSquelchedUsers;

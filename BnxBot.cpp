@@ -116,10 +116,6 @@ bool BnxBot::LoadShitList(const std::string &strFilename) {
 	return m_clShitList.Load();
 }
 
-void BnxBot::SetLegacyAntiIdle(bool bLegacy) {
-	m_bLegacyAntiIdle = bLegacy;
-}
-
 void BnxBot::StartUp() {
 	if (m_pConnectTimer != NULL)
 		return;
@@ -760,7 +756,7 @@ void BnxBot::OnRegistered() {
 	tv.tv_sec = 10;
 	event_add(m_pChannelsTimer, &tv);
 
-	tv.tv_sec = 300;
+	tv.tv_sec = 30;
 	event_add(m_pAntiIdleTimer, &tv);
 
 	if (GetNickname() == GetCurrentNickname() && 
@@ -978,7 +974,9 @@ void BnxBot::OnMode(const char *pSource, const char *pTarget, const char *pMode,
 		// Get traits from IRC (needed to process modes)
 		const IrcTraits &clTraits = GetIrcTraits();
 
-		bool bSetMode = (*pMode++ != '-');
+		const char *pModeString = pMode;
+
+		bool bSetMode = true;
 
 		for ( ;*pMode != '\0'; ++pMode) {
 			switch (*pMode) {
@@ -988,6 +986,12 @@ void BnxBot::OnMode(const char *pSource, const char *pTarget, const char *pMode,
 
 				++pParams;
 				--numParams;
+				break;
+			case '-':
+				bSetMode = false;
+				break;
+			case '+':
+				bSetMode = true;
 				break;
 			default:
 				// Process all other modes
@@ -1010,7 +1014,7 @@ void BnxBot::OnMode(const char *pSource, const char *pTarget, const char *pMode,
 		}
 
 		if (numParams != 0) {
-			Log("Didn't process modes correctly!");
+			Log("Didn't process modes correctly: %s", pModeString);
 		}
 	}
 }
@@ -1637,12 +1641,6 @@ void BnxBot::OnChannelsTimer(evutil_socket_t fd, short what) {
 }
 
 void BnxBot::OnAntiIdleTimer(evutil_socket_t fd, short what) {
-	if (!m_bLegacyAntiIdle || m_vCurrentChannels.empty()) {
-		Send("PING :%s\r\n", GetCurrentServer().c_str());
-	}
-	else {
-		for (size_t i = 0; i < m_vCurrentChannels.size(); ++i)
-			Say(m_vCurrentChannels[i].GetName().c_str(), "/me thinks anti-idle messages are annoying - don't you?");
-	}
+	Send("PING :%s\r\n", GetCurrentServer().c_str());
 }
 
