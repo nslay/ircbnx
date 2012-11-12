@@ -36,8 +36,8 @@ class IrcClient {
 public:
 	IrcClient()
 	: m_socket(INVALID_SOCKET), m_strUsername("IrcClient"), m_strRealName("IrcClient"), 
-	m_stagingBufferSize(0), m_pEventBase(NULL), m_pReadEvent(NULL), m_pWriteEvent(NULL), 
-	m_pSendTimer(NULL) { }
+	m_stagingBufferSize(0), m_lastRecvTime(0), m_pEventBase(NULL), m_pReadEvent(NULL), 
+	m_pWriteEvent(NULL), m_pSendTimer(NULL) { }
 
 	virtual ~IrcClient();
 
@@ -51,6 +51,7 @@ public:
 	const std::string & GetCurrentPort() const;
 	const IrcTraits & GetIrcTraits() const;
 	bool IsRegistered() const;
+	time_t GetLastRecvTime() const;
 
 	virtual void SetNickname(const std::string &strNickname);
 	virtual void SetUsername(const std::string &strUsername);
@@ -104,6 +105,7 @@ private:
 
 	char m_stagingBuffer[4096];
 	size_t m_stagingBufferSize;
+	time_t m_lastRecvTime;
 
 	struct event_base *m_pEventBase;
 	struct event *m_pReadEvent, *m_pWriteEvent, *m_pSendTimer;

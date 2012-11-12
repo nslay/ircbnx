@@ -103,6 +103,10 @@ bool IrcClient::IsRegistered() const {
 	return !m_strCurrentNickname.empty();
 }
 
+time_t IrcClient::GetLastRecvTime() const {
+	return m_lastRecvTime;
+}
+
 void IrcClient::SetNickname(const std::string &strNickname) {
 	m_strNickname = strNickname;
 }
@@ -221,6 +225,7 @@ void IrcClient::Disconnect() {
 
 	// This is REALLY important since this can be called while OnRead() is still processing messages
 	m_stagingBufferSize = 0;
+	m_lastRecvTime = 0;
 
 	CloseSocket();
 
@@ -553,6 +558,8 @@ void IrcClient::OnRead(evutil_socket_t fd, short what) {
 		OnDisconnect();
 		return;
 	}
+
+	time(&m_lastRecvTime);
 
 	m_stagingBufferSize += readSize;
 

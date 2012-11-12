@@ -756,7 +756,7 @@ void BnxBot::OnRegistered() {
 	tv.tv_sec = 10;
 	event_add(m_pChannelsTimer, &tv);
 
-	tv.tv_sec = 30;
+	tv.tv_sec = 60;
 	event_add(m_pAntiIdleTimer, &tv);
 
 	if (GetNickname() == GetCurrentNickname() && 
@@ -1641,6 +1641,7 @@ void BnxBot::OnChannelsTimer(evutil_socket_t fd, short what) {
 }
 
 void BnxBot::OnAntiIdleTimer(evutil_socket_t fd, short what) {
-	Send("PING :%s\r\n", GetCurrentServer().c_str());
+	if (time(NULL)-GetLastRecvTime() > 30)
+		Send("PING :%s\r\n", GetCurrentServer().c_str());
 }
 
