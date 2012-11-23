@@ -37,7 +37,8 @@ public:
 	typedef std::vector<BnxBot *>::const_iterator BotIterator;
 
 	static BnxDriver & GetInstance() {
-		return ms_clDriver;
+		static BnxDriver clDriver;
+		return clDriver;
 	}
 
 	~BnxDriver();
@@ -64,8 +65,6 @@ public:
 	BnxBot * GetBot(const std::string &strProfile) const;
 
 private:
-	static BnxDriver ms_clDriver;
-
 	BnxDriver()
 	: m_strConfigFile("bot.ini") { }
 

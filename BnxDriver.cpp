@@ -27,8 +27,6 @@
 #include "event2/event.h"
 #include "BnxDriver.h"
 
-BnxDriver BnxDriver::ms_clDriver;
-
 BnxDriver::~BnxDriver() {
 	Reset();
 }
