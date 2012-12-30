@@ -25,6 +25,7 @@
 
 #include <sstream>
 #include "event2/event.h"
+#include "getopt.h"
 #include "BnxDriver.h"
 
 BnxDriver::~BnxDriver() {
@@ -32,10 +33,24 @@ BnxDriver::~BnxDriver() {
 }
 
 void BnxDriver::Usage() {
-
+	// TODO: Get program name
+	std::cerr << "Usage: ircbnx [-c bot.ini]" << std::endl;
 }
 
 bool BnxDriver::ParseArgs(int argc, char *argv[]) {
+	int c;
+
+	while ((c = getopt(argc, argv, "c:")) != -1) {
+		switch (c) {
+		case 'c':
+			m_strConfigFile = optarg;
+			break;
+		default:
+			Usage();
+			return false;
+		}
+	}
+
 	return true;
 }
 

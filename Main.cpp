@@ -53,7 +53,8 @@ int main(int argc, char **argv) {
 
 	BnxDriver &clBnxDriver = BnxDriver::GetInstance();
 
-	clBnxDriver.ParseArgs(argc, argv);
+	if (!clBnxDriver.ParseArgs(argc, argv))
+		return -1;
 
 	clBnxDriver.Run();
 
