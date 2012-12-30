@@ -28,7 +28,6 @@
 
 #include <string>
 #include <deque>
-#include <cstdarg>
 #include "IrcTraits.h"
 #include "IrcCounter.h"
 #include "event2/event.h"
