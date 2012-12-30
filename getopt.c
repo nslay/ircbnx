@@ -38,6 +38,7 @@ static char sccsid[] = "@(#)getopt.c	8.3 (Berkeley) 4/27/95";
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "Windows.h"
 #include "getopt.h"
 
 int	opterr = 1,		/* if error message should be printed */
@@ -133,9 +134,13 @@ getopt(int nargc, char * const nargv[], const char *ostr)
 }
 
 const char * _getprogname() {
-	char *pgmptr = NULL;
-	_get_pgmptr(&pgmptr);
-	return strrchr(pgmptr,'\\')+1;
+	static char aProgName[MAX_PATH];
+
+	GetModuleFileName(NULL, aProgName, sizeof(aProgName));
+
+	const char *pBase = strrchr(aProgName,'\\');
+
+	return pBase == NULL ? aProgName : pBase+1;
 }
 
 #endif /* _WIN32 */
