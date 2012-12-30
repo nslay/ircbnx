@@ -38,6 +38,14 @@
 #pragma warning(disable:4996)
 #endif // _MSC_VER
 
+std::string BnxBot::GetVersionString() {
+	std::stringstream versionStream;
+
+	versionStream << "IRCBNX Chatterbot " << MAJOR_VERSION << '.' << MINOR_VERSION;
+
+	return versionStream.str();
+}
+
 BnxBot::~BnxBot() {
 	Shutdown();
 }
@@ -999,7 +1007,7 @@ void BnxBot::OnCtcpVersion(const char *pSource, const char *pTarget) {
 	m_clFloodDetector.Hit(clUser);
 
 	CtcpEncoder clEncoder;
-	clEncoder.Encode(MakeCtcpMessage("VERSION", "IRCBNX Chatterbot"));
+	clEncoder.Encode(MakeCtcpMessage("VERSION", GetVersionString().c_str()));
 
 	Send(AUTO, "NOTICE %s :%s\r\n", clUser.GetNickname().c_str(), clEncoder.GetRaw());
 }

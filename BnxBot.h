@@ -41,6 +41,10 @@ class BnxBot : public IrcClient {
 public:
 	typedef BnxAccessSystem::UserSession UserSession;
 
+	enum { MAJOR_VERSION = 1, MINOR_VERSION = 0 };
+
+	static std::string GetVersionString();
+
 	BnxBot()
 	: m_strLogFile("bot.log"), m_pConnectTimer(NULL), m_pFloodTimer(NULL), 
 		m_pVoteBanTimer(NULL), m_pChannelsTimer(NULL), m_pAntiIdleTimer(NULL), 

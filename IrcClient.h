@@ -34,8 +34,6 @@
 
 class IrcClient {
 public:
-	enum WhenType { AUTO = 0, NOW, LATER };
-
 	IrcClient()
 	: m_socket(INVALID_SOCKET), m_strUsername("IrcClient"), m_strRealName("IrcClient"), 
 	m_stagingBufferSize(0), m_lastRecvTime(0), m_pEventBase(NULL), m_pReadEvent(NULL), 
@@ -64,6 +62,8 @@ public:
 	virtual void Disconnect();
 
 protected:
+	enum WhenType { AUTO = 0, NOW, LATER };
+
 	virtual void Log(const char *pFormat, ...);
 	virtual void Send(WhenType eWhen, const char *pFormat, ...);
 	virtual void SendRaw(const void *pData, size_t dataSize);

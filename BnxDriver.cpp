@@ -34,17 +34,20 @@ BnxDriver::~BnxDriver() {
 
 void BnxDriver::Usage() {
 	// TODO: Get program name
-	std::cerr << "Usage: ircbnx [-c bot.ini]" << std::endl;
+	std::cerr << "Usage: ircbnx [-v] [-c bot.ini]" << std::endl;
 }
 
 bool BnxDriver::ParseArgs(int argc, char *argv[]) {
 	int c;
 
-	while ((c = getopt(argc, argv, "c:")) != -1) {
+	while ((c = getopt(argc, argv, "c:v")) != -1) {
 		switch (c) {
 		case 'c':
-			m_strConfigFile = optarg;
+			SetConfigFile(optarg);
 			break;
+		case 'v':
+			std::cout << BnxBot::GetVersionString() << std::endl;
+			return false;
 		default:
 			Usage();
 			return false;
