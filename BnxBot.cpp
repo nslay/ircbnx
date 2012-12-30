@@ -135,7 +135,7 @@ void BnxBot::StartUp() {
 }
 
 void BnxBot::Shutdown() {
-	SendNow("QUIT :Shutting down ...\r\n");
+	Send(NOW, "QUIT :Shutting down ...\r\n");
 	Log("Shutting down ...");
 
 	Disconnect();
@@ -491,10 +491,10 @@ void BnxBot::ProcessMessage(const char *pSource, const char *pTarget, const char
 
 			IrcUser clBanMask("*","*",clUser.GetHostname());
 
-			SendLater("PRIVMSG %s :I don't appreciate being spoken to in that manner, %s.\r\n", 
+			Send(LATER, "PRIVMSG %s :I don't appreciate being spoken to in that manner, %s.\r\n", 
 					pTarget, clUser.GetNickname().c_str());
-			SendLater("MODE %s +b %s\r\n", pTarget, clBanMask.GetHostmask().c_str());
-			SendLater("KICK %s %s :for inappropriate language\r\n", pTarget, 
+			Send(LATER, "MODE %s +b %s\r\n", pTarget, clBanMask.GetHostmask().c_str());
+			Send(LATER, "KICK %s %s :for inappropriate language\r\n", pTarget, 
 					clUser.GetNickname().c_str());
 
 			return;
@@ -511,7 +511,7 @@ void BnxBot::ProcessMessage(const char *pSource, const char *pTarget, const char
 	if (IrcMatch("*shut*up*", pMessage)) {
 		Squelch(IrcUser("*", "*", clUser.GetHostname()));
 
-		Send("PRIVMSG %s :%sOK, I won't talk to you anymore.\r\n", pReplyTo, strPrefix.c_str());
+		Send(AUTO, "PRIVMSG %s :%sOK, I won't talk to you anymore.\r\n", pReplyTo, strPrefix.c_str());
 		return;
 	}
 
@@ -528,10 +528,10 @@ void BnxBot::ProcessMessage(const char *pSource, const char *pTarget, const char
 		findPos += strSourceNick.size();
 	}
 	
-	Say(pReplyTo, "%s%s", strPrefix.c_str(), strResponse.c_str());
+	Say(AUTO, pReplyTo, "%s%s", strPrefix.c_str(), strResponse.c_str());
 }
 
-void BnxBot::Say(const char *pTarget, const char *pFormat, ...) {
+void BnxBot::Say(WhenType eWhen, const char *pTarget, const char *pFormat, ...) {
 	CtcpEncoder clEncoder;
 	char aBuff[513];
 	va_list ap;
@@ -570,49 +570,7 @@ void BnxBot::Say(const char *pTarget, const char *pFormat, ...) {
 		}
 	}
 
-	Send("PRIVMSG %s :%s\r\n", pTarget, pMessage);
-}
-
-void BnxBot::SayLater(const char *pTarget, const char *pFormat, ...) {
-	CtcpEncoder clEncoder;
-	char aBuff[513];
-	va_list ap;
-
-	va_start(ap, pFormat);
-
-	vsnprintf(aBuff, sizeof(aBuff), pFormat, ap);
-
-	va_end(ap);
-
-	const char *pMessage = aBuff;
-
-	if (pMessage[0] == '/') {
-		std::stringstream commandStream(pMessage);
-
-		std::string strCommand;
-
-		commandStream >> strCommand;
-
-		if (strCommand == "/me" || strCommand == "/action") {
-			std::string strLine;
-
-			commandStream.get();
-
-			if (!std::getline(commandStream,strLine))
-				return;
-
-			if (!clEncoder.Encode(MakeCtcpMessage("ACTION",strLine.c_str())))
-				return;
-
-			pMessage = clEncoder.GetRaw();
-		}
-		else {
-			// Unrecognized command
-			return;
-		}
-	}
-
-	SendLater("PRIVMSG %s :%s\r\n", pTarget, pMessage);
+	Send(eWhen, "PRIVMSG %s :%s\r\n", pTarget, pMessage);
 }
 
 BnxBot::ChannelIterator BnxBot::GetChannel(const char *pChannel) {
@@ -632,92 +590,92 @@ void BnxBot::SplatterKick(const char *pChannel, const IrcUser &clUser) {
 
 	switch(rand() % 12) {
 	case 0:
-		SayLater(pChannel, "Congratulations, %s - you're the lucky winner of a one-way trip to The Void!", 
+		Say(LATER, pChannel, "Congratulations, %s - you're the lucky winner of a one-way trip to The Void!", 
 				strNickname.c_str());
-		SendLater("MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
-		SendLater("KICK %s %s :don't forget to write!\r\n", pChannel, strNickname.c_str());
+		Send(LATER, "MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		Send(LATER, "KICK %s %s :don't forget to write!\r\n", pChannel, strNickname.c_str());
 		break;
 	case 1:
-		SayLater(pChannel, "%s: What is your real name?", strNickname.c_str());
-		SayLater(pChannel, "%s: What is your quest?", strNickname.c_str());
-		SayLater(pChannel, "%s: What is the average velocity of a coconut-laden swallow?", 
+		Say(LATER, pChannel, "%s: What is your real name?", strNickname.c_str());
+		Say(LATER, pChannel, "%s: What is your quest?", strNickname.c_str());
+		Say(LATER, pChannel, "%s: What is the average velocity of a coconut-laden swallow?", 
 				strNickname.c_str());
-		SendLater("MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
-		SendLater("KICK %s %s\r\n", pChannel, strNickname.c_str());
-		SayLater(pChannel, "I guess he didn't know!");
+		Send(LATER, "MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		Send(LATER, "KICK %s %s\r\n", pChannel, strNickname.c_str());
+		Say(LATER, pChannel, "I guess he didn't know!");
 		break;
 	case 2:
-		SayLater(pChannel, "/me smells something bad...");
-		SayLater(pChannel, "/me looks at %s...", strNickname.c_str());
-		SendLater("MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
-		SendLater("KICK %s %s :Ah! Smell's gone!!\r\n", pChannel, strNickname.c_str());
+		Say(LATER, pChannel, "/me smells something bad...");
+		Say(LATER, pChannel, "/me looks at %s...", strNickname.c_str());
+		Send(LATER, "MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		Send(LATER, "KICK %s %s :Ah! Smell's gone!!\r\n", pChannel, strNickname.c_str());
 		break;
 	case 3:
-		SayLater(pChannel, "/me says \"YER OUTTA HERE, PAL!\"");
-		SayLater(pChannel, "/me takes %s by the balls and throws him into The Void.", 
+		Say(LATER, pChannel, "/me says \"YER OUTTA HERE, PAL!\"");
+		Say(LATER, pChannel, "/me takes %s by the balls and throws him into The Void.", 
 				strNickname.c_str());
-		SendLater("MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
-		SendLater("KICK %s %s :AND STAY OUT!!\r\n", pChannel, strNickname.c_str());
+		Send(LATER, "MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		Send(LATER, "KICK %s %s :AND STAY OUT!!\r\n", pChannel, strNickname.c_str());
 		break;
 	case 4:
-		SayLater(pChannel, "It's April, the season of growing, and the F-ing weeds are popping up everywhere.");
-		SayLater(pChannel, "/me spots a weed in %s", pChannel);
-		SayLater(pChannel, "/me grabs a bottle of Round-Up and spritzes %s liberally.", 
+		Say(LATER, pChannel, "It's April, the season of growing, and the F-ing weeds are popping up everywhere.");
+		Say(LATER, pChannel, "/me spots a weed in %s", pChannel);
+		Say(LATER, pChannel, "/me grabs a bottle of Round-Up and spritzes %s liberally.", 
 				strNickname.c_str());
-		SendLater("MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
-		SendLater("KICK %s %s :FSSST! Weed's gone!\r\n", pChannel, strNickname.c_str());
+		Send(LATER, "MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		Send(LATER, "KICK %s %s :FSSST! Weed's gone!\r\n", pChannel, strNickname.c_str());
 		break;
 	case 5:
-		SayLater(pChannel, "/me pulls out his portable chalkboard.");
-		SayLater(pChannel, "/me shows %s the function of relativity for chaos mathematics.", 
+		Say(LATER, pChannel, "/me pulls out his portable chalkboard.");
+		Say(LATER, pChannel, "/me shows %s the function of relativity for chaos mathematics.", 
 				strNickname.c_str());
-		SayLater(pChannel, "/me watches as %s's brain shorts out with a puff of putrid smoke!", 
+		Say(LATER, pChannel, "/me watches as %s's brain shorts out with a puff of putrid smoke!", 
 				strNickname.c_str());
-		SendLater("MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
-		SendLater("KICK %s %s :zzzzzttttt!!!!\r\n", pChannel, strNickname.c_str());
+		Send(LATER, "MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		Send(LATER, "KICK %s %s :zzzzzttttt!!!!\r\n", pChannel, strNickname.c_str());
 		break;
 	case 6:
-		SayLater(pChannel, "/me bashes %s's head in with a baseball bat *BOK*!!", 
+		Say(LATER, pChannel, "/me bashes %s's head in with a baseball bat *BOK*!!", 
 				strNickname.c_str());
-		SendLater("MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
-		SendLater("KICK %s %s\r\n", pChannel, strNickname.c_str());
-		SayLater(pChannel, "/me wipes the blood off on %s's hair.", strNickname.c_str());
+		Send(LATER, "MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		Send(LATER, "KICK %s %s\r\n", pChannel, strNickname.c_str());
+		Say(LATER, pChannel, "/me wipes the blood off on %s's hair.", strNickname.c_str());
 		break;
 	case 7:
-		SayLater(pChannel, "/me gags %s, stuffs him into a cow suit, then tosses him into a corral with a horny bull.", 
+		Say(LATER, pChannel, "/me gags %s, stuffs him into a cow suit, then tosses him into a corral with a horny bull.", 
 				strNickname.c_str());
-		SendLater("MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
-		SendLater("KICK %s %s :Moooo!!!!!!!\r\n", pChannel, strNickname.c_str());
+		Send(LATER, "MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		Send(LATER, "KICK %s %s :Moooo!!!!!!!\r\n", pChannel, strNickname.c_str());
 		break;
 	case 8:
-		SayLater(pChannel, "/me grabs %s by the hair and jams his face into the toilet.", 
+		Say(LATER, pChannel, "/me grabs %s by the hair and jams his face into the toilet.", 
 				strNickname.c_str());
-		SayLater(pChannel, "/me does the royal flush.");
-		SendLater("MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
-		SendLater("KICK %s %s :KA-WIIIISSSHHHHHHHHH!!!\r\n", pChannel, strNickname.c_str());
+		Say(LATER, pChannel, "/me does the royal flush.");
+		Send(LATER, "MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		Send(LATER, "KICK %s %s :KA-WIIIISSSHHHHHHHHH!!!\r\n", pChannel, strNickname.c_str());
 		break;
 	case 9:
-		SayLater(pChannel, "/me casts a Fireball that goes streaking across the channel at %s", 
+		Say(LATER, pChannel, "/me casts a Fireball that goes streaking across the channel at %s", 
 				strNickname.c_str());
-		SayLater(pChannel, "/me watches as %s's corporeal form is enveloped in flame!",
+		Say(LATER, pChannel, "/me watches as %s's corporeal form is enveloped in flame!",
 				strNickname.c_str());
-		SendLater("MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
-		SendLater("KICK %s %s :poof!!\r\n", pChannel, strNickname.c_str());
+		Send(LATER, "MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		Send(LATER, "KICK %s %s :poof!!\r\n", pChannel, strNickname.c_str());
 		break;
 	case 10:
-		SayLater(pChannel, "/me grabs %s's tongue and pulls it waaaaay out.", 
+		Say(LATER, pChannel, "/me grabs %s's tongue and pulls it waaaaay out.", 
 			strNickname.c_str());
-		SayLater(pChannel, "/me takes out the locking ring and loops it through %s's tongue.",
+		Say(LATER, pChannel, "/me takes out the locking ring and loops it through %s's tongue.",
 			strNickname.c_str());
-		SayLater(pChannel, "/me then fastens the ring to the bumper of his Porsche and drives off.");
-		SendLater("MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
-		SendLater("KICK %s %s :what a drag!\r\n", pChannel, strNickname.c_str());
+		Say(LATER, pChannel, "/me then fastens the ring to the bumper of his Porsche and drives off.");
+		Send(LATER, "MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		Send(LATER, "KICK %s %s :what a drag!\r\n", pChannel, strNickname.c_str());
 		break;
 	case 11:
-		SayLater(pChannel, "/me pulls down the switch on the electric chair.");
-		SendLater("MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
-		SendLater("KICK %s %s\r\n", pChannel, strNickname.c_str());
-		SayLater(pChannel, "/me makes an omelette with %s's brains.", strNickname.c_str());
+		Say(LATER, pChannel, "/me pulls down the switch on the electric chair.");
+		Send(LATER, "MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		Send(LATER, "KICK %s %s\r\n", pChannel, strNickname.c_str());
+		Say(LATER, pChannel, "/me makes an omelette with %s's brains.", strNickname.c_str());
 		break;
 	}
 }
@@ -761,12 +719,12 @@ void BnxBot::OnRegistered() {
 
 	if (GetNickname() == GetCurrentNickname() && 
 		!m_strNickServ.empty() && !m_strNickServPassword.empty()) {
-		Send("PRIVMSG %s :identify %s\r\n", m_strNickServ.c_str(), 
+		Send(AUTO, "PRIVMSG %s :identify %s\r\n", m_strNickServ.c_str(), 
 			m_strNickServPassword.c_str());
 	}
 
 	for (size_t i = 0; i < m_vHomeChannels.size(); ++i) {
-		Send("JOIN %s\r\n", m_vHomeChannels[i].c_str());
+		Send(AUTO, "JOIN %s\r\n", m_vHomeChannels[i].c_str());
 	}
 }
 
@@ -804,7 +762,7 @@ void BnxBot::OnNumeric(const char *pSource, int numeric, const char *pParams[], 
 					AddChannel(pChannel);
 
 					// Now really collect useful information
-					Send("WHO %s\r\n", pChannel);
+					Send(AUTO, "WHO %s\r\n", pChannel);
 					return;
 				}
 			}
@@ -929,15 +887,15 @@ void BnxBot::OnJoin(const char *pSource, const char *pChannel) {
 		BnxShitList::ConstIterator shitItr = m_clShitList.FindMatch(clUser);
 
 		if (shitItr != m_clShitList.End()) {
-			Send("MODE %s +b %s\r\n", pChannel, shitItr->GetHostmask().c_str());
-			Send("KICK %s %s :because I don't like you\r\n", pChannel, 
+			Send(AUTO, "MODE %s +b %s\r\n", pChannel, shitItr->GetHostmask().c_str());
+			Send(AUTO, "KICK %s %s :because I don't like you\r\n", pChannel, 
 				clUser.GetNickname().c_str());
 			return;
 		}
 	}
 
 	if (channelItr->GetSize() == 2)
-		Send("PRIVMSG %s :Hi!\r\n", pChannel);
+		Send(AUTO, "PRIVMSG %s :Hi!\r\n", pChannel);
 }
 
 void BnxBot::OnPart(const char *pSource, const char *pChannel, const char *pReason) {
@@ -1043,7 +1001,7 @@ void BnxBot::OnCtcpVersion(const char *pSource, const char *pTarget) {
 	CtcpEncoder clEncoder;
 	clEncoder.Encode(MakeCtcpMessage("VERSION", "IRCBNX Chatterbot"));
 
-	Send("NOTICE %s :%s\r\n", clUser.GetNickname().c_str(), clEncoder.GetRaw());
+	Send(AUTO, "NOTICE %s :%s\r\n", clUser.GetNickname().c_str(), clEncoder.GetRaw());
 }
 
 void BnxBot::OnCtcpTime(const char *pSource, const char *pTarget) {
@@ -1066,14 +1024,14 @@ void BnxBot::OnCtcpTime(const char *pSource, const char *pTarget) {
 	CtcpEncoder clEncoder;
 	clEncoder.Encode(MakeCtcpMessage("TIME", aBuff));
 
-	Send("NOTICE %s :%s\r\n", clUser.GetNickname().c_str(), clEncoder.GetRaw());
+	Send(AUTO, "NOTICE %s :%s\r\n", clUser.GetNickname().c_str(), clEncoder.GetRaw());
 }
 
 bool BnxBot::OnCommandLogin(const IrcUser &clUser, const std::string &strPassword) {
 
 	if (m_clAccessSystem.Login(clUser, strPassword)) {
 		Log("%s validated.", clUser.GetHostmask().c_str());
-		Send("PRIVMSG %s :Your wish is my command, master.\r\n", clUser.GetNickname().c_str());
+		Send(AUTO, "PRIVMSG %s :Your wish is my command, master.\r\n", clUser.GetNickname().c_str());
 
 		return true;
 	}
@@ -1086,7 +1044,7 @@ bool BnxBot::OnCommandLogin(const IrcUser &clUser, const std::string &strPasswor
 bool BnxBot::OnCommandLogout(UserSession &clSession) {
 	const IrcUser &clUser = clSession.GetUser();
 
-	Send("PRIVMSG %s :Fare the well...\r\n", clUser.GetNickname().c_str());
+	Send(AUTO, "PRIVMSG %s :Fare the well...\r\n", clUser.GetNickname().c_str());
 
 	m_clAccessSystem.Logout(clUser);
 
@@ -1097,7 +1055,7 @@ bool BnxBot::OnCommandLogout(UserSession &clSession) {
 
 bool BnxBot::OnCommandSay(UserSession &clSession, const std::string &strTarget, const std::string &strMessage) {
 
-	Say(strTarget.c_str(), "%s", strMessage.c_str());
+	Say(AUTO, strTarget.c_str(), "%s", strMessage.c_str());
 
 	return true;
 }
@@ -1113,7 +1071,7 @@ bool BnxBot::OnCommandChatter(UserSession &clSession) {
 	// The original BNX would ignore users indefinitely, here we'll clear the list on "chatter"
 	m_vSquelchedUsers.clear();
 
-	Send("PRIVMSG %s :Permission to speak freely, sir?\r\n", clUser.GetNickname().c_str());
+	Send(AUTO, "PRIVMSG %s :Permission to speak freely, sir?\r\n", clUser.GetNickname().c_str());
 
 	return true;
 }
@@ -1126,7 +1084,7 @@ bool BnxBot::OnCommandShutUp(UserSession &clSession) {
 
 	m_bChatter = false;
 
-	Send("PRIVMSG %s :Aww... Why can't I talk anymore?\r\n", clUser.GetNickname().c_str());
+	Send(AUTO, "PRIVMSG %s :Aww... Why can't I talk anymore?\r\n", clUser.GetNickname().c_str());
 
 	return true;
 }
@@ -1137,7 +1095,7 @@ bool BnxBot::OnCommandJoin(UserSession &clSession, const std::string &strChannel
 
 	AddHomeChannels(strChannels);
 
-	Send("JOIN %s\r\n", strChannels.c_str());
+	Send(AUTO, "JOIN %s\r\n", strChannels.c_str());
 
 	return true;
 }
@@ -1148,7 +1106,7 @@ bool BnxBot::OnCommandPart(UserSession &clSession, const std::string &strChannel
 
 	DeleteHomeChannels(strChannels);
 
-	Send("PART %s\r\n", strChannels.c_str());
+	Send(AUTO, "PART %s\r\n", strChannels.c_str());
 
 	return true;
 }
@@ -1159,7 +1117,7 @@ bool BnxBot::OnCommandShutdown(UserSession &clSession) {
 
 	const IrcUser &clUser = clSession.GetUser();
 
-	SendNow("PRIVMSG %s :Sir, if you don't mind, I'll close down for a while...\r\n", clUser.GetNickname().c_str());
+	Send(NOW, "PRIVMSG %s :Sir, if you don't mind, I'll close down for a while...\r\n", clUser.GetNickname().c_str());
 
 	Shutdown();
 
@@ -1174,17 +1132,17 @@ bool BnxBot::OnCommandUserList(UserSession &clSession) {
 
 	BnxAccessSystem::ConstEntryIterator entryItr;
 
-	Send("PRIVMSG %s :Access List:\r\n", clUser.GetNickname().c_str());
+	Send(AUTO, "PRIVMSG %s :Access List:\r\n", clUser.GetNickname().c_str());
 
 	for (entryItr = m_clAccessSystem.EntryBegin(); entryItr != m_clAccessSystem.EntryEnd(); ++entryItr) {
 		const IrcUser &clMask = entryItr->GetHostmask();
 		std::string strMask = clMask.GetHostmask();
 		int iAccessLevel = entryItr->GetAccessLevel();
 
-		Send("PRIVMSG %s :%s %d\r\n", clUser.GetNickname().c_str(), strMask.c_str(), iAccessLevel);
+		Send(AUTO, "PRIVMSG %s :%s %d\r\n", clUser.GetNickname().c_str(), strMask.c_str(), iAccessLevel);
 	}
 
-	Send("PRIVMSG %s :End of Access List.\r\n", clUser.GetNickname().c_str());
+	Send(AUTO, "PRIVMSG %s :End of Access List.\r\n", clUser.GetNickname().c_str());
 
 	return true;
 }
@@ -1207,7 +1165,7 @@ bool BnxBot::OnCommandWhere(UserSession &clSession) {
 		}
 	}
 
-	Send("PRIVMSG %s :I am in channels: %s\r\n", clUser.GetNickname().c_str(), strChannels.c_str());
+	Send(AUTO, "PRIVMSG %s :I am in channels: %s\r\n", clUser.GetNickname().c_str(), strChannels.c_str());
 
 	return true;
 }
@@ -1225,13 +1183,13 @@ bool BnxBot::OnCommandKick(UserSession &clSession, const std::string &strChannel
 		return false;
 
 	if (!channelItr->IsOperator()) {
-		Send("PRIVMSG %s :I don't have OP!\r\n", clUser.GetNickname().c_str());
+		Send(AUTO, "PRIVMSG %s :I don't have OP!\r\n", clUser.GetNickname().c_str());
 		return true;
 	}
 
-	Send("KICK %s %s :%s\r\n", strChannel.c_str(), strHostmask.c_str(), strReason.c_str());
+	Send(AUTO, "KICK %s %s :%s\r\n", strChannel.c_str(), strHostmask.c_str(), strReason.c_str());
 
-	Send("PRIVMSG %s :OK, kicked his ass.\r\n", clUser.GetNickname().c_str());
+	Send(AUTO, "PRIVMSG %s :OK, kicked his ass.\r\n", clUser.GetNickname().c_str());
 
 	return true;
 }
@@ -1244,7 +1202,7 @@ bool BnxBot::OnCommandSquelch(UserSession &clSession, const std::string &strHost
 
 	Squelch(IrcUser(strHostmask));
 
-	Send("PRIVMSG %s :OK, ignoring...\r\n", clUser.GetNickname().c_str());
+	Send(AUTO, "PRIVMSG %s :OK, ignoring...\r\n", clUser.GetNickname().c_str());
 
 	return true;
 }
@@ -1257,7 +1215,7 @@ bool BnxBot::OnCommandUnsquelch(UserSession &clSession, const std::string &strHo
 
 	Unsquelch(IrcUser(strHostmask));
 
-	Send("PRIVMSG %s :OK, unignoring...\r\n", clUser.GetNickname().c_str());
+	Send(AUTO, "PRIVMSG %s :OK, unignoring...\r\n", clUser.GetNickname().c_str());
 
 	return true;
 }
@@ -1274,7 +1232,7 @@ bool BnxBot::OnCommandUserAdd(UserSession &clSession, const std::string &strHost
 	m_clAccessSystem.AddUser(clMask, iAccessLevel, strPassword);
 	m_clAccessSystem.Save();
 
-	Send("PRIVMSG %s :Added %s, level %d, pass %s\r\n", clUser.GetNickname().c_str(), 
+	Send(AUTO, "PRIVMSG %s :Added %s, level %d, pass %s\r\n", clUser.GetNickname().c_str(), 
 		clMask.GetHostmask().c_str(), iAccessLevel, strPassword.c_str());
 
 	return true;
@@ -1290,19 +1248,19 @@ bool BnxBot::OnCommandUserDel(UserSession &clSession, const std::string &strHost
 	BnxAccessSystem::EntryIterator entryItr = m_clAccessSystem.GetEntry(clMask);
 
 	if (entryItr == m_clAccessSystem.EntryEnd()) {
-		Send("PRIVMSG %s :Cannot delete %s\r\n", clUser.GetNickname().c_str(), clMask.GetHostmask().c_str());
+		Send(AUTO, "PRIVMSG %s :Cannot delete %s\r\n", clUser.GetNickname().c_str(), clMask.GetHostmask().c_str());
 		return true;
 	}
 
 	if (clSession.GetAccessLevel() <= entryItr->GetAccessLevel()) {
-		Send("PRIVMSG %s :Insufficient privilege.\r\n", clUser.GetNickname().c_str());
+		Send(AUTO, "PRIVMSG %s :Insufficient privilege.\r\n", clUser.GetNickname().c_str());
 		return true;
 	}
 
 	m_clAccessSystem.DeleteUser(entryItr);
 	m_clAccessSystem.Save();
 
-	Send("PRIVMSG %s :Deleted %s\r\n", clUser.GetNickname().c_str(), clMask.GetHostmask().c_str());
+	Send(AUTO, "PRIVMSG %s :Deleted %s\r\n", clUser.GetNickname().c_str(), clMask.GetHostmask().c_str());
 
 	return true;
 }
@@ -1318,7 +1276,7 @@ bool BnxBot::OnCommandShitAdd(UserSession &clSession, const std::string &strHost
 	m_clShitList.AddMask(clMask);
 	m_clShitList.Save();
 
-	Send("PRIVMSG %s :%s shitlisted.\r\n", clUser.GetNickname().c_str(), clMask.GetHostmask().c_str());
+	Send(AUTO, "PRIVMSG %s :%s shitlisted.\r\n", clUser.GetNickname().c_str(), clMask.GetHostmask().c_str());
 
 	return true;
 }
@@ -1332,11 +1290,11 @@ bool BnxBot::OnCommandShitDel(UserSession &clSession, const std::string &strHost
 	IrcUser clMask(strHostmask);
 
 	if (m_clShitList.DeleteMask(clMask)) {
-		Send("PRIVMSG %s :Deleted %s\r\n", clUser.GetNickname().c_str(), clMask.GetHostmask().c_str());
+		Send(AUTO, "PRIVMSG %s :Deleted %s\r\n", clUser.GetNickname().c_str(), clMask.GetHostmask().c_str());
 		m_clShitList.Save();
 	}
 	else {
-		Send("PRIVMSG %s :Cannot delete %s\r\n", clUser.GetNickname().c_str(), clMask.GetHostmask().c_str());
+		Send(AUTO, "PRIVMSG %s :Cannot delete %s\r\n", clUser.GetNickname().c_str(), clMask.GetHostmask().c_str());
 	}
 
 	return true;
@@ -1348,14 +1306,14 @@ bool BnxBot::OnCommandShitList(UserSession &clSession) {
 
 	const IrcUser &clUser = clSession.GetUser();
 
-	Send("PRIVMSG %s :Shit List:\r\n", clUser.GetNickname().c_str());
+	Send(AUTO, "PRIVMSG %s :Shit List:\r\n", clUser.GetNickname().c_str());
 
 	BnxShitList::ConstIterator itr;
 
 	for (itr = m_clShitList.Begin(); itr != m_clShitList.End(); ++itr)
-		Send("PRIVMSG %s :%s\r\n", clUser.GetNickname().c_str(), itr->GetHostmask().c_str());
+		Send(AUTO, "PRIVMSG %s :%s\r\n", clUser.GetNickname().c_str(), itr->GetHostmask().c_str());
 
-	Send("PRIVMSG %s :End of Shit List.\r\n", clUser.GetNickname().c_str());
+	Send(AUTO, "PRIVMSG %s :End of Shit List.\r\n", clUser.GetNickname().c_str());
 
 	return true;
 }
@@ -1366,7 +1324,7 @@ bool BnxBot::OnCommandNick(UserSession &clSession, const std::string &strNicknam
 
 	const IrcUser &clUser = clSession.GetUser();
 
-	Send("NICK %s\r\n", strNickname.c_str());
+	Send(AUTO, "NICK %s\r\n", strNickname.c_str());
 
 	return true;
 }
@@ -1384,7 +1342,7 @@ bool BnxBot::OnCommandBan(UserSession &clSession, const std::string &strChannel,
 		return false;
 	
 	if (!channelItr->IsOperator()) {
-		Send("PRIVMSG %s :I don't have OP!\r\n", clUser.GetNickname().c_str());
+		Send(AUTO, "PRIVMSG %s :I don't have OP!\r\n", clUser.GetNickname().c_str());
 		return true;
 	}
 
@@ -1402,13 +1360,13 @@ bool BnxBot::OnCommandBan(UserSession &clSession, const std::string &strChannel,
 		}
 	}
 
-	Send("MODE %s +b %s\r\n", strChannel.c_str(), clBanMask.GetHostmask().c_str());
+	Send(AUTO, "MODE %s +b %s\r\n", strChannel.c_str(), clBanMask.GetHostmask().c_str());
 
 	if (!strKickNick.empty()) {
-		Send("KICK %s %s :%s\r\n", strChannel.c_str(), strKickNick.c_str(), strReason.c_str());
+		Send(AUTO, "KICK %s %s :%s\r\n", strChannel.c_str(), strKickNick.c_str(), strReason.c_str());
 	}
 
-	Send("PRIVMSG %s :He is forever banned.\r\n", clUser.GetNickname().c_str());
+	Send(AUTO, "PRIVMSG %s :He is forever banned.\r\n", clUser.GetNickname().c_str());
 
 	return true;
 }
@@ -1427,14 +1385,14 @@ bool BnxBot::OnCommandUnban(UserSession &clSession, const std::string &strChanne
 		return false;
 
 	if (!channelItr->IsOperator()) {
-		Send("PRIVMSG %s :I don't have OP!\r\n", clUser.GetNickname().c_str());
+		Send(AUTO, "PRIVMSG %s :I don't have OP!\r\n", clUser.GetNickname().c_str());
 		return true;
 	}
 
 	IrcUser clMask(strHostmask);
 
-	Send("MODE %s -b %s\r\n", strChannel.c_str(), clMask.GetHostmask().c_str());
-	Send("PRIVMSG %s :Aw, do I have to let him back in?\r\n", clUser.GetNickname().c_str());
+	Send(AUTO, "MODE %s -b %s\r\n", strChannel.c_str(), clMask.GetHostmask().c_str());
+	Send(AUTO, "PRIVMSG %s :Aw, do I have to let him back in?\r\n", clUser.GetNickname().c_str());
 
 	return true;
 }
@@ -1452,7 +1410,7 @@ bool BnxBot::OnCommandSplatterKick(UserSession &clSession, const std::string &st
 		return false;
 
 	if (!channelItr->IsOperator()) {
-		Send("PRIVMSG %s :I don't have OP!\r\n", clUser.GetNickname().c_str());
+		Send(AUTO, "PRIVMSG %s :I don't have OP!\r\n", clUser.GetNickname().c_str());
 		return true;
 	}
 
@@ -1460,14 +1418,14 @@ bool BnxBot::OnCommandSplatterKick(UserSession &clSession, const std::string &st
 
 	if (memberItr == channelItr->End()) {
 		// Original BNX doesn't check this
-		Send("PRIVMSG %s :%s is not here for me to ban!\r\n", clUser.GetNickname().c_str(), 
+		Send(AUTO, "PRIVMSG %s :%s is not here for me to ban!\r\n", clUser.GetNickname().c_str(), 
 			strNickname.c_str());
 		return true;
 	}
 
 	SplatterKick(strChannel.c_str(), memberItr->GetUser());
 
-	Send("PRIVMSG %s :Consider him splattered.\r\n", clUser.GetNickname().c_str());
+	Send(AUTO, "PRIVMSG %s :Consider him splattered.\r\n", clUser.GetNickname().c_str());
 
 	return true;
 }
@@ -1485,7 +1443,7 @@ bool BnxBot::OnCommandVoteBan(UserSession &clSession, const std::string &strChan
 		return false;
 
 	if (!channelItr->IsOperator()) {
-		Send("PRIVMSG %s :I don't have OP!\r\n", clUser.GetNickname().c_str());
+		Send(AUTO, "PRIVMSG %s :I don't have OP!\r\n", clUser.GetNickname().c_str());
 		return true;
 	}
 
@@ -1494,7 +1452,7 @@ bool BnxBot::OnCommandVoteBan(UserSession &clSession, const std::string &strChan
 
 	// Apparently the original checks this here
 	if (!IrcStrCaseCmp(GetCurrentNickname().c_str(),strNickname.c_str())) {
-		Send("PRIVMSG %s :Only a MORON thinks I would try to ban MYSELF!\r\n", 
+		Send(AUTO, "PRIVMSG %s :Only a MORON thinks I would try to ban MYSELF!\r\n", 
 			clUser.GetNickname().c_str());
 		return true;
 	}
@@ -1502,15 +1460,15 @@ bool BnxBot::OnCommandVoteBan(UserSession &clSession, const std::string &strChan
 	BnxChannel::ConstIterator memberItr = channelItr->GetMember(strNickname);
 
 	if (memberItr == channelItr->End()) {
-		Send("PRIVMSG %s :%s is not here for me to ban!\r\n", clUser.GetNickname().c_str(), 
+		Send(AUTO, "PRIVMSG %s :%s is not here for me to ban!\r\n", clUser.GetNickname().c_str(), 
 			strNickname.c_str());
 		return true;
 	}
 
-	Send("PRIVMSG %s :If you want me to ban %s, say \"Yea\" - if not, say \"Nay\"\r\n", 
+	Send(AUTO, "PRIVMSG %s :If you want me to ban %s, say \"Yea\" - if not, say \"Nay\"\r\n", 
 		strChannel.c_str(), strNickname.c_str());
 
-	Send("PRIVMSG %s :I will tally the votes in %d seconds.\r\n", strChannel.c_str(), 
+	Send(AUTO, "PRIVMSG %s :I will tally the votes in %d seconds.\r\n", strChannel.c_str(), 
 		BnxChannel::VOTEBAN_TIMEOUT);
 
 	channelItr->VoteBan(memberItr->GetUser());
@@ -1531,11 +1489,11 @@ bool BnxBot::OnCommandOp(UserSession &clSession, const std::string &strChannel,
 		return false;
 
 	if (!channelItr->IsOperator()) {
-		Send("PRIVMSG %s :I don't have OP!\r\n", clUser.GetNickname().c_str());
+		Send(AUTO, "PRIVMSG %s :I don't have OP!\r\n", clUser.GetNickname().c_str());
 		return true;
 	}
 
-	Send("MODE %s +o %s\r\n", strChannel.c_str(), strNickname.c_str());
+	Send(AUTO, "MODE %s +o %s\r\n", strChannel.c_str(), strNickname.c_str());
 
 	return true;
 }
@@ -1553,11 +1511,11 @@ bool BnxBot::OnCommandDeOp(UserSession &clSession, const std::string &strChannel
 		return false;
 
 	if (!channelItr->IsOperator()) {
-		Send("PRIVMSG %s :I don't have OP!\r\n", clUser.GetNickname().c_str());
+		Send(AUTO, "PRIVMSG %s :I don't have OP!\r\n", clUser.GetNickname().c_str());
 		return true;
 	}
 
-	Send("MODE %s -o %s\r\n", strChannel.c_str(), strNickname.c_str());
+	Send(AUTO, "MODE %s -o %s\r\n", strChannel.c_str(), strNickname.c_str());
 
 	return true;
 }
@@ -1617,12 +1575,12 @@ void BnxBot::OnVoteBanTimer(evutil_socket_t fd, short what) {
 			const IrcUser &clUser = clChannel.GetVoteBanMask();
 
 			if (clChannel.TallyVote() >= 0) {
-				Send("PRIVMSG %s :Banning %s by popular request...\r\n", 
+				Send(AUTO, "PRIVMSG %s :Banning %s by popular request...\r\n", 
 					clChannel.GetName().c_str(), clUser.GetNickname().c_str());
 				SplatterKick(clChannel.GetName().c_str(), clUser);
 			}
 			else {
-				Send("PRIVMSG %s :OK, %s can stay.\r\n",
+				Send(AUTO, "PRIVMSG %s :OK, %s can stay.\r\n",
 					clChannel.GetName().c_str(), clUser.GetNickname().c_str());
 			}
 
@@ -1636,12 +1594,12 @@ void BnxBot::OnChannelsTimer(evutil_socket_t fd, short what) {
 		ChannelIterator channelItr = GetChannel(m_vHomeChannels[i].c_str());
 
 		if (channelItr == ChannelEnd())
-			Send("JOIN %s\r\n", m_vHomeChannels[i].c_str());
+			Send(AUTO, "JOIN %s\r\n", m_vHomeChannels[i].c_str());
 	}
 }
 
 void BnxBot::OnAntiIdleTimer(evutil_socket_t fd, short what) {
 	if (time(NULL)-GetLastRecvTime() > 30)
-		Send("PING :%s\r\n", GetCurrentServer().c_str());
+		Send(AUTO, "PING :%s\r\n", GetCurrentServer().c_str());
 }
 

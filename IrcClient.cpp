@@ -269,7 +269,7 @@ void IrcClient::Log(const char *pFormat, ...) {
 	putchar('\n');
 }
 
-void IrcClient::Send(const char *pFormat, ...) {
+void IrcClient::Send(WhenType eWhen, const char *pFormat, ...) {
 	if (m_socket == INVALID_SOCKET)
 		return;
 
@@ -280,41 +280,25 @@ void IrcClient::Send(const char *pFormat, ...) {
 	int buffSize = vsnprintf(buff, sizeof(buff), pFormat, ap);
 	va_end(ap);
 
-	// TODO: Tunable for bursting
-	if (!m_dqSendQueue.empty() || m_clSendCounter.GetCurrentCount() > 3) {
+	switch (eWhen) {
+	case AUTO:
+		// TODO: Tunable for bursting
+
+		if (!m_dqSendQueue.empty() || m_clSendCounter.GetCurrentCount() > 3) {
+			m_dqSendQueue.push_back(buff);
+			break;
+		}
+
+		SendRaw(buff, buffSize);
+		break;
+	case NOW:
+		SendRaw(buff, buffSize);
+		break;
+	case LATER:
 		m_dqSendQueue.push_back(buff);
-		return;
+		break;
 	}
 
-	SendRaw(buff, buffSize);
-}
-
-void IrcClient::SendNow(const char *pFormat, ...) {
-	if (m_socket == INVALID_SOCKET)
-		return;
-
-	char buff[513];
-
-	va_list ap;
-	va_start(ap, pFormat);
-	int buffSize = vsnprintf(buff, sizeof(buff), pFormat, ap);
-	va_end(ap);
-
-	SendRaw(buff, buffSize);
-}
-
-void IrcClient::SendLater(const char *pFormat, ...) {
-	if (m_socket == INVALID_SOCKET)
-		return;
-
-	char buff[513];
-
-	va_list ap;
-	va_start(ap, pFormat);
-	int buffSize = vsnprintf(buff, sizeof(buff), pFormat, ap);
-	va_end(ap);
-
-	m_dqSendQueue.push_back(buff);
 }
 
 void IrcClient::SendRaw(const void *pData, size_t dataSize) {
@@ -335,8 +319,8 @@ void IrcClient::SendRaw(const void *pData, size_t dataSize) {
 void IrcClient::OnConnect() {
 	Log("Connected.");
 
-	SendNow("NICK %s\r\n", m_strNickname.c_str());
-	SendNow("USER %s localhost localhost :%s\r\n", m_strUsername.c_str(), m_strRealName.c_str());
+	Send(NOW, "NICK %s\r\n", m_strNickname.c_str());
+	Send(NOW, "USER %s localhost localhost :%s\r\n", m_strUsername.c_str(), m_strRealName.c_str());
 
 	m_stagingBufferSize = 0;
 }
@@ -373,7 +357,7 @@ void IrcClient::OnNumeric(const char *pPrefix, int numeric, const char **pParams
 			std::stringstream nickStream;
 			nickStream << m_strNickname << (rand() % 1000);
 
-			Send("NICK %s\r\n", nickStream.str().c_str());
+			Send(AUTO, "NICK %s\r\n", nickStream.str().c_str());
 		}
 		break;
 	}
@@ -425,7 +409,7 @@ void IrcClient::OnNotice(const char *pSource, const char *pTarget, const char *p
 }
 
 void IrcClient::OnPing(const char *pServer) {
-	SendNow("PONG :%s\r\n", pServer);
+	Send(NOW, "PONG :%s\r\n", pServer);
 }
 
 void IrcClient::OnPong(const char *pServer1, const char *pServer2) {

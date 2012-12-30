@@ -28,12 +28,15 @@
 
 #include <string>
 #include <deque>
+#include <cstdarg>
 #include "IrcTraits.h"
 #include "IrcCounter.h"
 #include "event2/event.h"
 
 class IrcClient {
 public:
+	enum WhenType { AUTO = 0, NOW, LATER };
+
 	IrcClient()
 	: m_socket(INVALID_SOCKET), m_strUsername("IrcClient"), m_strRealName("IrcClient"), 
 	m_stagingBufferSize(0), m_lastRecvTime(0), m_pEventBase(NULL), m_pReadEvent(NULL), 
@@ -63,9 +66,7 @@ public:
 
 protected:
 	virtual void Log(const char *pFormat, ...);
-	virtual void Send(const char *pFormat, ...);
-	virtual void SendNow(const char *pFormat, ...);
-	virtual void SendLater(const char *pFormat, ...);
+	virtual void Send(WhenType eWhen, const char *pFormat, ...);
 	virtual void SendRaw(const void *pData, size_t dataSize);
 
 	virtual void OnConnect();

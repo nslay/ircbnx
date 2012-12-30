@@ -75,8 +75,7 @@ protected:
 	virtual bool ProcessCommand(const char *pSource, const char *pTarget, const char *pMessage);
 	virtual bool ProcessVoteBan(const char *pSource, const char *pTarget, const char *pMessage);
 	virtual void ProcessMessage(const char *pSource, const char *pTarget, const char *pMessage);
-	virtual void Say(const char *pTarget, const char *pFormat, ...);
-	virtual void SayLater(const char *pTarget, const char *pFormat, ...);
+	virtual void Say(WhenType eWhen, const char *pTarget, const char *pFormat, ...);
 	ChannelIterator GetChannel(const char *pChannel);
 	bool IsSquelched(const IrcUser &clUser);
 	void SplatterKick(const char *pChannel, const IrcUser &clUser);

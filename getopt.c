@@ -38,7 +38,7 @@ static char sccsid[] = "@(#)getopt.c	8.3 (Berkeley) 4/27/95";
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "Windows.h"
+#include <Windows.h>
 #include "getopt.h"
 
 int	opterr = 1,		/* if error message should be printed */
