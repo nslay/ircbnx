@@ -2,6 +2,11 @@
 # Introduction                                                        #
 #######################################################################
 
+IRCBNX Chatterbot is a moderation IRC bot based on the original 
+Battle.net text gateway bot BNX Chatterbot. Like the original, it 
+features a rule-based response system, an access system, and several 
+moderation features.
+
 #######################################################################
 # Installing                                                          #
 #######################################################################
@@ -143,11 +148,95 @@ comment. Any other use is an error.
 # Commands                                                            #
 #######################################################################
 
+Commands will be grouped and documented by minimum required access 
+level.
+
+All commands are issued by directly messaging the bot. You must "login"
+to the bot prior to issuing commands, see "login" under "Level 0".
+
+*** Level 100 ***
+
+shutdown - Have the bot quit and exit.
+
+userlist - Display the access list.
+
+useradd <hostmask> <accesslevel> <password> - Add a new user to command
+                                              the bot.
+
+userdel <hostmask> - Delete user from the access list.
+
+nick <newnick> - Chane the bot's nickname.
+
+*** Level 90 ***
+
+op <channel> <nick> - Give operator status to a user.
+
+deop <channel> <nick> - Remove operator status from a user.
+
+*** Level 75 ***
+
+chatter - Enable chattering. The bot will produce automated responses.
+
+shutup - Disable chattering. The bot will no longer produce automated
+         responses.
+
+join <channel> - Have the bot join a new home channel.
+
+part <channel> - Have the bot part from a channel.
+
+squelch <hostmask> - Ignore all users matching a hostmask. Users can
+                     still command the bot but it will not produce
+                     automated or CTCP responses.
+
+ignore <hostmask> - Same as squelch.
+
+unsquelch <hostmask> - No longer ignore users matching the given 
+                       hostmask.
+
+shitadd <hostmask> - Add a hostmask to ban on sight.
+
+shitdel <hostmask> - Remove a hostmask from the shitlist.
+
+shitlist - List all shit listed hostmasks.
+
+*** Level 60 ***
+
+kick <channel> <nick> [<reason>] - Have the bot kick a user from a
+                                   channel it has operator status in.
+
+ban <channel> <nick|hostmask> [<reason>] - Have the bot set mode +b on
+                                           a given hostmask. If a nick
+                                           is provided, it will search
+                                           the channel for the
+                                           hostmask.
+
+unban <channel> <hostmask> - Set mode -b on a given hostmask.
+
+splatterkick <channel> <nick> - Ban a user with one of twelve humorous
+                                sequences.
+
+voteban <channel> <nick> - Hold a 30 second vote on whether to ban a 
+                           user.
+
+*** Level 0 ***
+
+login <password> - Login to the bot to issue commands. 
+
+logout - Logout of the bot. No commands can be issued until you "login"
+         again.
+
+say <target> <message> - Have the bot send a message to a user(s) or 
+                         channel(s). The message may use "/me" or 
+                         "/action"
+
+where - Have the bot tell you its current channels.
+
 #######################################################################
 # Miscellaneous                                                       #
 #######################################################################
 
 IRCBNX exhibits some of the following additional behaviors:
+- The bot will shitlist users who kick it from the channel.
 - It will produce responses either when whispered or addressed in the
   channel (i.e. using its nickname in a message).
 - It will say "Hi!" when a second user joins the channel.
