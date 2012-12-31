@@ -238,7 +238,8 @@ where - Have the bot tell you its current channels.
 #######################################################################
 
 IRCBNX exhibits some of the following additional behaviors:
-- The bot will shitlist users who kick it from a channel.
+- It will shitlist users who kick it from a channel.
+- It will automatically logout users after 10 minutes.
 - It will produce responses either when whispered or addressed in the
   channel (i.e. using its nickname in a message).
 - It will say "Hi!" when a second user joins the channel.
