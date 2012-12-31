@@ -176,6 +176,7 @@ deop <channel> <nick> - Remove operator status from a user.
 *** Level 75 ***
 
 chatter - Enable chattering. The bot will produce automated responses.
+          This clears the squelch list.
 
 shutup - Disable chattering. The bot will no longer produce automated
          responses.
@@ -236,7 +237,7 @@ where - Have the bot tell you its current channels.
 #######################################################################
 
 IRCBNX exhibits some of the following additional behaviors:
-- The bot will shitlist users who kick it from the channel.
+- The bot will shitlist users who kick it from a channel.
 - It will produce responses either when whispered or addressed in the
   channel (i.e. using its nickname in a message).
 - It will say "Hi!" when a second user joins the channel.
