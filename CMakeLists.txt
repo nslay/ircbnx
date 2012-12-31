@@ -18,7 +18,7 @@ INCLUDE_DIRECTORIES(${LIBEVENT2_INCLUDE})
 LINK_DIRECTORIES(${LIBEVENT2_LIB})
 
 IF (USE_PCRE)
-	ADD_DEFINITIONS(-DUSE_PCRE)
+	ADD_DEFINITIONS(-DUSE_PCRE=1)
 	INCLUDE_DIRECTORIES(${PCRE_INCLUDE})
 	LINK_DIRECTORIES(${PCRE_LIB})
 	SET(LINK_LIBS ${LINK_LIBS} pcreposix pcre)
@@ -40,7 +40,7 @@ ADD_EXECUTABLE(ircbnx Main.cpp Irc.h
 	BnxChannel.h BnxChannel.cpp
 	BnxShitList.h BnxShitList.cpp
 	BnxFloodDetector.h BnxFloodDetector.cpp
-	getopt.c)
+	getopt.h getopt.c)
 
 TARGET_LINK_LIBRARIES(ircbnx ${LINK_LIBS}) 
 

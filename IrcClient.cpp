@@ -305,7 +305,7 @@ void IrcClient::SendRaw(const void *pData, size_t dataSize) {
 	if (m_socket == INVALID_SOCKET)
 		return;
 
-	printf("-> %s", (const char *)pData);
+	//printf("-> %s", (const char *)pData);
 
 	m_clSendCounter.Hit();
 
@@ -440,7 +440,7 @@ void IrcClient::ProcessLine(char *pLine) {
 	const char *pPrefix = NULL, *pCommand = NULL, *pParams[15] = { NULL };
 	unsigned int numParams = 0;
 
-	puts(pLine);
+	//puts(pLine);
 
 	if (*pLine == ':')
 		pPrefix = PopToken(pLine)+1;
