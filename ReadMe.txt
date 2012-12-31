@@ -10,9 +10,54 @@ If a precompiled version is available for your operating system,
 either extract the archive where it best suits you, or copy the
 executable, response.txt, and bot.ini to the desired location.
 
+Once installed and configured, simply run "ircbnx" from the command 
+line.
+
+NOTE: It will NOT produce output, but it should be working properly.
+      Be sure to check "bot.log" for additional information.
+
 #######################################################################
 # Configuration                                                       #
 #######################################################################
+
+For simplicity and flexibility, the configuration file format is INI.
+Every IRCBNX config file must have a "global" section and a "profiles"
+key specifying a comma delimited list of bot configurations to examine.
+
+For example:
+
+[global]
+profiles=bot1,bot2
+
+In this example, two bots, "bot1" and "bot2" are to be examined.
+
+Each bot profile listed in "profiles" references a section with 
+the following configurations
+
+enabled - Whether the configuration is to be loaded or not (use 0 or 1).
+server - The hostname or IP address of the IRC server.
+port - The service or port number to use.
+nickname - The nickname to use.
+username - The username to use when registering the connection.
+realname - The real name to use when registering the connection.
+homechannels - A comma delimited list of channels to join.
+nickserv - The nickserv service name (if any).
+nickservpassword - The password to identify with the nickserv (if any).
+shitlist - The shit list file to use.
+accesslist - The access list file to use.
+
+For example:
+
+[bot1]
+server=some.irc.network.com
+port=6667
+nickname=enslay
+username=nslay
+realname=Nathan Lay
+homechannels=#ircbnx,#freebsd
+
+This example corresponds to the configuration of bot profile "bot1" as 
+mentioned above.
 
 #######################################################################
 # Access List Format                                                  #
@@ -113,6 +158,8 @@ IRCBNX exhibits some of the following additional behaviors:
   the channel.
 - It will refuse to voteban itself.
 - It will ignore users who try to abuse its automated responses.
+- It will periodically try to join channels it was kicked or banned
+  from.
 
 #######################################################################
 # Building from Source                                                #
