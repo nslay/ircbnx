@@ -50,6 +50,7 @@ nickserv - The nickserv service name (if any).
 nickservpassword - The password to identify with the nickserv (if any).
 shitlist - The shit list file to use.
 accesslist - The access list file to use.
+responserules - The response rules file to use.
 
 For example:
 
@@ -258,7 +259,7 @@ IRCBNX exhibits some of the following additional behaviors:
 To build IRCBNX from source, you will need CMake, a C++ compiler, and 
 the following dependencies:
 - PCRE (required for Windows, optional for Unix-like systems)
-http://www.pcre.org/
+http://pcre.org/
 
 - libevent2
 http://libevent.org
