@@ -212,7 +212,7 @@ bool IrcClient::Reconnect() {
 
 void IrcClient::Disconnect() {
 	if (m_socket != INVALID_SOCKET)
-		Log("Disconnect.");
+		Log("Disconnected.");
 
 	m_strCurrentServer.clear();
 	m_strCurrentPort.clear();
