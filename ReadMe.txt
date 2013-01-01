@@ -295,6 +295,9 @@ FreeBSD 9.1:
 - GCC 4.2
 - Clang 3.1
 
+CentOS 6.3
+- GCC 4.4.6
+
 Windows 7:
 - MingW64 4.5.3
 - Visual Studio 2010
