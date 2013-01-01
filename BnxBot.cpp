@@ -41,7 +41,7 @@
 std::string BnxBot::GetVersionString() {
 	std::stringstream versionStream;
 
-	versionStream << "IRCBNX Chatterbot " << MAJOR_VERSION << '.' << MINOR_VERSION;
+	versionStream << "IRCBNX Chatterbot " << MAJOR_VERSION << '.' << MINOR_VERSION << '.' << PATCH_LEVEL;
 
 	return versionStream.str();
 }
