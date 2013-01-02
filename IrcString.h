@@ -36,6 +36,8 @@ int IrcIsSpecial(int c);
 
 bool IrcIsHostmask(const char *pString);
 
+bool IrcIsNickname(const char *pString);
+
 int IrcStrCaseCmp(const char *pString1, const char *pString2, IrcCaseMapping mapping = ASCII);
 
 char * IrcStrCaseStr(const char *pBig, const char *pLittle, IrcCaseMapping mapping = ASCII);

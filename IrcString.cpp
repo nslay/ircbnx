@@ -124,6 +124,17 @@ bool IrcIsHostmask(const char *pString) {
 	return true;
 }
 
+bool IrcIsNickname(const char *pString) {
+	if (!isalpha(*pString) && !IrcIsSpecial(*pString))
+		return false;
+
+	++pString;
+
+	for ( ; isalnum(*pString) || IrcIsSpecial(*pString) || *pString == '-'; ++pString);
+
+	return *pString == '\0';
+}
+
 int IrcStrCaseCmp(const char *pString1, const char *pString2, IrcCaseMapping mapping) {
 	for ( ; *pString1 != '\0' && 
 		*pString2 != '\0' && 

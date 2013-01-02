@@ -15,11 +15,22 @@ If a precompiled version is available for your operating system,
 either extract the archive where it best suits you, or copy the
 executable, response.txt, and bot.ini to the desired location.
 
+#######################################################################
+# Usage                                                               #
+#######################################################################
+
 Once installed and configured, simply run "ircbnx" from the command 
 line.
 
 NOTE: It will NOT produce output, but it should be working properly.
       Be sure to check "bot.log" for additional information.
+
+IRCBNX also has some command line flags:
+Usage: ircbnx [-hv] [-c config.ini]
+
+-h - Produces the above usage.
+-v - Queries the version of IRCBNX.
+-c - Specify a different configuration file (by default it's bot.ini).
 
 #######################################################################
 # Configuration                                                       #
@@ -239,7 +250,7 @@ where - Have the bot tell you its current channels.
 
 IRCBNX exhibits some of the following additional behaviors:
 - It will shitlist users who kick it from a channel.
-- It will automatically logout users after 10 minutes.
+- It will automatically logout users after 10 minutes of inactivity.
 - It will produce responses either when whispered or addressed in the
   channel (i.e. using its nickname in a message).
 - It will say "Hi!" when a second user joins the channel.
@@ -295,7 +306,7 @@ FreeBSD 9.1:
 - GCC 4.2
 - Clang 3.1
 
-CentOS 6.3
+CentOS 6.3:
 - GCC 4.4.6
 
 Windows 7:
