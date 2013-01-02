@@ -28,6 +28,9 @@
 #include "getopt.h"
 #include "BnxDriver.h"
 
+// Include for pcre_version()
+#include "pcre.h"
+
 BnxDriver::~BnxDriver() {
 	Reset();
 }
@@ -47,6 +50,9 @@ bool BnxDriver::ParseArgs(int argc, char *argv[]) {
 			break;
 		case 'v':
 			std::cout << BnxBot::GetVersionString() << std::endl;
+			std::cout << std::endl;
+			std::cout << "libevent: " << event_get_version() << std::endl;
+			std::cout << "pcre: " << pcre_version() << std::endl;
 			return false;
 		case 'h':
 		default:
