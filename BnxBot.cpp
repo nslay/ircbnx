@@ -495,7 +495,8 @@ void BnxBot::ProcessMessage(const char *pSource, const char *pTarget, const char
 		// Due to the multi-channel nature of IRC, we can only do this in channel
 		// The original would also ban for whispered profanity
 		if (channelItr->IsOperator() && IrcStrCaseStr(pMessage,"fuck") != NULL &&
-			IrcStrCaseStr(pMessage,GetCurrentNickname().c_str()) != NULL) {
+			(channelItr->GetSize() == 2 || 
+			IrcStrCaseStr(pMessage,GetCurrentNickname().c_str()) != NULL)) {
 
 			IrcUser clBanMask("*","*",clUser.GetHostname());
 
