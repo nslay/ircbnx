@@ -76,7 +76,7 @@ public:
 		}
 
 		bool operator!=(const UserEntry &clEntry) const {
-			return clEntry != m_clHostmask;
+			return !(*this == clEntry);
 		}
 
 		void SetHostmask(const IrcUser &clMask) {
