@@ -31,6 +31,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include "BnxListIo.h"
 #include "IrcUser.h"
 
 class BnxAccessSystem {
@@ -68,6 +69,14 @@ public:
 
 		bool operator!=(const IrcUser &clUser) const {
 			return !(*this == clUser);
+		}
+
+		bool operator==(const UserEntry &clEntry) const {
+			return clEntry == m_clHostmask;
+		}
+
+		bool operator!=(const UserEntry &clEntry) const {
+			return clEntry != m_clHostmask;
 		}
 
 		void SetHostmask(const IrcUser &clMask) {
@@ -175,8 +184,14 @@ public:
 		return m_strAccessListFile;
 	}
 
-	bool Load();
-	void Save() const;
+	bool Load() {
+		Reset();
+		return BnxLoadList(m_strAccessListFile.c_str(), m_vUserEntries);
+	}
+
+	void Save() const {
+		BnxSaveList(m_strAccessListFile.c_str(), m_vUserEntries);
+	}
 
 	void AddUser(const UserEntry &clEntry);
 	void AddUser(const IrcUser &clHostmask, int iAccessLevel, const std::string &strPassword) {

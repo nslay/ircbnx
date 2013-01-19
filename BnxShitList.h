@@ -30,6 +30,7 @@
 #include <vector>
 #include <string>
 #include "IrcUser.h"
+#include "BnxListIo.h"
 
 class BnxShitList {
 public:
@@ -63,8 +64,14 @@ public:
 		return m_strShitListFile;
 	}
 
-	bool Load();
-	void Save() const;
+	bool Load() {
+		Reset();
+		return BnxLoadList(m_strShitListFile.c_str(), m_vHostmasks);
+	}
+
+	void Save() const {
+		BnxSaveList(m_strShitListFile.c_str(), m_vHostmasks);
+	}
 
 	bool AddMask(const IrcUser &clMask);
 	bool DeleteMask(const IrcUser &clMask);
