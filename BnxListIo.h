@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012 Nathan Lay (nslay@users.sourceforge.net)
+ * Copyright (c) 2013 Nathan Lay (nslay@users.sourceforge.net)
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,6 +29,7 @@
 #include <algorithm>
 #include <fstream>
 #include <sstream>
+#include <string>
 #include <vector>
 
 template<typename ElementType>
@@ -119,7 +120,7 @@ bool BnxSaveList(const char *pFileName, const std::vector<ElementType> &vElement
 
 		for (size_t i = 0; i < vElements.size(); ++i) {
 			if (!vIsWritten[i])
-			outListStream << vElements[i] << std::endl;
+				outListStream << vElements[i] << std::endl;
 		}
 	}
 	else {
