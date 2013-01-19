@@ -29,6 +29,7 @@
 #include <ctime>
 #include <string>
 #include <vector>
+#include "BnxFloodDetector.h"
 #include "IrcString.h"
 #include "IrcUser.h"
 
@@ -36,7 +37,7 @@
 
 class BnxChannel {
 public:
-	enum { VOTEBAN_TIMEOUT = 30 };
+	enum { VOTEBAN_TIMEOUT = 30, WARNING_TIMEOUT = 600 };
 
 	class Member {
 	public:
@@ -99,8 +100,62 @@ public:
 		int m_iVote;
 	};
 
-	typedef std::vector<Member>::iterator Iterator;
-	typedef std::vector<Member>::const_iterator ConstIterator;
+	class WarningEntry {
+	public:
+		WarningEntry(){
+			Reset();
+		}
+
+		WarningEntry(const std::string &strHostname) {
+			Reset();
+			m_strHostname = strHostname;
+		}
+
+		const std::string & GetHostname() const {
+			return m_strHostname;
+		}
+
+		time_t GetTimeStamp() const {
+			return m_timeStamp;
+		}
+
+		unsigned int GetCount() const {
+			return m_uiCount;
+		}
+
+		void Warn() {
+			++m_uiCount;
+			m_timeStamp = time(NULL);
+		}
+
+		void Reset() {
+			m_strHostname.clear();
+			m_timeStamp = time(NULL);
+			m_uiCount = 0;
+		}
+
+		bool IsExpired() const {
+			return time(NULL)-m_timeStamp > WARNING_TIMEOUT;
+		}
+
+		bool operator==(const std::string &strHostname) const {
+			return !IrcStrCaseCmp(m_strHostname.c_str(), strHostname.c_str());
+		}
+
+		bool operator!=(const std::string &strHostname) const {
+			return !(*this == strHostname);
+		}
+
+	private:
+		std::string m_strHostname;
+		time_t m_timeStamp;
+		unsigned int m_uiCount;
+	};
+
+	typedef std::vector<Member>::iterator MemberIterator;
+	typedef std::vector<Member>::const_iterator ConstMemberIterator;
+	typedef std::vector<WarningEntry>::iterator WarningIterator;
+	typedef std::vector<WarningEntry>::const_iterator ConstWarningIterator;
 
 	BnxChannel() {
 		Reset();
@@ -111,37 +166,73 @@ public:
 		m_strName = strName;
 	}
 
-	Iterator Begin() {
+	MemberIterator MemberBegin() {
 		return m_vMembers.begin();
 	}
 
-	ConstIterator Begin() const {
+	ConstMemberIterator MemberBegin() const {
 		return m_vMembers.begin();
 	}
 
-	Iterator End() {
+	MemberIterator MemberEnd() {
 		return m_vMembers.end();
 	}
 
-	ConstIterator End() const {
+	ConstMemberIterator MemberEnd() const {
 		return m_vMembers.end();
 	}
 
 	void AddMember(const IrcUser &clUser);
 
-	Iterator GetMember(const std::string &strNickname) {
-		return std::find(m_vMembers.begin(), m_vMembers.end(), strNickname);
+	MemberIterator GetMember(const std::string &strNickname) {
+		return std::find(MemberBegin(), MemberEnd(), strNickname);
 	}
 
-	ConstIterator GetMember(const std::string &strNickname) const {
-		return std::find(m_vMembers.begin(), m_vMembers.end(), strNickname);
+	ConstMemberIterator GetMember(const std::string &strNickname) const {
+		return std::find(MemberBegin(), MemberEnd(), strNickname);
 	}
 
 	void DeleteMember(const std::string &strNickname);
 
-	Iterator DeleteMember(Iterator memberItr) {
+	MemberIterator DeleteMember(MemberIterator memberItr) {
 		return m_vMembers.erase(memberItr);
 	}
+
+	void UpdateMember(const std::string &strNick, const std::string &strNewNick);
+
+	WarningIterator WarningBegin() {
+		return m_vWarnings.begin();
+	}
+
+	ConstWarningIterator WarningBegin() const {
+		return m_vWarnings.begin();
+	}
+
+	WarningIterator WarningEnd() {
+		return m_vWarnings.end();
+	}
+
+	ConstWarningIterator WarningEnd() const {
+		return m_vWarnings.end();
+	}
+
+	WarningIterator GetWarningEntry(const std::string &strHostname) {
+		return std::find(WarningBegin(), WarningEnd(), strHostname);
+	}
+
+	ConstWarningIterator GetWarningEntry(const std::string &strHostname) const {
+		return std::find(WarningBegin(), WarningEnd(), strHostname);
+	}
+
+	WarningIterator Warn(const std::string &strHostname);
+
+	void DeleteWarningEntry(const std::string &strHostname);
+
+	WarningIterator DeleteWarningEntry(WarningIterator warningItr) {
+		return m_vWarnings.erase(warningItr);
+	}
+
+	void ExpireWarningEntries();
 
 	bool IsOperator() const {
 		return m_bIsOperator;
@@ -187,6 +278,10 @@ public:
 		return m_vMembers.size();
 	}
 
+	BnxFloodDetector & GetFloodDetector() {
+		return m_clFloodDetector;
+	}
+
 	bool operator==(const std::string &strName) const {
 		return !IrcStrCaseCmp(m_strName.c_str(), strName.c_str());
 	}
@@ -198,7 +293,9 @@ public:
 private:
 	std::string m_strName;
 	std::vector<Member> m_vMembers;
+	std::vector<WarningEntry> m_vWarnings;
 	bool m_bIsOperator;
+	BnxFloodDetector m_clFloodDetector;
 
 	// For voteban
 	bool m_bVoteBan;

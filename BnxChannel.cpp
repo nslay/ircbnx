@@ -30,17 +30,57 @@
 #include "BnxChannel.h"
 
 void BnxChannel::AddMember(const IrcUser &clUser) {
-	if (GetMember(clUser.GetNickname()) != End())
+	if (GetMember(clUser.GetNickname()) != MemberEnd())
 		return;
 
 	m_vMembers.push_back(Member(clUser));
 }
 
 void BnxChannel::DeleteMember(const std::string &strNickname) {
-	Iterator memberItr = GetMember(strNickname);
+	MemberIterator memberItr = GetMember(strNickname);
 
-	if (memberItr != End())
+	if (memberItr != MemberEnd())
 		DeleteMember(memberItr);
+}
+
+void BnxChannel::UpdateMember(const std::string &strNick, const std::string &strNewNick) {
+	MemberIterator memberItr = GetMember(strNick);
+
+	if (memberItr != MemberEnd())
+		memberItr->GetUser().SetNickname(strNewNick);
+
+	if (IsVoteBanInProgress() && !IrcStrCaseCmp(m_clVoteBanMask.GetNickname().c_str(), strNick.c_str()))
+		m_clVoteBanMask.SetNickname(strNewNick);
+}
+
+BnxChannel::WarningIterator BnxChannel::Warn(const std::string &strHostname) {
+	WarningIterator warningItr = GetWarningEntry(strHostname);
+
+	if (warningItr == WarningEnd()) 
+		warningItr = m_vWarnings.insert(m_vWarnings.end(), WarningEntry(strHostname));
+
+	warningItr->Warn();
+
+	return warningItr;
+}
+
+void BnxChannel::DeleteWarningEntry(const std::string &strHostname) {
+	WarningIterator warningItr = GetWarningEntry(strHostname);
+
+	if (warningItr != WarningEnd())
+		DeleteWarningEntry(warningItr);
+}
+
+void BnxChannel::ExpireWarningEntries() {
+	WarningIterator warningItr;
+
+	warningItr = WarningBegin();
+	while (warningItr != WarningEnd()) {
+		if (warningItr->IsExpired())
+			warningItr = DeleteWarningEntry(warningItr);
+		else
+			++warningItr;
+	}
 }
 
 void BnxChannel::ResetVoteBan() {
@@ -56,7 +96,9 @@ void BnxChannel::ResetVoteBan() {
 void BnxChannel::Reset() {
 	m_strName.clear();
 	m_vMembers.clear();
+	m_vWarnings.clear();
 	m_bIsOperator = false;
+	m_clFloodDetector.Reset();
 
 	ResetVoteBan();
 }
@@ -70,10 +112,10 @@ void BnxChannel::VoteBan(const IrcUser &clUser) {
 }
 
 void BnxChannel::VoteYay(const std::string &strNickname) {
-	Iterator memberItr = GetMember(strNickname);
+	MemberIterator memberItr = GetMember(strNickname);
 
 	// Only allow those members who were present prior to the voteban
-	if (memberItr == End() || memberItr->GetTimeStamp() > m_voteBanTime)
+	if (memberItr == MemberEnd() || memberItr->GetTimeStamp() > m_voteBanTime)
 		return;
 
 	int iOldVote = memberItr->GetVote();
@@ -84,10 +126,10 @@ void BnxChannel::VoteYay(const std::string &strNickname) {
 }
 
 void BnxChannel::VoteNay(const std::string &strNickname) {
-	Iterator memberItr = GetMember(strNickname);
+	MemberIterator memberItr = GetMember(strNickname);
 
 	// Only allow those members who were present prior to the voteban
-	if (memberItr == End() || memberItr->GetTimeStamp() > m_voteBanTime)
+	if (memberItr == MemberEnd() || memberItr->GetTimeStamp() > m_voteBanTime)
 		return;
 
 	int iOldVote = memberItr->GetVote();

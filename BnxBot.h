@@ -76,6 +76,7 @@ protected:
 	ChannelIterator ChannelEnd();
 
 	virtual void Log(const char *pFormat, ...);
+	virtual void ProcessFlood(const char *pSource, const char *pTarget, const char *pMessage);
 	virtual bool ProcessCommand(const char *pSource, const char *pTarget, const char *pMessage);
 	virtual bool ProcessVoteBan(const char *pSource, const char *pTarget, const char *pMessage);
 	virtual void ProcessMessage(const char *pSource, const char *pTarget, const char *pMessage);
@@ -92,6 +93,7 @@ protected:
 	virtual void OnNick(const char *pSource, const char *pNewNick);
 	virtual void OnKick(const char *pSource, const char *pChannel, const char *pUser, const char *pReason);
 	virtual void OnPrivmsg(const char *pSource, const char *pTarget, const char *pMessage);
+	virtual void OnNotice(const char *pSource, const char *pTarget, const char *pMessage);
 	virtual void OnJoin(const char *pSource, const char *pChannel);
 	virtual void OnPart(const char *pSource, const char *pChannel, const char *pReason);
 	virtual void OnMode(const char *pSource, const char *pTarget, const char *pMode, const char *pParams[], unsigned int numParams);

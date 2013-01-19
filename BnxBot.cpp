@@ -239,6 +239,21 @@ void BnxBot::Log(const char *pFormat, ...) {
 	fclose(pFile);
 }
 
+void BnxBot::ProcessFlood(const char *pSource, const char *pTarget, const char *pMessage) {
+	IrcUser clUser(pSource);
+
+	if (!IsSquelched(clUser))
+		m_clFloodDetector.Hit(clUser);
+
+	if (pTarget != GetCurrentNickname()) {
+		ChannelIterator channelItr = GetChannel(pTarget);
+
+		if (channelItr != ChannelEnd() && channelItr->IsOperator())
+			channelItr->GetFloodDetector().Hit(clUser);
+	}
+
+}
+
 bool BnxBot::ProcessCommand(const char *pSource, const char *pTarget, const char *pMessage) {
 	if (pTarget != GetCurrentNickname())
 		return false;
@@ -524,8 +539,6 @@ void BnxBot::ProcessMessage(const char *pSource, const char *pTarget, const char
 		return;
 	}
 
-	m_clFloodDetector.Hit(clUser);
-
 	std::string strResponse = m_clResponseEngine.ComputeResponse(pMessage);
 
 	if (strResponse[0] == '/')
@@ -808,12 +821,8 @@ void BnxBot::OnNick(const char *pSource, const char *pNewNick) {
 
 	IrcUser clUser(pSource);
 
-	for (size_t i = 0; i < m_vCurrentChannels.size(); ++i) {
-		BnxChannel::Iterator itr = m_vCurrentChannels[i].GetMember(clUser.GetNickname());
-
-		if (itr != m_vCurrentChannels[i].End())
-			itr->GetUser().SetNickname(pNewNick);
-	}
+	for (size_t i = 0; i < m_vCurrentChannels.size(); ++i) 
+		m_vCurrentChannels[i].UpdateMember(clUser.GetNickname(), pNewNick);
 }
 
 void BnxBot::OnKick(const char *pSource, const char *pChannel, const char *pUser, const char *pReason) {
@@ -842,6 +851,8 @@ void BnxBot::OnKick(const char *pSource, const char *pChannel, const char *pUser
 
 void BnxBot::OnPrivmsg(const char *pSource, const char *pTarget, const char *pMessage) {
 	IrcClient::OnPrivmsg(pSource, pTarget, pMessage);
+
+	ProcessFlood(pSource, pTarget, pMessage);
 
 	CtcpDecoder clDecoder(pMessage);
 	CtcpMessage message;
@@ -877,6 +888,12 @@ void BnxBot::OnPrivmsg(const char *pSource, const char *pTarget, const char *pMe
 		// Finally, process the message text
 		ProcessMessage(pSource, pTarget, pMessage);
 	}
+}
+
+void BnxBot::OnNotice(const char *pSource, const char *pTarget, const char *pMessage) {
+	// Sometimes servers send notices
+	if (IrcIsHostmask(pSource))
+		ProcessFlood(pSource, pTarget, pMessage);
 }
 
 void BnxBot::OnJoin(const char *pSource, const char *pChannel) {
@@ -1005,8 +1022,6 @@ void BnxBot::OnCtcpVersion(const char *pSource, const char *pTarget) {
 	if (IsSquelched(clUser))
 		return;
 
-	m_clFloodDetector.Hit(clUser);
-
 	CtcpEncoder clEncoder;
 	clEncoder.Encode(MakeCtcpMessage("VERSION", GetVersionString().c_str()));
 
@@ -1018,8 +1033,6 @@ void BnxBot::OnCtcpTime(const char *pSource, const char *pTarget) {
 
 	if (IsSquelched(clUser))
 		return;
-
-	m_clFloodDetector.Hit(clUser);
 
 	time_t rawTime = 0;
 	time(&rawTime);
@@ -1360,9 +1373,9 @@ bool BnxBot::OnCommandBan(UserSession &clSession, const std::string &strChannel,
 
 	if (!IrcIsHostmask(strHostmask.c_str())) {
 		// Nickname
-		BnxChannel::ConstIterator memberItr = channelItr->GetMember(strHostmask);
+		BnxChannel::ConstMemberIterator memberItr = channelItr->GetMember(strHostmask);
 
-		if (memberItr != channelItr->End()) {
+		if (memberItr != channelItr->MemberEnd()) {
 			const IrcUser &clMember = memberItr->GetUser();
 			strKickNick = clMember.GetNickname();
 			clBanMask.Set("*","*",clMember.GetHostname());
@@ -1423,9 +1436,9 @@ bool BnxBot::OnCommandSplatterKick(UserSession &clSession, const std::string &st
 		return true;
 	}
 
-	BnxChannel::ConstIterator memberItr = channelItr->GetMember(strNickname);
+	BnxChannel::ConstMemberIterator memberItr = channelItr->GetMember(strNickname);
 
-	if (memberItr == channelItr->End()) {
+	if (memberItr == channelItr->MemberEnd()) {
 		// Original BNX doesn't check this
 		Send(AUTO, "PRIVMSG %s :%s is not here for me to ban!\r\n", clUser.GetNickname().c_str(), 
 			strNickname.c_str());
@@ -1466,9 +1479,9 @@ bool BnxBot::OnCommandVoteBan(UserSession &clSession, const std::string &strChan
 		return true;
 	}
 
-	BnxChannel::ConstIterator memberItr = channelItr->GetMember(strNickname);
+	BnxChannel::ConstMemberIterator memberItr = channelItr->GetMember(strNickname);
 
-	if (memberItr == channelItr->End()) {
+	if (memberItr == channelItr->MemberEnd()) {
 		Send(AUTO, "PRIVMSG %s :%s is not here for me to ban!\r\n", clUser.GetNickname().c_str(), 
 			strNickname.c_str());
 		return true;
@@ -1574,6 +1587,58 @@ void BnxBot::OnFloodTimer(evutil_socket_t fd, short what) {
 		Log("Ignoring %s for flooding", vFlooders[i].GetHostmask().c_str());
 		Squelch(IrcUser("*","*",vFlooders[i].GetHostname()));
 	}
+
+	// Detect floods in channels
+	for (size_t i = 0; i < m_vCurrentChannels.size(); ++i) {
+		BnxChannel &clChannel = m_vCurrentChannels[i];
+
+		clChannel.ExpireWarningEntries();
+
+		BnxFloodDetector &clDetector = clChannel.GetFloodDetector();
+
+		vFlooders.clear();
+
+		clDetector.Detect(vFlooders);
+
+		if (!clChannel.IsOperator())
+			continue;
+
+		for (size_t j = 0; j < vFlooders.size(); ++j) {
+			const IrcUser &clUser = vFlooders[j];
+			IrcUser clBanMask("*", "*", clUser.GetHostname());
+
+			BnxChannel::WarningIterator warningItr = clChannel.Warn(clUser.GetHostname());
+
+			switch (warningItr->GetCount()) {
+			case 0:
+				break;
+			case 1:
+				Send(AUTO, "PRIVMSG %s :%s: Stop flooding! I'm warning you!\r\n", 
+					clChannel.GetName().c_str(), clUser.GetNickname().c_str());
+				break;
+			case 2:
+				Log("Kicking %s from %s for flooding", 
+					clUser.GetHostmask().c_str(), clChannel.GetName().c_str());
+
+				Send(AUTO, "KICK %s %s :stop flooding!\r\n", 
+					clChannel.GetName().c_str(), clUser.GetNickname().c_str());
+				break;
+			case 3:
+			default:
+				Log("Banning %s from %s for flooding", 
+					clUser.GetHostmask().c_str(), clChannel.GetName().c_str());
+
+				Send(AUTO, "MODE %s +b %s\r\n", 
+					clChannel.GetName().c_str(), clBanMask.GetHostmask().c_str());
+				Send(AUTO, "KICK %s %s :for flooding\r\n", 
+					clChannel.GetName().c_str(), clUser.GetNickname().c_str());
+
+				clChannel.DeleteWarningEntry(warningItr);
+			}
+		}
+
+	}
+
 }
 
 void BnxBot::OnVoteBanTimer(evutil_socket_t fd, short what) {
