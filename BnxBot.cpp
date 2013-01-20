@@ -457,6 +457,15 @@ bool BnxBot::ProcessCommand(const char *pSource, const char *pTarget, const char
 		return OnCommandDeOp(*sessionItr, strChannel, strNickname);
 	}
 
+	if (strCommand == "rejoin") {
+		std::string strChannel;
+
+		if (!(messageStream >> strChannel))
+			return false;
+
+		return OnCommandRejoin(*sessionItr, strChannel);
+	}
+
 	return false;
 }
 
@@ -1538,6 +1547,21 @@ bool BnxBot::OnCommandDeOp(UserSession &clSession, const std::string &strChannel
 	}
 
 	Send(AUTO, "MODE %s -o %s\r\n", strChannel.c_str(), strNickname.c_str());
+
+	return true;
+}
+
+bool BnxBot::OnCommandRejoin(UserSession &clSession, const std::string &strChannel) {
+	if (clSession.GetAccessLevel() < 90)
+		return false;
+
+	ChannelIterator channelItr = GetChannel(strChannel.c_str());
+
+	if (channelItr == ChannelEnd())
+		return false;
+
+	Send(AUTO, "PART %s\r\n", strChannel.c_str());
+	Send(AUTO, "JOIN %s\r\n", strChannel.c_str());
 
 	return true;
 }
