@@ -5,4 +5,5 @@
 - Fix bug where a user is not banned for profanity when number of users is two.
 - Fix bug where target voteban user can change nickname to avoid being banned.
 - Add channel flood protection.
+- Add rejoin command.
 
