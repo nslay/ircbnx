@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012 Nathan Lay (nslay@users.sourceforge.net)
+ * Copyright (c) 2012-2013 Nathan Lay (nslay@users.sourceforge.net)
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -38,6 +38,11 @@ bool BnxResponseEngine::LoadFromStream(std::istream &is) {
 
 	std::string line;
 	while (std::getline(is, line)) {
+		size_t p = line.find('\r');
+
+		if (p != std::string::npos)
+			line.resize(p);
+
 		if (line.empty())
 			continue;
 
