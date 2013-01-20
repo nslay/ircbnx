@@ -51,6 +51,11 @@ bool BnxLoadList(const char *pFileName, std::vector<ElementType> &vElements) {
 	std::stringstream lineStream;
 
 	while (std::getline(listStream, strLine)) {
+		size_t p = strLine.find('\r');
+
+		if (p != std::string::npos)
+			strLine.resize(p);
+
 		if (strLine.empty() || strLine[0] == ';')
 			continue;
 
@@ -83,6 +88,11 @@ bool BnxSaveList(const char *pFileName, const std::vector<ElementType> &vElement
 		std::stringstream lineStream;
 
 		while (std::getline(inListStream, strLine)) {
+			size_t p = strLine.find('\r');
+
+			if (p != std::string::npos)
+				strLine.resize(p);
+
 			if (strLine.empty() || strLine[0] == ';') {
 				tmpListStream << strLine << std::endl;
 				continue;
