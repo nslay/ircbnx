@@ -1552,7 +1552,7 @@ bool BnxBot::OnCommandDeOp(UserSession &clSession, const std::string &strChannel
 }
 
 bool BnxBot::OnCommandRejoin(UserSession &clSession, const std::string &strChannel) {
-	if (clSession.GetAccessLevel() < 90)
+	if (clSession.GetAccessLevel() < 75)
 		return false;
 
 	ChannelIterator channelItr = GetChannel(strChannel.c_str());
