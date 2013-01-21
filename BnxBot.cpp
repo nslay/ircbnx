@@ -1620,6 +1620,7 @@ void BnxBot::OnFloodTimer(evutil_socket_t fd, short what) {
 
 		vFlooders.clear();
 
+		// This should be called regardless of channel operator status
 		clDetector.Detect(vFlooders);
 
 		if (!clChannel.IsOperator())

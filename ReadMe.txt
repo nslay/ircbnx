@@ -197,6 +197,8 @@ join <channel> - Have the bot join a new home channel.
 
 part <channel> - Have the bot part from a channel.
 
+rejoin <channel> - Have the bot rejoin a channel.
+
 squelch <hostmask> - Ignore all users matching a hostmask. Users can
                      still command the bot but it will not produce
                      automated or CTCP responses.
@@ -250,6 +252,8 @@ where - Have the bot tell you its current channels.
 
 IRCBNX exhibits some of the following additional behaviors:
 - It will shitlist users who kick it from a channel.
+- It will progressively warn, kick, and ban users flooding the
+  channel it has ops in.
 - It will automatically logout users after 10 minutes of inactivity.
 - It will produce responses either when whispered or addressed in the
   channel (i.e. using its nickname in a message).
