@@ -522,11 +522,9 @@ void BnxBot::ProcessMessage(const char *pSource, const char *pTarget, const char
 			(channelItr->GetSize() == 2 || 
 			IrcStrCaseStr(pMessage,GetCurrentNickname().c_str()) != NULL)) {
 
-			IrcUser clBanMask("*","*",clUser.GetHostname());
-
 			Send(LATER, "PRIVMSG %s :I don't appreciate being spoken to in that manner, %s.\r\n", 
 					pTarget, clUser.GetNickname().c_str());
-			Send(LATER, "MODE %s +b %s\r\n", pTarget, clBanMask.GetHostmask().c_str());
+			Send(LATER, "MODE %s +b %s\r\n", pTarget, clUser.GetBanMask().c_str());
 			Send(LATER, "KICK %s %s :for inappropriate language\r\n", pTarget, 
 					clUser.GetNickname().c_str());
 
@@ -617,13 +615,11 @@ bool BnxBot::IsSquelched(const IrcUser &clUser) {
 void BnxBot::SplatterKick(const char *pChannel, const IrcUser &clUser) {
 	const std::string &strNickname = clUser.GetNickname();
 
-	IrcUser clBanMask("*","*",clUser.GetHostname());
-
 	switch(rand() % 12) {
 	case 0:
 		Say(LATER, pChannel, "Congratulations, %s - you're the lucky winner of a one-way trip to The Void!", 
 				strNickname.c_str());
-		Send(LATER, "MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		Send(LATER, "MODE %s +b %s\r\n", pChannel, clUser.GetBanMask().c_str());
 		Send(LATER, "KICK %s %s :don't forget to write!\r\n", pChannel, strNickname.c_str());
 		break;
 	case 1:
@@ -631,21 +627,21 @@ void BnxBot::SplatterKick(const char *pChannel, const IrcUser &clUser) {
 		Say(LATER, pChannel, "%s: What is your quest?", strNickname.c_str());
 		Say(LATER, pChannel, "%s: What is the average velocity of a coconut-laden swallow?", 
 				strNickname.c_str());
-		Send(LATER, "MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		Send(LATER, "MODE %s +b %s\r\n", pChannel, clUser.GetBanMask().c_str());
 		Send(LATER, "KICK %s %s\r\n", pChannel, strNickname.c_str());
 		Say(LATER, pChannel, "I guess he didn't know!");
 		break;
 	case 2:
 		Say(LATER, pChannel, "/me smells something bad...");
 		Say(LATER, pChannel, "/me looks at %s...", strNickname.c_str());
-		Send(LATER, "MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		Send(LATER, "MODE %s +b %s\r\n", pChannel, clUser.GetBanMask().c_str());
 		Send(LATER, "KICK %s %s :Ah! Smell's gone!!\r\n", pChannel, strNickname.c_str());
 		break;
 	case 3:
 		Say(LATER, pChannel, "/me says \"YER OUTTA HERE, PAL!\"");
 		Say(LATER, pChannel, "/me takes %s by the balls and throws him into The Void.", 
 				strNickname.c_str());
-		Send(LATER, "MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		Send(LATER, "MODE %s +b %s\r\n", pChannel, clUser.GetBanMask().c_str());
 		Send(LATER, "KICK %s %s :AND STAY OUT!!\r\n", pChannel, strNickname.c_str());
 		break;
 	case 4:
@@ -653,7 +649,7 @@ void BnxBot::SplatterKick(const char *pChannel, const IrcUser &clUser) {
 		Say(LATER, pChannel, "/me spots a weed in %s", pChannel);
 		Say(LATER, pChannel, "/me grabs a bottle of Round-Up and spritzes %s liberally.", 
 				strNickname.c_str());
-		Send(LATER, "MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		Send(LATER, "MODE %s +b %s\r\n", pChannel, clUser.GetBanMask().c_str());
 		Send(LATER, "KICK %s %s :FSSST! Weed's gone!\r\n", pChannel, strNickname.c_str());
 		break;
 	case 5:
@@ -662,27 +658,27 @@ void BnxBot::SplatterKick(const char *pChannel, const IrcUser &clUser) {
 				strNickname.c_str());
 		Say(LATER, pChannel, "/me watches as %s's brain shorts out with a puff of putrid smoke!", 
 				strNickname.c_str());
-		Send(LATER, "MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		Send(LATER, "MODE %s +b %s\r\n", pChannel, clUser.GetBanMask().c_str());
 		Send(LATER, "KICK %s %s :zzzzzttttt!!!!\r\n", pChannel, strNickname.c_str());
 		break;
 	case 6:
 		Say(LATER, pChannel, "/me bashes %s's head in with a baseball bat *BOK*!!", 
 				strNickname.c_str());
-		Send(LATER, "MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		Send(LATER, "MODE %s +b %s\r\n", pChannel, clUser.GetBanMask().c_str());
 		Send(LATER, "KICK %s %s\r\n", pChannel, strNickname.c_str());
 		Say(LATER, pChannel, "/me wipes the blood off on %s's hair.", strNickname.c_str());
 		break;
 	case 7:
 		Say(LATER, pChannel, "/me gags %s, stuffs him into a cow suit, then tosses him into a corral with a horny bull.", 
 				strNickname.c_str());
-		Send(LATER, "MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		Send(LATER, "MODE %s +b %s\r\n", pChannel, clUser.GetBanMask().c_str());
 		Send(LATER, "KICK %s %s :Moooo!!!!!!!\r\n", pChannel, strNickname.c_str());
 		break;
 	case 8:
 		Say(LATER, pChannel, "/me grabs %s by the hair and jams his face into the toilet.", 
 				strNickname.c_str());
 		Say(LATER, pChannel, "/me does the royal flush.");
-		Send(LATER, "MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		Send(LATER, "MODE %s +b %s\r\n", pChannel, clUser.GetBanMask().c_str());
 		Send(LATER, "KICK %s %s :KA-WIIIISSSHHHHHHHHH!!!\r\n", pChannel, strNickname.c_str());
 		break;
 	case 9:
@@ -690,7 +686,7 @@ void BnxBot::SplatterKick(const char *pChannel, const IrcUser &clUser) {
 				strNickname.c_str());
 		Say(LATER, pChannel, "/me watches as %s's corporeal form is enveloped in flame!",
 				strNickname.c_str());
-		Send(LATER, "MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		Send(LATER, "MODE %s +b %s\r\n", pChannel, clUser.GetBanMask().c_str());
 		Send(LATER, "KICK %s %s :poof!!\r\n", pChannel, strNickname.c_str());
 		break;
 	case 10:
@@ -699,12 +695,12 @@ void BnxBot::SplatterKick(const char *pChannel, const IrcUser &clUser) {
 		Say(LATER, pChannel, "/me takes out the locking ring and loops it through %s's tongue.",
 			strNickname.c_str());
 		Say(LATER, pChannel, "/me then fastens the ring to the bumper of his Porsche and drives off.");
-		Send(LATER, "MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		Send(LATER, "MODE %s +b %s\r\n", pChannel, clUser.GetBanMask().c_str());
 		Send(LATER, "KICK %s %s :what a drag!\r\n", pChannel, strNickname.c_str());
 		break;
 	case 11:
 		Say(LATER, pChannel, "/me pulls down the switch on the electric chair.");
-		Send(LATER, "MODE %s +b %s\r\n", pChannel, clBanMask.GetHostmask().c_str());
+		Send(LATER, "MODE %s +b %s\r\n", pChannel, clUser.GetBanMask().c_str());
 		Send(LATER, "KICK %s %s\r\n", pChannel, strNickname.c_str());
 		Say(LATER, pChannel, "/me makes an omelette with %s's brains.", strNickname.c_str());
 		break;
@@ -1631,7 +1627,6 @@ void BnxBot::OnFloodTimer(evutil_socket_t fd, short what) {
 
 		for (size_t j = 0; j < vFlooders.size(); ++j) {
 			const IrcUser &clUser = vFlooders[j];
-			IrcUser clBanMask("*", "*", clUser.GetHostname());
 
 			BnxChannel::WarningIterator warningItr = clChannel.Warn(clUser.GetHostname());
 
@@ -1655,7 +1650,7 @@ void BnxBot::OnFloodTimer(evutil_socket_t fd, short what) {
 					clUser.GetHostmask().c_str(), clChannel.GetName().c_str());
 
 				Send(AUTO, "MODE %s +b %s\r\n", 
-					clChannel.GetName().c_str(), clBanMask.GetHostmask().c_str());
+					clChannel.GetName().c_str(), clUser.GetBanMask().c_str());
 				Send(AUTO, "KICK %s %s :for flooding\r\n", 
 					clChannel.GetName().c_str(), clUser.GetNickname().c_str());
 
