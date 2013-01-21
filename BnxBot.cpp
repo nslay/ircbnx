@@ -900,6 +900,8 @@ void BnxBot::OnPrivmsg(const char *pSource, const char *pTarget, const char *pMe
 }
 
 void BnxBot::OnNotice(const char *pSource, const char *pTarget, const char *pMessage) {
+	IrcClient::OnNotice(pSource, pTarget, pMessage);
+
 	// Sometimes servers send notices
 	if (IrcIsHostmask(pSource))
 		ProcessFlood(pSource, pTarget, pMessage);
