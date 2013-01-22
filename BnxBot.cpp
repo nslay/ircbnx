@@ -466,6 +466,15 @@ bool BnxBot::ProcessCommand(const char *pSource, const char *pTarget, const char
 		return OnCommandRejoin(*sessionItr, strChannel);
 	}
 
+	if (strCommand == "who") {
+		std::string strChannel;
+
+		if (!(messageStream >> strChannel))
+			return false;
+
+		return OnCommandWho(*sessionItr, strChannel);
+	}
+
 	return false;
 }
 
@@ -1560,6 +1569,45 @@ bool BnxBot::OnCommandRejoin(UserSession &clSession, const std::string &strChann
 
 	Send(AUTO, "PART %s\r\n", strChannel.c_str());
 	Send(AUTO, "JOIN %s\r\n", strChannel.c_str());
+
+	return true;
+}
+
+bool BnxBot::OnCommandWho(UserSession &clSession, const std::string &strChannel) {
+	ChannelIterator channelItr = GetChannel(strChannel.c_str());
+
+	const IrcUser &clUser = clSession.GetUser();
+
+	if (channelItr == ChannelEnd())
+		return false;
+
+	BnxChannel::ConstMemberIterator memberItr;
+
+	Send(AUTO, "PRIVMSG %s :Users in channel: %s (%lu)\r\n", 
+		clUser.GetNickname().c_str(), strChannel.c_str(), channelItr->GetSize());
+
+	unsigned int uiCount = 0;
+	std::string strOutput;
+
+	for (memberItr = channelItr->MemberBegin(); memberItr != channelItr->MemberEnd(); ++memberItr) {
+		if (!strOutput.empty())
+			strOutput += ", ";
+
+		strOutput += memberItr->GetUser().GetNickname();
+
+		if (++uiCount == 5) {
+			Send(AUTO, "PRIVMSG %s :%s\r\n", 
+				clUser.GetNickname().c_str(), strOutput.c_str());
+			strOutput.clear();
+			uiCount = 0;
+		}
+		
+	}
+
+	if (!strOutput.empty()) {
+		Send(AUTO, "PRIVMSG %s :%s\r\n", 
+			clUser.GetNickname().c_str(), strOutput.c_str());
+	}
 
 	return true;
 }

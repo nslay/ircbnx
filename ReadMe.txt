@@ -246,6 +246,9 @@ say <target> <message> - Have the bot send a message to a user(s) or
 
 where - Have the bot tell you its current channels.
 
+who <channel> - Have the bot tell you the users in a channel it is
+                currently in.
+
 #######################################################################
 # Miscellaneous                                                       #
 #######################################################################
