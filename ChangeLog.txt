@@ -7,4 +7,5 @@
 - Add channel flood protection.
 - Add rejoin command.
 - Add who command.
+- Now handles case mapping properly when dealing with the server.
 

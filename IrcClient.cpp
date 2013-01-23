@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012 Nathan Lay (nslay@users.sourceforge.net)
+ * Copyright (c) 2012-2013 Nathan Lay (nslay@users.sourceforge.net)
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -49,6 +49,7 @@
 #include <iostream>
 #include "IrcClient.h"
 #include "IrcUser.h"
+#include "IrcString.h"
 #include "Irc.h"
 
 char * IrcClient::PopToken(char *&pStr) {
@@ -101,6 +102,12 @@ const IrcTraits & IrcClient::GetIrcTraits() const {
 
 bool IrcClient::IsRegistered() const {
 	return !m_strCurrentNickname.empty();
+}
+
+bool IrcClient::IsMe(const std::string &strNickname) const {
+	IrcCaseMapping eCaseMapping = GetIrcTraits().GetCaseMapping();
+	return !IrcStrCaseCmp(strNickname.c_str(), 
+				GetCurrentNickname().c_str(), eCaseMapping);
 }
 
 time_t IrcClient::GetLastRecvTime() const {

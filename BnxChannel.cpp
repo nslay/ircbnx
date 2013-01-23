@@ -36,6 +36,32 @@ void BnxChannel::AddMember(const IrcUser &clUser) {
 	m_vMembers.push_back(Member(clUser));
 }
 
+BnxChannel::MemberIterator BnxChannel::GetMember(const std::string &strNickname) {
+	MemberIterator memberItr;
+
+	for (memberItr = MemberBegin(); memberItr != MemberEnd(); ++memberItr) {
+		const IrcUser &clUser = memberItr->GetUser();
+
+		if (!IrcStrCaseCmp(strNickname.c_str(), clUser.GetNickname().c_str(), m_eCaseMapping))
+			return memberItr;
+	}
+
+	return MemberEnd();
+}
+
+BnxChannel::ConstMemberIterator BnxChannel::GetMember(const std::string &strNickname) const {
+	ConstMemberIterator memberItr;
+
+	for (memberItr = MemberBegin(); memberItr != MemberEnd(); ++memberItr) {
+		const IrcUser &clUser = memberItr->GetUser();
+
+		if (!IrcStrCaseCmp(strNickname.c_str(), clUser.GetNickname().c_str(), m_eCaseMapping))
+			return memberItr;
+	}
+
+	return MemberEnd();
+}
+
 void BnxChannel::DeleteMember(const std::string &strNickname) {
 	MemberIterator memberItr = GetMember(strNickname);
 
@@ -95,6 +121,7 @@ void BnxChannel::ResetVoteBan() {
 
 void BnxChannel::Reset() {
 	m_strName.clear();
+	m_eCaseMapping = RFC1459;
 	m_vMembers.clear();
 	m_vWarnings.clear();
 	m_bIsOperator = false;

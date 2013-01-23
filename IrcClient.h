@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012 Nathan Lay (nslay@users.sourceforge.net)
+ * Copyright (c) 2012-2013 Nathan Lay (nslay@users.sourceforge.net)
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -51,6 +51,7 @@ public:
 	const std::string & GetCurrentPort() const;
 	const IrcTraits & GetIrcTraits() const;
 	bool IsRegistered() const;
+	bool IsMe(const std::string &strNickname) const;
 	time_t GetLastRecvTime() const;
 
 	virtual void SetNickname(const std::string &strNickname);

@@ -84,14 +84,6 @@ public:
 			ResetVote();
 		}
 
-		bool operator==(const std::string &strNickname) const {
-			return !IrcStrCaseCmp(m_clUser.GetNickname().c_str(), strNickname.c_str());
-		}
-
-		bool operator!=(const std::string &strNickname) const {
-			return !(*this == strNickname);
-		}
-
 	private:
 		IrcUser m_clUser;
 		time_t m_timeStamp;
@@ -161,9 +153,10 @@ public:
 		Reset();
 	}
 
-	BnxChannel(const std::string &strName) {
+	BnxChannel(const std::string &strName, IrcCaseMapping eCaseMapping) {
 		Reset();
 		m_strName = strName;
+		m_eCaseMapping = eCaseMapping;
 	}
 
 	MemberIterator MemberBegin() {
@@ -184,13 +177,9 @@ public:
 
 	void AddMember(const IrcUser &clUser);
 
-	MemberIterator GetMember(const std::string &strNickname) {
-		return std::find(MemberBegin(), MemberEnd(), strNickname);
-	}
+	MemberIterator GetMember(const std::string &strNickname);
 
-	ConstMemberIterator GetMember(const std::string &strNickname) const {
-		return std::find(MemberBegin(), MemberEnd(), strNickname);
-	}
+	ConstMemberIterator GetMember(const std::string &strNickname) const;
 
 	void DeleteMember(const std::string &strNickname);
 
@@ -283,7 +272,7 @@ public:
 	}
 
 	bool operator==(const std::string &strName) const {
-		return !IrcStrCaseCmp(m_strName.c_str(), strName.c_str());
+		return !IrcStrCaseCmp(m_strName.c_str(), strName.c_str(), m_eCaseMapping);
 	}
 
 	bool operator!=(const std::string &strName) const {
@@ -292,6 +281,7 @@ public:
 
 private:
 	std::string m_strName;
+	IrcCaseMapping m_eCaseMapping;
 	std::vector<Member> m_vMembers;
 	std::vector<WarningEntry> m_vWarnings;
 	bool m_bIsOperator;

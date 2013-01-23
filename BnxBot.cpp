@@ -245,7 +245,7 @@ void BnxBot::ProcessFlood(const char *pSource, const char *pTarget, const char *
 	if (!IsSquelched(clUser))
 		m_clFloodDetector.Hit(clUser);
 
-	if (pTarget != GetCurrentNickname()) {
+	if (!IsMe(pTarget)) {
 		ChannelIterator channelItr = GetChannel(pTarget);
 
 		if (channelItr != ChannelEnd() && channelItr->IsOperator())
@@ -255,7 +255,7 @@ void BnxBot::ProcessFlood(const char *pSource, const char *pTarget, const char *
 }
 
 bool BnxBot::ProcessCommand(const char *pSource, const char *pTarget, const char *pMessage) {
-	if (pTarget != GetCurrentNickname())
+	if (!IsMe(pTarget))
 		return false;
 
 	IrcUser clUser(pSource);
@@ -479,7 +479,7 @@ bool BnxBot::ProcessCommand(const char *pSource, const char *pTarget, const char
 }
 
 bool BnxBot::ProcessVoteBan(const char *pSource, const char *pTarget, const char *pMessage) {
-	if (pTarget == GetCurrentNickname())
+	if (IsMe(pTarget))
 		return false;
 
 	ChannelIterator channelItr = GetChannel(pTarget);
@@ -510,13 +510,13 @@ void BnxBot::ProcessMessage(const char *pSource, const char *pTarget, const char
 	const std::string &strSourceNick = clUser.GetNickname();
 
 	// Don't respond to self
-	if (strSourceNick == GetCurrentNickname())
+	if (IsMe(strSourceNick))
 		return;
 
 	const char *pReplyTo = strSourceNick.c_str();
 	std::string strPrefix;
 
-	if (pTarget != GetCurrentNickname()) {
+	if (!IsMe(pTarget)) {
 		ChannelIterator channelItr = GetChannel(pTarget);
 
 		if ((channelItr != ChannelEnd() && channelItr->GetSize() != 2) && 
@@ -753,7 +753,7 @@ void BnxBot::OnRegistered() {
 	tv.tv_sec = 60;
 	event_add(m_pAntiIdleTimer, &tv);
 
-	if (GetNickname() == GetCurrentNickname() && 
+	if (IsMe(GetNickname()) &&
 		!m_strNickServ.empty() && !m_strNickServPassword.empty()) {
 		Send(AUTO, "PRIVMSG %s :identify %s\r\n", m_strNickServ.c_str(), 
 			m_strNickServPassword.c_str());
@@ -794,7 +794,7 @@ void BnxBot::OnNumeric(const char *pSource, int numeric, const char *pParams[], 
 						!isalpha(strNickname[p]) &&
 						!IrcIsSpecial(strNickname[p]); ++p);
 
-				if (p < strNickname.size() && GetCurrentNickname() == strNickname.substr(p)) {
+				if (p < strNickname.size() && IsMe(strNickname.substr(p))) {
 					AddChannel(pChannel);
 
 					// Now really collect useful information
@@ -819,7 +819,7 @@ void BnxBot::OnNumeric(const char *pSource, int numeric, const char *pParams[], 
 
 		channelItr->AddMember(IrcUser(pNickname,pUsername,pHostname));
 
-		if (GetCurrentNickname() == pNickname && strchr(pMode,'@') != NULL)
+		if (IsMe(pNickname) && strchr(pMode,'@') != NULL)
 			channelItr->SetOperator(true);
 
 		break;
@@ -850,7 +850,7 @@ void BnxBot::OnKick(const char *pSource, const char *pChannel, const char *pUser
 
 	IrcUser clUser(pSource);
 
-	if (pUser == GetCurrentNickname()) {
+	if (IsMe(pUser)) {
 		m_clShitList.AddMask(IrcUser("*","*",clUser.GetHostname()));
 		m_clShitList.Save();
 
@@ -945,7 +945,7 @@ void BnxBot::OnPart(const char *pSource, const char *pChannel, const char *pReas
 
 	IrcUser clUser(pSource);
 
-	if (clUser.GetNickname() == GetCurrentNickname()) {
+	if (IsMe(clUser.GetNickname())) {
 		DeleteChannel(pChannel);
 		return;
 	}
@@ -962,7 +962,7 @@ void BnxBot::OnPart(const char *pSource, const char *pChannel, const char *pReas
 void BnxBot::OnMode(const char *pSource, const char *pTarget, const char *pMode, const char *pParams[], unsigned int numParams) {
 	IrcClient::OnMode(pSource, pTarget, pMode, pParams, numParams);
 
-	if (pTarget != GetCurrentNickname()) {
+	if (!IsMe(pTarget)) {
 		// Targetting channel
 
 		ChannelIterator channelItr = GetChannel(pTarget);
@@ -981,7 +981,7 @@ void BnxBot::OnMode(const char *pSource, const char *pTarget, const char *pMode,
 		for ( ;*pMode != '\0'; ++pMode) {
 			switch (*pMode) {
 			case 'o':
-				if (*pParams == GetCurrentNickname())
+				if (IsMe(*pParams))
 					channelItr->SetOperator(bSetMode);
 
 				++pParams;
@@ -1489,7 +1489,7 @@ bool BnxBot::OnCommandVoteBan(UserSession &clSession, const std::string &strChan
 		return false;
 
 	// Apparently the original checks this here
-	if (!IrcStrCaseCmp(GetCurrentNickname().c_str(),strNickname.c_str())) {
+	if (IsMe(strNickname)) {
 		Send(AUTO, "PRIVMSG %s :Only a MORON thinks I would try to ban MYSELF!\r\n", 
 			clUser.GetNickname().c_str());
 		return true;
@@ -1616,7 +1616,9 @@ void BnxBot::AddChannel(const char *pChannel) {
 	if (GetChannel(pChannel) != ChannelEnd())
 		return;
 
-	m_vCurrentChannels.push_back(BnxChannel(pChannel));
+	IrcCaseMapping eCaseMapping = GetIrcTraits().GetCaseMapping();
+
+	m_vCurrentChannels.push_back(BnxChannel(pChannel, eCaseMapping));
 }
 
 void BnxBot::DeleteChannel(const char *pChannel) {
