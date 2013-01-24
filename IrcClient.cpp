@@ -337,7 +337,7 @@ void IrcClient::OnDisconnect() {
 }
 
 void IrcClient::OnRegistered() {
-
+	Log("Registered with nickname %s", GetCurrentNickname().c_str());
 }
 
 void IrcClient::OnNumeric(const char *pPrefix, int numeric, const char **pParams, unsigned int numParams) {
@@ -375,8 +375,10 @@ void IrcClient::OnNick(const char *pSource, const char *pNewNick) {
 
 	const std::string &strNickname = clUser.GetNickname();
 
-	if (m_strCurrentNickname == strNickname)
+	if (IsMe(strNickname)) {
 		m_strCurrentNickname = pNewNick;
+		Log("Nickname changed to %s", pNewNick);
+	}
 }
 
 void IrcClient::OnQuit(const char *pSource, const char *pReason) {
