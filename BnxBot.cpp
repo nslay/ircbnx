@@ -889,6 +889,10 @@ void BnxBot::OnPrivmsg(const char *pSource, const char *pTarget, const char *pMe
 			if (message.dataSize > 0)
 				OnCtcpAction(pSource, pTarget, pMessage);
 		}
+		else if (!strcmp(pTag,"PING")) {
+			if (message.dataSize > 0)
+				OnCtcpPing(pSource, pTarget, pMessage);
+		}
 	}
 	else {
 		// Don't use the decoded non-tagged data since it strips lone backslash
@@ -1030,6 +1034,18 @@ void BnxBot::OnQuit(const char *pSource, const char *pReason) {
 
 void BnxBot::OnCtcpAction(const char *pSource, const char *pTarget, const char *pMessage) {
 	ProcessMessage(pSource, pTarget, pMessage);
+}
+
+void BnxBot::OnCtcpPing(const char *pSource, const char *pTarget, const char *pMessage) {
+	IrcUser clUser(pSource);
+
+	if (IsSquelched(clUser))
+		return;
+
+	CtcpEncoder clEncoder;
+	clEncoder.Encode(MakeCtcpMessage("PING", pMessage));
+
+	Send(AUTO, "NOTICE %s :%s\r\n", clUser.GetNickname().c_str(), clEncoder.GetRaw());
 }
 
 void BnxBot::OnCtcpVersion(const char *pSource, const char *pTarget) {
