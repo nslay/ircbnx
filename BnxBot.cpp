@@ -519,7 +519,11 @@ void BnxBot::ProcessMessage(const char *pSource, const char *pTarget, const char
 	if (!IsMe(pTarget)) {
 		ChannelIterator channelItr = GetChannel(pTarget);
 
-		if ((channelItr != ChannelEnd() && channelItr->GetSize() != 2) && 
+		// Uhh?
+		if (channelItr == ChannelEnd())
+			return;
+
+		if (channelItr->GetSize() != 2 && 
 			IrcStrCaseStr(pMessage,GetCurrentNickname().c_str()) == NULL) {
 			return;
 		}
@@ -527,10 +531,7 @@ void BnxBot::ProcessMessage(const char *pSource, const char *pTarget, const char
 		// BNX seems to only consider "fuck" inappropriate
 		// Due to the multi-channel nature of IRC, we can only do this in channel
 		// The original would also ban for whispered profanity
-		if (channelItr->IsOperator() && IrcStrCaseStr(pMessage,"fuck") != NULL &&
-			(channelItr->GetSize() == 2 || 
-			IrcStrCaseStr(pMessage,GetCurrentNickname().c_str()) != NULL)) {
-
+		if (channelItr->IsOperator() && IrcStrCaseStr(pMessage,"fuck") != NULL) {
 			Send(LATER, "PRIVMSG %s :I don't appreciate being spoken to in that manner, %s.\r\n", 
 					pTarget, clUser.GetNickname().c_str());
 			Send(LATER, "MODE %s +b %s\r\n", pTarget, clUser.GetBanMask().c_str());
