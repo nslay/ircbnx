@@ -1664,7 +1664,15 @@ void BnxBot::Unsquelch(const IrcUser &clUser) {
 }
 
 void BnxBot::OnConnectTimer(evutil_socket_t fd, short what) {
-	Connect(m_strServer, m_strPort);
+	if (!Connect(m_strServer, m_strPort)) {
+		// Connect failed outright so reschedule the timer
+		struct timeval tv;
+
+		tv.tv_sec = 5;
+		tv.tv_usec = 0;
+
+		evtimer_add(m_pConnectTimer, &tv);
+	}
 }
 
 void BnxBot::OnFloodTimer(evutil_socket_t fd, short what) {

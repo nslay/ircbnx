@@ -9,4 +9,5 @@
 - Add who command.
 - Now handles case mapping properly when dealing with the server.
 - Add CTCP ping support.
+- Fix bug where Connect() fails (e.g. due to DNS) and OnConnectTimer() is not rescheduled.
 
