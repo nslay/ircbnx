@@ -1,0 +1,66 @@
+;
+; RESPONSE.TXT
+;
+; NOTE: Converted to regex
+;
+; Standard response rules
+;
+P \bwho +are +you\b
+R Who I am is not important...
+P \bwhat\b.*\bare\b.*\byou\b
+P \bare\b.*\byou\b.*\bbot\b
+R I'm a BNX Chatterbot v1.0
+P \byou\b.*\bare\b.*gay\b
+P \bare\b.*\byou\b.*\bgay\b
+P \byou\b.*\bare\b.*\bfag\b
+P \bare\b.*\byou\b.*\bfag\b
+R Why, are you a homophobe?
+P haha
+P hehe
+P \blol\b
+P \brofl\b
+R Something which causes you mirth?
+R Are you laughing at me?
+;
+; Small talk rules
+;
+P \bhug +me\b
+P \bembrace +me\b
+P \btake +me +.*\byour\b.* +arm\b
+P \bwrap +.*\byour\b.* +arm\b
+R /me hugs %s.
+R /me shakes %s's hand instead.
+P \bi\b.*\blove\b.*\byou\b
+R I love you too. ;-)
+P \bi\b.*\bhate\b.*\byou\b
+R Hate is such a strong word...
+P \bwhat\b.*\bmy\b.*\blag\b
+R I see you with 6 red.
+;
+; Polite rules
+;
+P \bhi\b
+P \bsup\b
+P \bhey\b
+P \bhowdy\b
+P \bhail\b
+P \bhello\b
+R Hi, how are you?
+R Sup?
+R Hail!
+R Greetz!
+P \bbye\b
+P \blater\b
+P \bciao\b
+P \bgood +night\b
+R Bye!
+R See ya!
+R Nice chatting with you!
+R Bah! Good riddance! j/k
+P \bhow +are +you\b
+P \bhow +you +doing\b
+P \bhow +you +feel\b
+P \bhow +you +been\b
+R Do you care? ;-)
+R Just fine, thanks.
+R I'm doing great!

@@ -1,0 +1,13 @@
+1.0.0 - 12/31/2012
+- Initial release.
+
+1.1.0 - 03/02/2013
+- Fix bug where a user is not banned for profanity when number of users is two.
+- Fix bug where target voteban user can change nickname to avoid being banned.
+- Add channel flood protection.
+- Add rejoin command.
+- Add who command.
+- Now handles case mapping properly when dealing with the server.
+- Add CTCP ping support.
+- Fix bug where Connect() fails (e.g. due to DNS) and OnConnectTimer() is not rescheduled.
+
