@@ -14,5 +14,4 @@
 1.2.0 - ??/??/????
 - Fix support for compiling without PCRE enabled.
 - Output bot version to log file on startup.
-- Fix bug where version string is potentially used out of scope in CTCP VERSION response.
 

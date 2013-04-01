@@ -1056,6 +1056,10 @@ void BnxBot::OnCtcpVersion(const char *pSource, const char *pTarget) {
 	if (IsSquelched(clUser))
 		return;
 
+	// Actually, this can be used inline below (as before) even though it seems like it might be destructed.
+	// One might be tempted to think that it is destructs when MakeCtcpMessage() has finished,
+	//  but apparently this is not the case and it destructs when the entire expression has
+	//  finished executing.
 	std::string strVersion = GetVersionString();
 
 	CtcpEncoder clEncoder;
