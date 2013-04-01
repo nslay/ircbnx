@@ -31,14 +31,14 @@
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#else // _WIN32
+#else // !_WIN32
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
 #include <fcntl.h>
 #include <errno.h>
-#endif // !_WIN32
+#endif // _WIN32
 
 #include <sstream>
 #include <cstdarg>
@@ -133,7 +133,11 @@ bool IrcClient::Connect(const std::string &strServer, const std::string &strPort
 	m_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
 	if (m_socket == INVALID_SOCKET) {
+#ifdef _WIN32
+		Log("socket failed (%d)", WSAGetLastError());
+#else // !_WIN32
 		Log("socket failed (%d): %s", errno, strerror(errno));
+#endif // _WIN32
 		return false;
 	}
 
@@ -146,7 +150,7 @@ bool IrcClient::Connect(const std::string &strServer, const std::string &strPort
 
 		return false;
 	}
-#else // _WIN32
+#else // !_WIN32
 	int flags = fcntl(m_socket, F_GETFL);
 
 	if (fcntl(m_socket, F_SETFL, flags | O_NONBLOCK) == -1) {
@@ -156,7 +160,7 @@ bool IrcClient::Connect(const std::string &strServer, const std::string &strPort
 
 		return false;
 	}
-#endif // !_WIN32
+#endif // _WIN32
 
 	struct addrinfo hints, *pResults = NULL;
 	memset(&hints, 0, sizeof(hints));
@@ -185,14 +189,14 @@ bool IrcClient::Connect(const std::string &strServer, const std::string &strPort
 		freeaddrinfo(pResults);
 		return false;
 	}
-#else // _WIN32
+#else // !_WIN32
 	if (e != 0 && errno != EINPROGRESS) {
 		Log("connect() failed (%d): %s", errno, strerror(errno));
 		CloseSocket();
 		freeaddrinfo(pResults);
 		return false;
 	}
-#endif // !_WIN32
+#endif // _WIN32
 
 	freeaddrinfo(pResults);
 
@@ -281,10 +285,11 @@ void IrcClient::Send(WhenType eWhen, const char *pFormat, ...) {
 		return;
 
 	char buff[513];
+	int buffSize = 0;
 
 	va_list ap;
 	va_start(ap, pFormat);
-	int buffSize = vsnprintf(buff, sizeof(buff), pFormat, ap);
+	buffSize = vsnprintf(buff, sizeof(buff), pFormat, ap);
 	va_end(ap);
 
 	switch (eWhen) {
@@ -318,9 +323,9 @@ void IrcClient::SendRaw(const void *pData, size_t dataSize) {
 
 #ifdef _WIN32
 	send(m_socket, (const char *)pData, (int)dataSize, 0);
-#else // _WIN32
+#else // !_WIN32
 	send(m_socket, pData, dataSize, 0);
-#endif // !_WIN32
+#endif // _WIN32
 }
 
 void IrcClient::OnConnect() {
@@ -438,9 +443,9 @@ void IrcClient::CloseSocket() {
 
 #ifdef _WIN32
 	closesocket(m_socket);
-#else // _WIN32
+#else // !_WIN32
 	close(m_socket);
-#endif // !_WIN32
+#endif // _WIN32
 
 	m_socket = INVALID_SOCKET;
 }
@@ -536,10 +541,10 @@ void IrcClient::OnRead(evutil_socket_t fd, short what) {
 #ifdef _WIN32
 	int readSize = recv(m_socket, m_stagingBuffer + m_stagingBufferSize, 
 		(int)(sizeof(m_stagingBuffer)-1-m_stagingBufferSize),0);
-#else // _WIN32
+#else // !_WIN32
 	ssize_t readSize = recv(m_socket, m_stagingBuffer + m_stagingBufferSize, 
 		sizeof(m_stagingBuffer)-1-m_stagingBufferSize,0);
-#endif // !_WIN32
+#endif // _WIN32
 
 	if (readSize == 0) {
 		Log("Remote host closed the connection.");
@@ -547,7 +552,11 @@ void IrcClient::OnRead(evutil_socket_t fd, short what) {
 		return;
 	}
 	else if (readSize < 0) {
+#ifdef _WIN32
+		Log("recv() failed (%d)", WSAGetLastError());
+#else // !_WIN32
 		Log("recv() failed (%d): %s", errno, strerror(errno));
+#endif // _WIN32
 		OnDisconnect();
 		return;
 	}

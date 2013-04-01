@@ -129,6 +129,7 @@ void BnxBot::StartUp() {
 		return;
 
 	Log("Starting up ...");
+	Log("Version: %s", GetVersionString().c_str());
 
 	m_pConnectTimer = event_new(GetEventBase(), -1, 0, &Dispatch<&BnxBot::OnConnectTimer>, this);
 	m_pFloodTimer = event_new(GetEventBase(), -1, EV_PERSIST, &Dispatch<&BnxBot::OnFloodTimer>, this);

@@ -11,3 +11,7 @@
 - Add CTCP ping support.
 - Fix bug where Connect() fails (e.g. due to DNS) and OnConnectTimer() is not rescheduled.
 
+1.2.0 - ??/??/????
+- Fix support for compiling without PCRE enabled.
+- Output bot version to log file on startup.
+

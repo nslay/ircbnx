@@ -47,9 +47,9 @@ int main(int argc, char **argv) {
 		std::cerr << "WSAStartup failed with error: " << e << std::endl;
 		return -1;
 	}
-#else // _WIN32
+#else // !_WIN32
 	signal(SIGPIPE, SIG_IGN);
-#endif // !_WIN32
+#endif // _WIN32
 
 	BnxDriver &clBnxDriver = BnxDriver::GetInstance();
 

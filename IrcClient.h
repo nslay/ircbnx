@@ -32,6 +32,12 @@
 #include "IrcCounter.h"
 #include "event2/event.h"
 
+#ifdef _WIN32
+// For SOCKET typedef
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#endif // _WIN32
+
 class IrcClient {
 public:
 	IrcClient()
@@ -91,10 +97,10 @@ protected:
 private:
 #ifdef _WIN32
 	typedef SOCKET SocketType;
-#else
+#else // !_WIN32
 	typedef int SocketType;
 	enum { INVALID_SOCKET = -1 };
-#endif
+#endif // _WIN32
 
 	SocketType m_socket;
 	std::string m_strNickname, m_strUsername, m_strRealName, m_strCurrentNickname, 

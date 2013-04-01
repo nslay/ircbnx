@@ -34,9 +34,9 @@
 
 #ifdef USE_PCRE
 #include <pcreposix.h>
-#else // USE_PCRE
+#else // !USE_PCRE
 #include <regex.h>
-#endif // !USE_PCRE
+#endif // USE_PCRE
 
 class BnxResponseRule {
 public:
