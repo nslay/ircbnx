@@ -1006,8 +1006,10 @@ void BnxBot::OnCtcpVersion(const char *pSource, const char *pTarget) {
 
 	m_clFloodDetector.Hit(clUser);
 
+	std::string strVersion = GetVersionString();
+
 	CtcpEncoder clEncoder;
-	clEncoder.Encode(MakeCtcpMessage("VERSION", GetVersionString().c_str()));
+	clEncoder.Encode(MakeCtcpMessage("VERSION", strVersion.c_str()));
 
 	Send(AUTO, "NOTICE %s :%s\r\n", clUser.GetNickname().c_str(), clEncoder.GetRaw());
 }

@@ -41,7 +41,7 @@ class BnxBot : public IrcClient {
 public:
 	typedef BnxAccessSystem::UserSession UserSession;
 
-	enum { MAJOR_VERSION = 1, MINOR_VERSION = 0, PATCH_LEVEL = 1 };
+	enum { MAJOR_VERSION = 1, MINOR_VERSION = 0, PATCH_LEVEL = 2 };
 
 	static std::string GetVersionString();
 
