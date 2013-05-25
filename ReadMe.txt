@@ -60,6 +60,7 @@ homechannels - A comma delimited list of channels to join.
 nickserv - The nickserv service name (if any).
 nickservpassword - The password to identify with the nickserv (if any).
 shitlist - The shit list file to use.
+seenlist - The seen list file to use.
 accesslist - The access list file to use.
 responserules - The response rules file to use.
 
