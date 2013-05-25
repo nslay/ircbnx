@@ -34,6 +34,7 @@
 #include "BnxShitList.h"
 #include "BnxChannel.h"
 #include "BnxFloodDetector.h"
+#include "BnxSeenList.h"
 #include "IrcClient.h"
 #include "IrcUser.h"
 
@@ -63,6 +64,7 @@ public:
 	bool LoadResponseRules(const std::string &strFileName);
 	bool LoadAccessList(const std::string &strFilename);
 	bool LoadShitList(const std::string &strFilename);
+	bool LoadSeenList(const std::string &strSeenList);
 
 	void StartUp();
 	void Shutdown();
@@ -141,6 +143,8 @@ protected:
 					const std::string &strNickname);
 	virtual bool OnCommandRejoin(UserSession &clSession, const std::string &strChannel);
 	virtual bool OnCommandWho(UserSession &clSession, const std::string &strChannel);
+	virtual bool OnCommandSeen(UserSession &clSession, const std::string &strNickname);
+	virtual bool OnCommandLastSeen(UserSession &clSession, const std::string &strChannel);
 
 private:
 	struct MaskMatches {
@@ -168,7 +172,7 @@ private:
 	std::string m_strProfileName, m_strServer, m_strPort, m_strNickServ, 
 			m_strNickServPassword, m_strLogFile;
 	struct event *m_pConnectTimer, *m_pFloodTimer, *m_pVoteBanTimer, 
-			*m_pChannelsTimer, *m_pAntiIdleTimer;
+			*m_pChannelsTimer, *m_pAntiIdleTimer, *m_pSeenListTimer;
 
 	bool m_bChatter;
 
@@ -179,6 +183,7 @@ private:
 	BnxAccessSystem m_clAccessSystem;
 	BnxShitList m_clShitList;
 	BnxFloodDetector m_clFloodDetector;
+	BnxSeenList m_clSeenList;
 
 	template<void (BnxBot::*Method)(evutil_socket_t, short)>
 	static void Dispatch(evutil_socket_t fd, short what, void *arg) {
@@ -197,6 +202,7 @@ private:
 	void OnVoteBanTimer(evutil_socket_t fd, short what);
 	void OnChannelsTimer(evutil_socket_t fd, short what);
 	void OnAntiIdleTimer(evutil_socket_t fd, short what);
+	void OnSeenListTimer(evutil_socket_t fd, short what);
 };
 
 #endif // !BNXBOT_H

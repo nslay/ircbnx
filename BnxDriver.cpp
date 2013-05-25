@@ -151,6 +151,7 @@ void BnxDriver::LoadBot(const IniFile::Section &clSection) {
 	std::string strRealName = clSection.GetValue<std::string>("realname", "BnxBot");
 	std::string strAccessList = clSection.GetValue<std::string>("accesslist", "access.lst");
 	std::string strShitList = clSection.GetValue<std::string>("shitlist", "shit.lst");
+	std::string strSeenList = clSection.GetValue<std::string>("seenlist", "seen.lst");
 	std::string strResponseRules = clSection.GetValue<std::string>("responserules", "response.txt");
 	std::string strHomeChannels = clSection.GetValue<std::string>("homechannels", "");
 	std::string strNickServ = clSection.GetValue<std::string>("nickserv", "");
@@ -164,6 +165,7 @@ void BnxDriver::LoadBot(const IniFile::Section &clSection) {
 	pclBot->LoadResponseRules(strResponseRules);
 	pclBot->LoadAccessList(strAccessList);
 	pclBot->LoadShitList(strShitList);
+	pclBot->LoadSeenList(strSeenList);
 	pclBot->SetHomeChannels(strHomeChannels);
 }
 

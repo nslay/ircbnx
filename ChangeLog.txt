@@ -14,4 +14,4 @@
 1.2.0 - ??/??/????
 - Fix support for compiling without PCRE enabled.
 - Output bot version to log file on startup.
-
+- Add seen and lastseen commands.

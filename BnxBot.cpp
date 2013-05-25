@@ -124,6 +124,12 @@ bool BnxBot::LoadShitList(const std::string &strFilename) {
 	return m_clShitList.Load();
 }
 
+bool BnxBot::LoadSeenList(const std::string &strSeenList) {
+	m_clSeenList.SetSeenListFile(strSeenList);
+
+	return m_clSeenList.Load();
+}
+
 void BnxBot::StartUp() {
 	if (m_pConnectTimer != NULL)
 		return;
@@ -136,6 +142,7 @@ void BnxBot::StartUp() {
 	m_pVoteBanTimer = event_new(GetEventBase(), -1, EV_PERSIST, &Dispatch<&BnxBot::OnVoteBanTimer>, this);
 	m_pChannelsTimer = event_new(GetEventBase(), -1, EV_PERSIST, &Dispatch<&BnxBot::OnChannelsTimer>, this);
 	m_pAntiIdleTimer = event_new(GetEventBase(), -1, EV_PERSIST, &Dispatch<&BnxBot::OnAntiIdleTimer>, this);
+	m_pSeenListTimer = event_new(GetEventBase(), -1, EV_PERSIST, &Dispatch<&BnxBot::OnSeenListTimer>, this);
 
 	struct timeval tv;
 	tv.tv_sec = tv.tv_usec = 0;
@@ -178,6 +185,12 @@ void BnxBot::Shutdown() {
 		event_free(m_pAntiIdleTimer);
 		m_pAntiIdleTimer = NULL;
 	}
+
+	if (m_pSeenListTimer != NULL) {
+		event_del(m_pSeenListTimer);
+		event_free(m_pSeenListTimer);
+		m_pSeenListTimer = NULL;
+	}
 }
 
 void BnxBot::Disconnect() {
@@ -194,6 +207,9 @@ void BnxBot::Disconnect() {
 
 	if (m_pAntiIdleTimer != NULL)
 		event_del(m_pAntiIdleTimer);
+
+	if (m_pSeenListTimer != NULL)
+		event_del(m_pSeenListTimer);
 
 	m_vCurrentChannels.clear();
 	m_vSquelchedUsers.clear();
@@ -476,6 +492,24 @@ bool BnxBot::ProcessCommand(const char *pSource, const char *pTarget, const char
 		return OnCommandWho(*sessionItr, strChannel);
 	}
 
+	if (strCommand == "seen") {
+		std::string strNickname;
+
+		if (!(messageStream >> strNickname))
+			return false;
+
+		return OnCommandSeen(*sessionItr, strNickname);
+	}
+
+	if (strCommand == "lastseen") {
+		std::string strChannel;
+
+		if (!(messageStream >> strChannel))
+			return false;
+
+		return OnCommandLastSeen(*sessionItr, strChannel);
+	}
+
 	return false;
 }
 
@@ -755,6 +789,9 @@ void BnxBot::OnRegistered() {
 	tv.tv_sec = 60;
 	event_add(m_pAntiIdleTimer, &tv);
 
+	tv.tv_sec = 300;
+	event_add(m_pSeenListTimer, &tv);
+
 	if (IsMe(GetNickname()) &&
 		!m_strNickServ.empty() && !m_strNickServPassword.empty()) {
 		Send(AUTO, "PRIVMSG %s :identify %s\r\n", m_strNickServ.c_str(), 
@@ -819,7 +856,11 @@ void BnxBot::OnNumeric(const char *pSource, int numeric, const char *pParams[], 
 		if (channelItr == ChannelEnd())
 			return;
 
-		channelItr->AddMember(IrcUser(pNickname,pUsername,pHostname));
+		{
+			IrcUser clUser(pNickname,pUsername,pHostname);
+			channelItr->AddMember(clUser);
+			m_clSeenList.Saw(clUser, pChannel);
+		}
 
 		if (IsMe(pNickname) && strchr(pMode,'@') != NULL)
 			channelItr->SetOperator(true);
@@ -867,6 +908,9 @@ void BnxBot::OnKick(const char *pSource, const char *pChannel, const char *pUser
 
 void BnxBot::OnPrivmsg(const char *pSource, const char *pTarget, const char *pMessage) {
 	IrcClient::OnPrivmsg(pSource, pTarget, pMessage);
+
+	if (!IsMe(pTarget))
+		m_clSeenList.Saw(IrcUser(pSource), pTarget);
 
 	ProcessFlood(pSource, pTarget, pMessage);
 
@@ -930,6 +974,7 @@ void BnxBot::OnJoin(const char *pSource, const char *pChannel) {
 	IrcUser clUser(pSource);
 
 	channelItr->AddMember(clUser);
+	m_clSeenList.Saw(clUser, pChannel);
 
 	if (channelItr->IsOperator()) {
 		BnxShitList::ConstIterator shitItr = m_clShitList.FindMatch(clUser);
@@ -1636,6 +1681,71 @@ bool BnxBot::OnCommandWho(UserSession &clSession, const std::string &strChannel)
 	return true;
 }
 
+bool BnxBot::OnCommandSeen(UserSession &clSession, const std::string &strNickname) {
+	const IrcUser &clUser = clSession.GetUser();
+
+	BnxSeenList::Iterator itr = m_clSeenList.Find(strNickname);
+
+	if (itr == m_clSeenList.End()) {
+		Send(AUTO, "PRIVMSG %s :Haven't seen %s in any channel.\r\n",
+			clUser.GetNickname().c_str(), strNickname.c_str());
+		return true;
+	}
+
+	const BnxSeenList::SeenInfo &clSeenInfo = itr->second;
+
+	time_t rawTime = clSeenInfo.GetTimestamp();
+
+	// XXX: Not thread-safe
+	struct tm *pLocalTime = localtime(&rawTime);
+
+	char aFormattedTime[128] = "";
+	strftime(aFormattedTime, sizeof(aFormattedTime), "%c", pLocalTime);
+
+	Send(AUTO, "PRIVMSG %s :Last saw %s in channel %s on %s.\r\n",
+		clUser.GetNickname().c_str(), clSeenInfo.GetUser().GetHostmask().c_str(),
+		clSeenInfo.GetChannel().c_str(), aFormattedTime);
+
+	return true;
+}
+
+bool BnxBot::OnCommandLastSeen(UserSession &clSession, const std::string &strChannel) {
+	const int iMaxTime = 60*60*24;
+	const IrcUser &clUser = clSession.GetUser();
+
+	Send(AUTO, "PRIVMSG %s :Users last seen in the past day in channel %s:\r\n",
+		clUser.GetNickname().c_str(), strChannel.c_str());
+
+	BnxSeenList::Iterator itr;
+
+	int iCount = 0;
+	for (itr = m_clSeenList.Begin(); itr != m_clSeenList.End(); ++itr) {
+		const BnxSeenList::SeenInfo &clSeenInfo = itr->second;
+
+		if (IrcStrCaseCmp(clSeenInfo.GetChannel().c_str(), strChannel.c_str()) != 0 ||
+			time(NULL) - clSeenInfo.GetTimestamp() >= iMaxTime) {
+			continue;
+		}
+
+		++iCount;
+
+		time_t rawTime = clSeenInfo.GetTimestamp();
+	
+		// XXX: Not thread-safe
+		struct tm *pLocalTime = localtime(&rawTime);
+	
+		char aFormattedTime[128] = "";
+		strftime(aFormattedTime, sizeof(aFormattedTime), "%H:%M", pLocalTime);
+
+		Send(AUTO, "PRIVMSG %s :%s at %s.\r\n", clUser.GetNickname().c_str(),
+			clSeenInfo.GetUser().GetHostmask().c_str(), aFormattedTime);
+	}
+
+	Send(AUTO, "PRIVMSG %s :Saw a total of %d users.\r\n", clUser.GetNickname().c_str(), iCount);
+
+	return true;
+}
+
 void BnxBot::AddChannel(const char *pChannel) {
 	if (GetChannel(pChannel) != ChannelEnd())
 		return;
@@ -1779,5 +1889,12 @@ void BnxBot::OnChannelsTimer(evutil_socket_t fd, short what) {
 void BnxBot::OnAntiIdleTimer(evutil_socket_t fd, short what) {
 	if (time(NULL)-GetLastRecvTime() > 30)
 		Send(AUTO, "PING :%s\r\n", GetCurrentServer().c_str());
+}
+
+void BnxBot::OnSeenListTimer(evutil_socket_t fd, short what) {
+	// Occasionally expire and save entries
+
+	m_clSeenList.ExpireEntries();
+	m_clSeenList.Save();
 }
 
