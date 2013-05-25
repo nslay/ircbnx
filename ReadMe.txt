@@ -249,6 +249,12 @@ where - Have the bot tell you its current channels.
 who <channel> - Have the bot tell you the users in a channel it is
                 currently in.
 
+seen <nickname> - Have the bot tell you where and when it last saw
+                  a user with nickname <nickname>.
+
+lastseen <channel> - Have the bot tell you all users last seen in
+                     in a channel in the past day.
+
 #######################################################################
 # Miscellaneous                                                       #
 #######################################################################
