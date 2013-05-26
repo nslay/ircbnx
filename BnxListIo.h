@@ -114,7 +114,8 @@ bool BnxSaveList(const char *pFileName, const std::vector<ElementType> &vElement
 			size_t i = itr - vElements.begin();
 
 			if (!vIsWritten[i]) {
-				tmpListStream << strLine << std::endl;
+				// Write the element in memory lest some other aspect of it changed
+				tmpListStream << vElements[i] << std::endl;
 				vIsWritten[i] = true;
 			}
 		}
