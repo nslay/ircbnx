@@ -39,11 +39,13 @@ Usage: ircbnx [-hv] [-c config.ini]
 For simplicity and flexibility, the configuration file format is INI.
 Every IRCBNX config file must have a "global" section and a "profiles"
 key specifying a comma delimited list of bot configurations to examine.
+The log file may also be optionally specified with the "logfile" key.
 
 For example:
 
 [global]
 profiles=bot1,bot2
+logfile=bot.log
 
 In this example, two bots, "bot1" and "bot2" are to be examined.
 

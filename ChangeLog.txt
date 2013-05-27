@@ -15,3 +15,4 @@
 - Fix support for compiling without PCRE enabled.
 - Output bot version to log file on startup.
 - Add seen and lastseen commands.
+- Can now run as a daemon.
