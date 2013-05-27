@@ -65,6 +65,7 @@ public:
 	bool LoadAccessList(const std::string &strFilename);
 	bool LoadShitList(const std::string &strFilename);
 	bool LoadSeenList(const std::string &strSeenList);
+	void SetLogFile(const std::string &strLogFile);
 
 	void StartUp();
 	void Shutdown();

@@ -130,6 +130,10 @@ bool BnxBot::LoadSeenList(const std::string &strSeenList) {
 	return m_clSeenList.Load();
 }
 
+void BnxBot::SetLogFile(const std::string &strLogFile) {
+	m_strLogFile = strLogFile;
+}
+
 void BnxBot::StartUp() {
 	if (m_pConnectTimer != NULL)
 		return;

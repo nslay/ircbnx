@@ -65,14 +65,18 @@ public:
 	BnxBot * GetBot(const std::string &strProfile) const;
 
 private:
-	BnxDriver()
-	: m_strConfigFile("bot.ini") { }
+	std::string m_strConfigFile, m_strLogFile;
+	std::vector<BnxBot *> m_vBots;
+
+	BnxDriver() {
+		m_strConfigFile = "bot.ini";
+		m_strLogFile = "bot.log";
+	}
 
 	// Disabled
 	BnxDriver(const BnxDriver &);
 
-	std::string m_strConfigFile;
-	std::vector<BnxBot *> m_vBots;
+	bool Daemonize();
 
 	void LoadBot(const IniFile::Section &clSection);
 

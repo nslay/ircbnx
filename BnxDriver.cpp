@@ -23,10 +23,20 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cstdio>
 #include <sstream>
 #include "event2/event.h"
 #include "getopt.h"
 #include "BnxDriver.h"
+
+#ifdef _WIN32
+
+#else // !_WIN32
+#include <sys/types.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <unistd.h>
+#endif // _WIN32
 
 #ifdef USE_PCRE
 // Include for pcre_version()
@@ -79,6 +89,8 @@ bool BnxDriver::Load() {
 	const IniFile::Section &clGlobal = clConfig.GetSection("global");
 
 	std::string strEntries = clGlobal.GetValue<std::string>("profiles", "");
+	m_strLogFile = clGlobal.GetValue<std::string>("logfile", m_strLogFile);
+
 	if (strEntries.empty())
 		return false;
 
@@ -95,6 +107,9 @@ bool BnxDriver::Load() {
 
 bool BnxDriver::Run() {
 	if (!Load())
+		return false;
+
+	if (!Daemonize())
 		return false;
 
 	struct event_base *pEventBase;
@@ -124,6 +139,50 @@ void BnxDriver::Reset() {
 
 	m_vBots.clear();
 }
+
+#ifdef _WIN32
+bool BnxDriver::Daemonize() {
+	// TODO: Implement this
+	return true;
+}
+#else // !_WIN32
+bool BnxDriver::Daemonize() {
+	// Taken from daemon(3) (which is not standard)
+
+	// Ignore signal from parent exiting
+	signal(SIGHUP, SIG_IGN);
+
+	switch (fork()) {
+	case -1:
+		perror("fork");
+		return false;
+	case 0:
+		// Child
+		break;
+	default:
+		// Parent
+		exit(0);
+	}
+
+	setsid();
+
+	int fd = open("/dev/null", O_RDWR, 0);
+
+	if (fd != -1) {
+		dup2(fd, STDIN_FILENO);
+		dup2(fd, STDOUT_FILENO);
+		dup2(fd, STDERR_FILENO);
+
+		if (fd != STDIN_FILENO && 
+			fd != STDOUT_FILENO && 
+			fd != STDERR_FILENO) {
+			close(fd);
+		}
+	}
+	
+	return true;
+}
+#endif // _WIN32
 
 void BnxDriver::LoadBot(const IniFile::Section &clSection) {
 	bool bEnabled = clSection.GetValue<bool>("enabled", true);
@@ -166,6 +225,7 @@ void BnxDriver::LoadBot(const IniFile::Section &clSection) {
 	pclBot->LoadAccessList(strAccessList);
 	pclBot->LoadShitList(strShitList);
 	pclBot->LoadSeenList(strSeenList);
+	pclBot->SetLogFile(m_strLogFile);
 	pclBot->SetHomeChannels(strHomeChannels);
 }
 
