@@ -318,6 +318,9 @@ Unix-like systems:
 
 IRCBNX is known to build in the following environments:
 
+FreeBSD 10.0:
+- Clang 3.3
+
 FreeBSD 9.1:
 - GCC 4.2
 - Clang 3.1
