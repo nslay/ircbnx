@@ -118,12 +118,12 @@ bool BnxDriver::Run() {
 #ifdef __unix__
 	m_pSigTerm = event_new(pEventBase, SIGTERM, EV_SIGNAL|EV_PERSIST, &Dispatch<&BnxDriver::OnSignal>, this);
 	m_pSigInt = event_new(pEventBase, SIGINT, EV_SIGNAL|EV_PERSIST, &Dispatch<&BnxDriver::OnSignal>, this);
-	m_pSigKill = event_new(pEventBase, SIGKILL, EV_SIGNAL|EV_PERSIST, &Dispatch<&BnxDriver::OnSignal>, this);
+	m_pSigAbrt = event_new(pEventBase, SIGABRT, EV_SIGNAL|EV_PERSIST, &Dispatch<&BnxDriver::OnSignal>, this);
 	m_pSigQuit = event_new(pEventBase, SIGQUIT, EV_SIGNAL|EV_PERSIST, &Dispatch<&BnxDriver::OnSignal>, this);
 
 	event_add(m_pSigTerm, NULL);
 	event_add(m_pSigInt, NULL);
-	event_add(m_pSigKill, NULL);
+	event_add(m_pSigAbrt, NULL);
 	event_add(m_pSigQuit, NULL);
 #endif // __unix__
 
@@ -137,10 +137,10 @@ bool BnxDriver::Run() {
 #ifdef __unix__
 	event_free(m_pSigTerm);
 	event_free(m_pSigInt);
-	event_free(m_pSigKill);
+	event_free(m_pSigAbrt);
 	event_free(m_pSigQuit);
 
-	m_pSigTerm = m_pSigInt = m_pSigKill = m_pSigQuit = NULL;
+	m_pSigTerm = m_pSigInt = m_pSigAbrt = m_pSigQuit = NULL;
 #endif // __unix__
 
 	event_base_free(pEventBase);
@@ -159,8 +159,8 @@ void BnxDriver::Shutdown() {
 	if (m_pSigInt != NULL)
 		event_del(m_pSigInt);
 	
-	if (m_pSigKill != NULL)
-		event_del(m_pSigKill);
+	if (m_pSigAbrt != NULL)
+		event_del(m_pSigAbrt);
 
 	if (m_pSigQuit != NULL)
 		event_del(m_pSigQuit);

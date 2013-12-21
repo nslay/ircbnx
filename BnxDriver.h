@@ -79,7 +79,7 @@ private:
 		m_strConfigFile = "bot.ini";
 		m_strLogFile = "bot.log";
 #ifdef __unix__
-		m_pSigTerm = m_pSigInt = m_pSigKill = m_pSigQuit = NULL;
+		m_pSigTerm = m_pSigInt = m_pSigAbrt = m_pSigQuit = NULL;
 #endif // __unix__
 	}
 
@@ -95,7 +95,7 @@ private:
 
 #ifdef __unix__
 	// Unix-specific signals
-	struct event *m_pSigTerm, *m_pSigInt, *m_pSigKill, *m_pSigQuit;
+	struct event *m_pSigTerm, *m_pSigInt, *m_pSigAbrt, *m_pSigQuit;
 
 	void OnSignal(evutil_socket_t signal, short what) {
 		Shutdown();
