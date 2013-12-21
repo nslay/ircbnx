@@ -64,7 +64,10 @@ public:
 										m_vDefaultQuestionResponses : 
 										m_vDefaultStatementResponses;
 
-			return vDefaultResponses[rand() % vDefaultResponses.size()];
+			size_t responseIndex = (size_t)(vDefaultResponses.size() * (rand()/(float)RAND_MAX));
+			responseIndex = std::min(responseIndex, vDefaultResponses.size()-1);
+
+			return vDefaultResponses[responseIndex];
 
 		}
 
