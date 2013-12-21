@@ -32,6 +32,7 @@
 #include "IrcString.h"
 #include "IrcUser.h"
 #include "BnxBot.h"
+#include "BnxDriver.h"
 
 #ifdef _MSC_VER
 // Disable warnings about safe string functions
@@ -1235,7 +1236,12 @@ bool BnxBot::OnCommandShutdown(UserSession &clSession) {
 
 	Send(NOW, "PRIVMSG %s :Sir, if you don't mind, I'll close down for a while...\r\n", clUser.GetNickname().c_str());
 
-	Shutdown();
+	//Shutdown();
+
+	// Shut all bots down I guess ...
+	BnxDriver &clDriver = BnxDriver::GetInstance();
+
+	clDriver.Shutdown();
 
 	return true;
 }

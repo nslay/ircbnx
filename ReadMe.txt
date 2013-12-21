@@ -255,8 +255,9 @@ who <channel> - Have the bot tell you the users in a channel it is
 seen <nickname> - Have the bot tell you where and when it last saw
                   a user with nickname <nickname>.
 
-lastseen <channel> - Have the bot tell you all users last seen in
-                     in a channel in the past day.
+lastseen <channel> [<days>] - Have the bot tell you all users last seen in
+                              in a channel in the past day. If <days> is
+                              specified, the past <days> days.
 
 #######################################################################
 # Miscellaneous                                                       #

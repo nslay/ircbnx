@@ -17,4 +17,5 @@
 - Add seen and lastseen commands.
 - Can now run as a daemon on Unix-like systems.
 - Add project URL to version string.
+- Add signal handling for graceful exiting.
 

@@ -25,7 +25,6 @@
 
 #include <cstdio>
 #include <sstream>
-#include "event2/event.h"
 #include "getopt.h"
 #include "BnxDriver.h"
 
@@ -116,12 +115,33 @@ bool BnxDriver::Run() {
 
 	pEventBase = event_base_new();
 
+#ifdef __unix__
+	m_pSigTerm = event_new(pEventBase, SIGTERM, EV_SIGNAL|EV_PERSIST, &Dispatch<&BnxDriver::OnSignal>, this);
+	m_pSigInt = event_new(pEventBase, SIGINT, EV_SIGNAL|EV_PERSIST, &Dispatch<&BnxDriver::OnSignal>, this);
+	m_pSigKill = event_new(pEventBase, SIGKILL, EV_SIGNAL|EV_PERSIST, &Dispatch<&BnxDriver::OnSignal>, this);
+	m_pSigQuit = event_new(pEventBase, SIGQUIT, EV_SIGNAL|EV_PERSIST, &Dispatch<&BnxDriver::OnSignal>, this);
+
+	event_add(m_pSigTerm, NULL);
+	event_add(m_pSigInt, NULL);
+	event_add(m_pSigKill, NULL);
+	event_add(m_pSigQuit, NULL);
+#endif // __unix__
+
 	for (size_t i = 0; i < m_vBots.size(); ++i) {
 		m_vBots[i]->SetEventBase(pEventBase);
 		m_vBots[i]->StartUp();
 	}
 
 	event_base_dispatch(pEventBase);
+
+#ifdef __unix__
+	event_free(m_pSigTerm);
+	event_free(m_pSigInt);
+	event_free(m_pSigKill);
+	event_free(m_pSigQuit);
+
+	m_pSigTerm = m_pSigInt = m_pSigKill = m_pSigQuit = NULL;
+#endif // __unix__
 
 	event_base_free(pEventBase);
 
@@ -131,6 +151,20 @@ bool BnxDriver::Run() {
 void BnxDriver::Shutdown() {
 	for (size_t i = 0; i < m_vBots.size(); ++i)
 		m_vBots[i]->Shutdown();
+
+#ifdef __unix__
+	if (m_pSigTerm != NULL)
+		event_del(m_pSigTerm);
+
+	if (m_pSigInt != NULL)
+		event_del(m_pSigInt);
+	
+	if (m_pSigKill != NULL)
+		event_del(m_pSigKill);
+
+	if (m_pSigQuit != NULL)
+		event_del(m_pSigQuit);
+#endif // __unix__
 }
 
 void BnxDriver::Reset() {

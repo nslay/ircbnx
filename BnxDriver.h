@@ -29,6 +29,7 @@
 #include <cstddef>
 #include <string>
 #include <vector>
+#include "event2/event.h"
 #include "IniFile.h"
 #include "BnxBot.h"
 
@@ -68,9 +69,18 @@ private:
 	std::string m_strConfigFile, m_strLogFile;
 	std::vector<BnxBot *> m_vBots;
 
+	template<void (BnxDriver::*Method)(evutil_socket_t, short)>
+	static void Dispatch(evutil_socket_t fd, short what, void *arg) {
+		BnxDriver *pObject = (BnxDriver *)arg;
+		(pObject->*Method)(fd, what);
+	}
+
 	BnxDriver() {
 		m_strConfigFile = "bot.ini";
 		m_strLogFile = "bot.log";
+#ifdef __unix__
+		m_pSigTerm = m_pSigInt = m_pSigKill = m_pSigQuit = NULL;
+#endif // __unix__
 	}
 
 	// Disabled
@@ -82,6 +92,15 @@ private:
 
 	// Disabled
 	BnxDriver & operator=(const BnxDriver &);
+
+#ifdef __unix__
+	// Unix-specific signals
+	struct event *m_pSigTerm, *m_pSigInt, *m_pSigKill, *m_pSigQuit;
+
+	void OnSignal(evutil_socket_t signal, short what) {
+		Shutdown();
+	}
+#endif // __unix__
 };
 
 #endif // !BNXDRIVER_H
