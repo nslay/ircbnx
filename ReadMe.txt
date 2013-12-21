@@ -171,7 +171,7 @@ to the bot prior to issuing commands, see "login" under "Level 0".
 
 *** Level 100 ***
 
-shutdown - Have the bot quit and exit.
+shutdown - Have all bots quit and exit.
 
 userlist - Display the access list.
 
