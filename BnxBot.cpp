@@ -508,11 +508,15 @@ bool BnxBot::ProcessCommand(const char *pSource, const char *pTarget, const char
 
 	if (strCommand == "lastseen") {
 		std::string strChannel;
+		int iDays = 1;
 
 		if (!(messageStream >> strChannel))
 			return false;
 
-		return OnCommandLastSeen(*sessionItr, strChannel);
+		if (!(messageStream >> iDays))
+			iDays = 1;
+
+		return OnCommandLastSeen(*sessionItr, strChannel, iDays);
 	}
 
 	return false;
@@ -1714,12 +1718,15 @@ bool BnxBot::OnCommandSeen(UserSession &clSession, const std::string &strNicknam
 	return true;
 }
 
-bool BnxBot::OnCommandLastSeen(UserSession &clSession, const std::string &strChannel) {
-	const int iMaxTime = 60*60*24;
+bool BnxBot::OnCommandLastSeen(UserSession &clSession, const std::string &strChannel, int iDays) {
+	if (iDays < 1)
+		return false;
+
+	const int iMaxTime = 60*60*24*iDays;
 	const IrcUser &clUser = clSession.GetUser();
 
-	Send(AUTO, "PRIVMSG %s :Users last seen in the past day in channel %s:\r\n",
-		clUser.GetNickname().c_str(), strChannel.c_str());
+	Send(AUTO, "PRIVMSG %s :Users last seen in the past %d days in channel %s:\r\n",
+		clUser.GetNickname().c_str(), iDays, strChannel.c_str());
 
 	BnxSeenList::Iterator itr;
 
@@ -1740,9 +1747,9 @@ bool BnxBot::OnCommandLastSeen(UserSession &clSession, const std::string &strCha
 		struct tm *pLocalTime = localtime(&rawTime);
 	
 		char aFormattedTime[128] = "";
-		strftime(aFormattedTime, sizeof(aFormattedTime), "%H:%M", pLocalTime);
+		strftime(aFormattedTime, sizeof(aFormattedTime), "%a %b %d %H:%M", pLocalTime);
 
-		Send(AUTO, "PRIVMSG %s :%s at %s.\r\n", clUser.GetNickname().c_str(),
+		Send(AUTO, "PRIVMSG %s :%s on %s.\r\n", clUser.GetNickname().c_str(),
 			clSeenInfo.GetUser().GetHostmask().c_str(), aFormattedTime);
 	}
 
