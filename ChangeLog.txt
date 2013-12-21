@@ -15,4 +15,6 @@
 - Fix support for compiling without PCRE enabled.
 - Output bot version to log file on startup.
 - Add seen and lastseen commands.
-- Can now run as a daemon.
+- Can now run as a daemon on Unix-like systems.
+- Add project URL to version string.
+
