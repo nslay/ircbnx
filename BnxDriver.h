@@ -83,6 +83,10 @@ private:
 #ifdef __unix__
 		m_pSigTerm = m_pSigInt = m_pSigAbrt = m_pSigQuit = NULL;
 #endif // __unix__
+
+#ifdef _WIN32
+		m_hWnd = NULL;
+#endif // _WIN32
 	}
 
 	// Disabled
@@ -103,6 +107,14 @@ private:
 		Shutdown();
 	}
 #endif // __unix__
+
+#ifdef _WIN32
+	enum { TRAY_ICON_MESSAGE = 6112 };
+
+	HWND m_hWnd;
+
+	static LRESULT OnWindowEvent(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam);
+#endif // _WIN32
 };
 
 #endif // !BNXDRIVER_H

@@ -29,12 +29,15 @@
 #include "BnxDriver.h"
 #include "BnxStreams.h"
 
-#ifndef _WIN32
+#ifdef _WIN32
+#include <Windows.h>
+#include <ShellAPI.h>
+#else // !_WIN32
 #include <sys/types.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <unistd.h>
-#endif // !_WIN32
+#endif // _WIN32
 
 #ifdef USE_PCRE
 // Include for pcre_version()
@@ -170,13 +173,77 @@ void BnxDriver::Reset() {
 		delete m_vBots[i];
 
 	m_vBots.clear();
+
+#ifdef _WIN32
+	if (m_hWnd != NULL) {
+		NOTIFYICONDATA stIconData;
+		memset(&stIconData, 0, sizeof(stIconData));
+
+		stIconData.cbSize = sizeof(stIconData);
+		stIconData.hWnd = m_hWnd;
+
+		Shell_NotifyIcon(NIM_DELETE, &stIconData);
+
+		DestroyWindow(m_hWnd);
+		m_hWnd = NULL;
+	}
+#endif // _WIN32
 }
 
 #ifdef _WIN32
 bool BnxDriver::Daemonize() {
-	// TODO: Implement this
+	if (m_hWnd != NULL)
+		return true;
+
+	HINSTANCE hInst = (HINSTANCE)GetModuleHandle(NULL);
+
+	WNDCLASSEX stWndClass;
+	memset(&stWndClass, 0, sizeof(stWndClass));
+
+	stWndClass.cbSize = sizeof(stWndClass);
+	stWndClass.lpfnWndProc = (WNDPROC)&OnWindowEvent;
+	stWndClass.hInstance = hInst;
+	stWndClass.lpszClassName = "ircbnx";
+
+	RegisterClassEx(&stWndClass);
+
+	m_hWnd = CreateWindow("ircbnx", "ircbnx", 0, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInst, NULL);
+
+	if (m_hWnd == NULL) {
+		BnxErrorStream << "Error: Could not create window: " << GetLastError() << BnxEndl;
+		return false;
+	}
+
+	NOTIFYICONDATA stIconData;
+	memset(&stIconData, 0, sizeof(stIconData));
+
+	stIconData.cbSize = sizeof(stIconData);
+	stIconData.hWnd = m_hWnd;
+	stIconData.uID = 0;
+	stIconData.uVersion = NOTIFYICON_VERSION;
+	stIconData.uCallbackMessage = (UINT)TRAY_ICON_MESSAGE;
+	strcpy_s(stIconData.szTip, "ircbnx");
+
+	stIconData.uFlags = NIF_MESSAGE|NIF_TIP;
+
+	if (Shell_NotifyIcon(NIM_ADD, &stIconData) == FALSE)
+		BnxErrorStream << "Warning: Could not add notication icon: " << GetLastError() << BnxEndl;
+
 	return true;
 }
+
+LRESULT BnxDriver::OnWindowEvent(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam) {
+	switch (uMsg) {
+	case TRAY_ICON_MESSAGE:
+		switch(lParam) {
+		case WM_COMMAND:
+			break;
+		}
+		break;
+	}
+	return DefWindowProc(hWnd, uMsg, wParam, lParam);
+}
+
 #else // !_WIN32
 bool BnxDriver::Daemonize() {
 	// Taken from daemon(3) (which is not standard)
