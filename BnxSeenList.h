@@ -26,6 +26,7 @@
 #ifndef BNXSEENLIST_H
 #define BNXSEENLIST_H
 
+#include <ctime>
 #include <iostream>
 #include <string>
 #include <map>

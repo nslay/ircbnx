@@ -135,10 +135,11 @@ getopt(int nargc, char * const nargv[], const char *ostr)
 
 const char * _getprogname() {
 	static char aProgName[MAX_PATH];
+	const char *pBase = NULL;
 
 	GetModuleFileName(NULL, aProgName, sizeof(aProgName));
-
-	const char *pBase = strrchr(aProgName,'\\');
+	
+	pBase = strrchr(aProgName,'\\');
 
 	return pBase == NULL ? aProgName : pBase+1;
 }

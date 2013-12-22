@@ -28,6 +28,10 @@
 
 // See: http://www.irchelp.org/irchelp/rfc/ctcpspec.html
 
+#ifdef _MSC_VER
+#pragma warning(disable:4996)
+#endif // _MSC_VER
+
 #include <cstring>
 
 struct CtcpMessage {

@@ -47,6 +47,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cctype>
+#include <ctime>
 #include <iostream>
 #include "IrcClient.h"
 #include "IrcUser.h"
