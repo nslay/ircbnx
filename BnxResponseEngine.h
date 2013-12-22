@@ -60,7 +60,7 @@ public:
 		itr = std::find(m_vRules.begin(), m_vRules.end(), strMessage);
 
 		if (itr == m_vRules.end()) {
-			const std::vector<std::string> &vDefaultResponses = (*strMessage.rbegin() == '?') ? 
+			const std::vector<std::string> &vDefaultResponses = (!strMessage.empty() && *strMessage.rbegin() == '?') ? 
 										m_vDefaultQuestionResponses : 
 										m_vDefaultStatementResponses;
 
