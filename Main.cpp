@@ -29,27 +29,16 @@
 #include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <ShellAPI.h>
 #endif // _WIN32
 
 #include <signal.h>
-#include <iostream>
 #include "BnxDriver.h"
 
 int main(int argc, char **argv) {
-
-#ifdef _WIN32
-	WORD wsaVersion = MAKEWORD(2, 2);
-	WSADATA wsaData;
-	int e;
-
-	e = WSAStartup(wsaVersion, &wsaData);
-	if (e != 0) {
-		std::cerr << "WSAStartup failed with error: " << e << std::endl;
-		return -1;
-	}
-#else // !_WIN32
+#ifdef __unix__
 	signal(SIGPIPE, SIG_IGN);
-#endif // _WIN32
+#endif // __unix__
 
 	BnxDriver &clBnxDriver = BnxDriver::GetInstance();
 
@@ -58,10 +47,49 @@ int main(int argc, char **argv) {
 
 	clBnxDriver.Run();
 
+	return 0;
+}
+
 #ifdef _WIN32
+
+// From getopt.c
+extern "C" const char * _getprogname();
+
+int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nCmdShow) {
+	WORD wsaVersion = MAKEWORD(2, 2);
+	WSADATA wsaData;
+	int e;
+
+	e = WSAStartup(wsaVersion, &wsaData);
+	if (e != 0) {
+		BnxErrorStream << "WSAStartup failed with error: " << e << BnxEndl;
+		return -1;
+	}
+
+	int argc = 0;
+	LPWSTR * lpwCmdLine = CommandLineToArgvW(GetCommandLineW(), &argc);
+
+	char **argv = new char*[argc+1];
+
+	for (int i = 0; i < argc; ++i) {
+		const size_t argLen = wcslen(lpwCmdLine[i]);
+		char * const p_cArg = new char[argLen+1];
+
+		for (size_t j = 0; j < argLen; ++j)
+			p_cArg[j] = (char)lpwCmdLine[i][j];
+
+		p_cArg[argLen] = '\0';
+
+		argv[i] = p_cArg;
+	}
+
+	argv[argc] = NULL;
+
+	int iRet = main(argc, argv);
+
 	WSACleanup();
-#endif // _WIN32
 
 	return 0;
 }
+#endif // !_WIN32
 

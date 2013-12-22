@@ -29,7 +29,7 @@
 #include "BnxDriver.h"
 
 #ifdef _WIN32
-
+#include <Windows.h>
 #else // !_WIN32
 #include <sys/types.h>
 #include <fcntl.h>
@@ -42,13 +42,38 @@
 #include "pcre.h"
 #endif // USE_PCRE
 
+#ifndef _WIN32
+std::ostream &BnxOutStream = std::cout;
+std::ostream &BnxErrorStream = std::cerr;
+
+std::ostream & (&BnxEndl)(std::ostream &os) = std::endl;
+#else // _WIN32
+std::stringstream BnxOutStream;
+std::stringstream BnxErrorStream;
+
+std::ostream & BnxEndl(std::ostream &os) {
+	// In case somebody misused this ...
+	os << std::endl;
+
+	if (&os == &BnxOutStream) {
+		MessageBox(NULL, BnxOutStream.str().c_str(), "Output Stream", MB_OK);
+		BnxOutStream.str("");
+	}
+	else if (&os == &BnxErrorStream) {
+		MessageBox(NULL, BnxErrorStream.str().c_str(), "Error Stream", MB_OK);
+		BnxErrorStream.str("");
+	}
+	return os;
+}
+#endif // !_WIN32
+
 BnxDriver::~BnxDriver() {
 	Reset();
 }
 
 void BnxDriver::Usage() {
 	// TODO: Get program name
-	std::cerr << "Usage: ircbnx [-hv] [-c config.ini]" << std::endl;
+	BnxErrorStream << "Usage: ircbnx [-hv] [-c config.ini]" << BnxEndl;
 }
 
 bool BnxDriver::ParseArgs(int argc, char *argv[]) {
@@ -60,11 +85,10 @@ bool BnxDriver::ParseArgs(int argc, char *argv[]) {
 			SetConfigFile(optarg);
 			break;
 		case 'v':
-			std::cout << BnxBot::GetVersionString() << std::endl;
-			std::cout << std::endl;
-			std::cout << "libevent: " << event_get_version() << std::endl;
+			BnxOutStream << BnxBot::GetVersionString() << "\n\n";
+			BnxOutStream << "libevent: " << event_get_version() << '\n';
 #ifdef USE_PCRE
-			std::cout << "pcre: " << pcre_version() << std::endl;
+			BnxOutStream << "pcre: " << pcre_version() << BnxEndl;
 #endif // USE_PCRE
 			return false;
 		case 'h':

@@ -29,9 +29,24 @@
 #include <cstddef>
 #include <string>
 #include <vector>
+#include <sstream>
+#include <iostream>
 #include "event2/event.h"
 #include "IniFile.h"
 #include "BnxBot.h"
+
+#ifndef _WIN32
+extern std::ostream &BnxOutStream;
+extern std::ostream &BnxErrorStream;
+
+extern std::ostream & (&BnxEndl)(std::ostream &os);
+#else // _WIN32
+extern std::stringstream BnxOutStream;
+extern std::stringstream BnxErrorStream;
+
+// This just dumps everything to MessageBox()
+std::ostream & BnxEndl(std::ostream &os);
+#endif // !_WIN32
 
 class BnxDriver {
 public:
