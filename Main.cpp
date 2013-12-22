@@ -34,6 +34,7 @@
 
 #include <signal.h>
 #include "BnxDriver.h"
+#include "BnxStreams.h"
 
 int main(int argc, char **argv) {
 #ifdef __unix__
