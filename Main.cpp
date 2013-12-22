@@ -52,9 +52,6 @@ int main(int argc, char **argv) {
 
 #ifdef _WIN32
 
-// From getopt.c
-extern "C" const char * _getprogname();
-
 int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nCmdShow) {
 	WORD wsaVersion = MAKEWORD(2, 2);
 	WSADATA wsaData;
@@ -67,7 +64,7 @@ int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE hPrevInstance, _In
 	}
 
 	int argc = 0;
-	LPWSTR * lpwCmdLine = CommandLineToArgvW(GetCommandLineW(), &argc);
+	LPWSTR *lpwCmdLine = CommandLineToArgvW(GetCommandLineW(), &argc);
 
 	char **argv = new char*[argc+1];
 
@@ -89,7 +86,8 @@ int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE hPrevInstance, _In
 
 	WSACleanup();
 
-	return 0;
+	return iRet;
 }
+
 #endif // !_WIN32
 

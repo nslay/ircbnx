@@ -8,6 +8,7 @@ SET(PCRE_INCLUDE "/usr/local/include" CACHE PATH "PCRE include directory")
 SET(PCRE_LIB "/usr/local/lib" CACHE PATH "PCRE library directory")
 
 IF (WIN32)
+	SET(EXECUTABLE_TYPE "WIN32")
 	SET(LINK_LIBS event ws2_32)
 	ADD_DEFINITIONS(-DPCRE_STATIC=1 -DNOMINMAX=1)
 ELSE (WIN32)
@@ -24,7 +25,7 @@ IF (USE_PCRE)
 	SET(LINK_LIBS ${LINK_LIBS} pcreposix pcre)
 ENDIF (USE_PCRE)
 
-ADD_EXECUTABLE(ircbnx Main.cpp Irc.h 
+ADD_EXECUTABLE(ircbnx ${EXECUTABLE_TYPE} Main.cpp Irc.h 
 	IrcString.h IrcString.cpp
 	IrcUser.h IrcUser.cpp
 	IrcTraits.h IrcTraits.cpp
@@ -45,4 +46,3 @@ ADD_EXECUTABLE(ircbnx Main.cpp Irc.h
 	getopt.h getopt.c)
 
 TARGET_LINK_LIBRARIES(ircbnx ${LINK_LIBS}) 
-
