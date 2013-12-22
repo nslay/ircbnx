@@ -24,10 +24,11 @@
  */
 
 #include "BnxResponseEngine.h"
+#include "BnxStreams.h"
 
 bool BnxResponseEngine::LoadFromStream(std::istream &is) {
 	if (!is) {
-		std::cerr << "Bad stream" << std::endl;
+		BnxErrorStream << "Bad stream" << BnxEndl;
 		return false;
 	}
 
@@ -57,13 +58,13 @@ bool BnxResponseEngine::LoadFromStream(std::istream &is) {
 			break;
 		case 'P':
 			if (value.empty()) {
-				std::cerr << "Error: Missing regex rule." << std::endl;
+				BnxErrorStream << "Error: Missing regex rule." << BnxEndl;
 				Reset();
 				return false;
 			}
 
 			if (line[1] != ' ') {
-				std::cerr << "Error: Expected space after type." << std::endl;
+				BnxErrorStream << "Error: Expected space after type." << BnxEndl;
 				Reset();
 				return false;
 			}
@@ -77,7 +78,7 @@ bool BnxResponseEngine::LoadFromStream(std::istream &is) {
 			mode = 'P';
 
 			if (!clRule.AddRule(value)) {
-				std::cerr << "Error: Could not compile regex '" << value << "'." << std::endl;
+				BnxErrorStream << "Error: Could not compile regex '" << value << "'." << BnxEndl;
 				Reset();
 				return false;
 			}
@@ -85,19 +86,19 @@ bool BnxResponseEngine::LoadFromStream(std::istream &is) {
 			break;
 		case 'R':
 			if (mode == '\0') {
-				std::cerr << "Error: No rules specified for response." << std::endl;
+				BnxErrorStream << "Error: No rules specified for response." << BnxEndl;
 				Reset();
 				return false;
 			}
 
 			if (line[1] != ' ') {
-				std::cerr << "Error: Expected space after type." << std::endl;
+				BnxErrorStream << "Error: Expected space after type." << BnxEndl;
 				Reset();
 				return false;
 			}
 
 			if (value.empty()) {
-				std::cerr << "Error: Missing response." << std::endl;
+				BnxErrorStream << "Error: Missing response." << BnxEndl;
 				Reset();
 				return false;
 			}
@@ -107,14 +108,14 @@ bool BnxResponseEngine::LoadFromStream(std::istream &is) {
 			clRule.AddResponse(value);
 			break;
 		default:
-			std::cerr << "Unknown rule type '" << type << "'" << std::endl;
+			BnxErrorStream << "Unknown rule type '" << type << "'" << BnxEndl;
 			Reset();
 			return false;
 		}
 	}
 
 	if (mode == 'P') {
-		std::cerr << "Error: No responses specified!" << std::endl;
+		BnxErrorStream << "Error: No responses specified!" << BnxEndl;
 		Reset();
 		return false;
 	}
