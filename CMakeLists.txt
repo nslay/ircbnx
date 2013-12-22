@@ -43,6 +43,7 @@ ADD_EXECUTABLE(ircbnx ${EXECUTABLE_TYPE} Main.cpp Irc.h
 	BnxShitList.h BnxShitList.cpp
 	BnxFloodDetector.h BnxFloodDetector.cpp
 	BnxSeenList.h BnxSeenList.cpp
+	BnxStreams.h BnxStreams.cpp
 	getopt.h getopt.c)
 
 TARGET_LINK_LIBRARIES(ircbnx ${LINK_LIBS}) 

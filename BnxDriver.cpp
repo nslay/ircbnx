@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012 Nathan Lay (nslay@users.sourceforge.net)
+ * Copyright (c) 2012-2013 Nathan Lay (nslay@users.sourceforge.net)
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,45 +27,19 @@
 #include <sstream>
 #include "getopt.h"
 #include "BnxDriver.h"
+#include "BnxStreams.h"
 
-#ifdef _WIN32
-#include <Windows.h>
-#else // !_WIN32
+#ifndef _WIN32
 #include <sys/types.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <unistd.h>
-#endif // _WIN32
+#endif // !_WIN32
 
 #ifdef USE_PCRE
 // Include for pcre_version()
 #include "pcre.h"
 #endif // USE_PCRE
-
-#ifndef _WIN32
-std::ostream &BnxOutStream = std::cout;
-std::ostream &BnxErrorStream = std::cerr;
-
-std::ostream & (&BnxEndl)(std::ostream &os) = std::endl;
-#else // _WIN32
-std::stringstream BnxOutStream;
-std::stringstream BnxErrorStream;
-
-std::ostream & BnxEndl(std::ostream &os) {
-	// In case somebody misused this ...
-	os << std::endl;
-
-	if (&os == &BnxOutStream) {
-		MessageBox(NULL, BnxOutStream.str().c_str(), "Output Stream", MB_OK);
-		BnxOutStream.str("");
-	}
-	else if (&os == &BnxErrorStream) {
-		MessageBox(NULL, BnxErrorStream.str().c_str(), "Error Stream", MB_OK);
-		BnxErrorStream.str("");
-	}
-	return os;
-}
-#endif // !_WIN32
 
 BnxDriver::~BnxDriver() {
 	Reset();
