@@ -64,26 +64,7 @@ int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE hPrevInstance, _In
 		return -1;
 	}
 
-	int argc = 0;
-	LPWSTR *lpwCmdLine = CommandLineToArgvW(GetCommandLineW(), &argc);
-
-	char **argv = new char*[argc+1];
-
-	for (int i = 0; i < argc; ++i) {
-		const size_t argLen = wcslen(lpwCmdLine[i]);
-		char * const p_cArg = new char[argLen+1];
-
-		for (size_t j = 0; j < argLen; ++j)
-			p_cArg[j] = (char)lpwCmdLine[i][j];
-
-		p_cArg[argLen] = '\0';
-
-		argv[i] = p_cArg;
-	}
-
-	argv[argc] = NULL;
-
-	int iRet = main(argc, argv);
+	int iRet = main(__argc, __argv);
 
 	WSACleanup();
 

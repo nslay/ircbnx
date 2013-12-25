@@ -222,7 +222,7 @@ bool BnxDriver::Daemonize() {
 	stIconData.uID = 0;
 	stIconData.uVersion = NOTIFYICON_VERSION;
 	stIconData.uCallbackMessage = (UINT)TRAY_ICON_MESSAGE;
-	strcpy_s(stIconData.szTip, "ircbnx");
+	strcpy(stIconData.szTip, "ircbnx");
 
 	stIconData.uFlags = NIF_MESSAGE|NIF_TIP;
 
