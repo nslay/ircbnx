@@ -82,8 +82,6 @@ void BnxWin32Driver::Shutdown() {
 
 LRESULT BnxWin32Driver::OnWindowEvent(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam) {
 	BnxWin32Driver &clDriver = (BnxWin32Driver &)BnxDriver::GetInstance();
-	int iId = -1;
-	POINT stPoint;
 
 	switch (uMsg) {
 	case WM_CREATE:
@@ -103,9 +101,6 @@ LRESULT BnxWin32Driver::OnWindowEvent(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARA
 		switch(LOWORD(lParam)) {
 		case WM_RBUTTONDOWN:
 		case WM_CONTEXTMENU:
-			stPoint.x = LOWORD(wParam);
-			stPoint.y = HIWORD(wParam);
-
 			ShowContextMenu(hWnd);
 			break;
 		}
