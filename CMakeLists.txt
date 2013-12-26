@@ -11,9 +11,14 @@ IF (WIN32)
 	SET(EXECUTABLE_TYPE "WIN32")
 	SET(LINK_LIBS event ws2_32)
 	ADD_DEFINITIONS(-DPCRE_STATIC=1 -DNOMINMAX=1)
+	SET(PLATFORM_SRC BnxWin32Driver.h BnxWin32Driver.cpp)
 ELSE (WIN32)
 	SET(LINK_LIBS event)
 ENDIF (WIN32)
+
+IF (UNIX)
+	SET(PLATFORM_SRC BnxUnixDriver.h BnxUnixDriver.cpp)
+ENDIF (UNIX)
 
 INCLUDE_DIRECTORIES(${LIBEVENT2_INCLUDE})
 LINK_DIRECTORIES(${LIBEVENT2_LIB})
@@ -44,6 +49,8 @@ ADD_EXECUTABLE(ircbnx ${EXECUTABLE_TYPE} Main.cpp Irc.h
 	BnxFloodDetector.h BnxFloodDetector.cpp
 	BnxSeenList.h BnxSeenList.cpp
 	BnxStreams.h BnxStreams.cpp
-	getopt.h getopt.c)
+	getopt.h getopt.c
+	${PLATFORM_SRC}
+	)
 
 TARGET_LINK_LIBRARIES(ircbnx ${LINK_LIBS}) 

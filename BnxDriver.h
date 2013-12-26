@@ -39,23 +39,26 @@ class BnxDriver {
 public:
 	typedef std::vector<BnxBot *>::const_iterator BotIterator;
 
-	static BnxDriver & GetInstance() {
-		static BnxDriver clDriver;
-		return clDriver;
+	static BnxDriver & GetInstance();
+
+	BnxDriver() {
+		m_strConfigFile = "bot.ini";
+		m_strLogFile = "bot.log";
+		m_pEventBase = event_base_new();
 	}
 
-	~BnxDriver();
+	virtual ~BnxDriver();
 
-	void SetConfigFile(const std::string &strConfigFile) {
+	virtual void SetConfigFile(const std::string &strConfigFile) {
 		m_strConfigFile = strConfigFile;
 	}
 
-	void Usage();
-	bool ParseArgs(int argc, char *argv[]);
-	bool Load();
-	bool Run();
-	void Shutdown();
-	void Reset();
+	virtual void Usage();
+	virtual bool ParseArgs(int argc, char *argv[]);
+	virtual bool Load();
+	virtual bool Run();
+	virtual void Shutdown();
+	virtual void Reset();
 
 	BotIterator BotBegin() const {
 		return m_vBots.begin();
@@ -67,54 +70,23 @@ public:
 
 	BnxBot * GetBot(const std::string &strProfile) const;
 
+protected:
+	struct event_base * GetEventBase() const {
+		return m_pEventBase;
+	}
+
 private:
 	std::string m_strConfigFile, m_strLogFile;
 	std::vector<BnxBot *> m_vBots;
-
-	template<void (BnxDriver::*Method)(evutil_socket_t, short)>
-	static void Dispatch(evutil_socket_t fd, short what, void *arg) {
-		BnxDriver *pObject = (BnxDriver *)arg;
-		(pObject->*Method)(fd, what);
-	}
-
-	BnxDriver() {
-		m_strConfigFile = "bot.ini";
-		m_strLogFile = "bot.log";
-#ifdef __unix__
-		m_pSigTerm = m_pSigInt = m_pSigAbrt = m_pSigQuit = NULL;
-#endif // __unix__
-
-#ifdef _WIN32
-		m_hWnd = NULL;
-#endif // _WIN32
-	}
+	struct event_base *m_pEventBase;
 
 	// Disabled
 	BnxDriver(const BnxDriver &);
 
-	bool Daemonize();
-
-	void LoadBot(const IniFile::Section &clSection);
-
 	// Disabled
 	BnxDriver & operator=(const BnxDriver &);
 
-#ifdef __unix__
-	// Unix-specific signals
-	struct event *m_pSigTerm, *m_pSigInt, *m_pSigAbrt, *m_pSigQuit;
-
-	void OnSignal(evutil_socket_t signal, short what) {
-		Shutdown();
-	}
-#endif // __unix__
-
-#ifdef _WIN32
-	enum { TRAY_ICON_MESSAGE = 6112 };
-
-	HWND m_hWnd;
-
-	static LRESULT OnWindowEvent(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam);
-#endif // _WIN32
+	void LoadBot(const IniFile::Section &clSection);
 };
 
 #endif // !BNXDRIVER_H

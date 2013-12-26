@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012 Nathan Lay (nslay@users.sourceforge.net)
+ * Copyright (c) 2013 Nathan Lay (nslay@users.sourceforge.net)
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -23,58 +23,49 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
+#ifndef BNXUNIXDRIVER_H
+#define BNXUNIXDRIVER_H
 
-#include <windows.h>
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <ShellAPI.h>
-#endif // _WIN32
-
-#include <signal.h>
+#include <cstddef>
+#include <string>
+#include <vector>
+#include <sstream>
+#include <iostream>
+#include "event2/event.h"
 #include "BnxDriver.h"
-#include "BnxStreams.h"
+#include "BnxBot.h"
 
-#ifndef _WIN32
-
-int main(int argc, char **argv) {
-#ifdef __unix__
-	signal(SIGPIPE, SIG_IGN);
-#endif // __unix__
-
-	BnxDriver &clBnxDriver = BnxDriver::GetInstance();
-
-	if (!clBnxDriver.ParseArgs(argc, argv))
-		return -1;
-
-	return clBnxDriver.Run() ? 0 : -1;
-}
-
-#else // _WIN32
-
-int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nCmdShow) {
-	WORD wsaVersion = MAKEWORD(2, 2);
-	WSADATA wsaData;
-	int e;
-
-	e = WSAStartup(wsaVersion, &wsaData);
-	if (e != 0) {
-		BnxErrorStream << "WSAStartup failed with error: " << e << BnxEndl;
-		return -1;
+class BnxUnixDriver : public BnxDriver {
+public:
+	BnxUnixDriver() { 
+		m_pSigTerm = m_pSigInt = m_pSigAbrt = m_pSigQuit = NULL;
 	}
 
-	BnxDriver &clBnxDriver = BnxDriver::GetInstance();
+	virtual bool Run();
+	virtual void Shutdown();
 
-	if (!clBnxDriver.ParseArgs(__argc, __argv))
-		return -1;
+private:
+	// Unix-specific signals
+	struct event *m_pSigTerm, *m_pSigInt, *m_pSigAbrt, *m_pSigQuit;
 
-	int iRet = clBnxDriver.Run() ? 0 : -1;
+	template<void (BnxUnixDriver::*Method)(evutil_socket_t, short)>
+	static void Dispatch(evutil_socket_t fd, short what, void *arg) {
+		BnxUnixDriver *pObject = (BnxUnixDriver *)arg;
+		(pObject->*Method)(fd, what);
+	}
 
-	WSACleanup();
+	// Disabled
+	BnxUnixDriver(const BnxUnixDriver &);
 
-	return iRet;
-}
+	// Disabled
+	BnxUnixDriver & operator=(const BnxUnixDriver &);
 
-#endif // !_WIN32
+	bool Daemonize();
+
+	void OnSignal(evutil_socket_t signal, short what) {
+		Shutdown();
+	}
+};
+
+#endif // !BNXUNIXDRIVER_H
 

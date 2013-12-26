@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012 Nathan Lay (nslay@users.sourceforge.net)
+ * Copyright (c) 2013 Nathan Lay (nslay@users.sourceforge.net)
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -23,58 +23,59 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
+#ifndef BNXWIN32DRIVER_H
+#define BNXWIN32DRIVER_H
 
-#include <windows.h>
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <ShellAPI.h>
-#endif // _WIN32
-
-#include <signal.h>
+#include <cstddef>
+#include <string>
+#include <vector>
+#include <iostream>
 #include "BnxDriver.h"
-#include "BnxStreams.h"
+#include "IniFile.h"
+#include "BnxBot.h"
+#include <Windows.h>
 
-#ifndef _WIN32
-
-int main(int argc, char **argv) {
-#ifdef __unix__
-	signal(SIGPIPE, SIG_IGN);
-#endif // __unix__
-
-	BnxDriver &clBnxDriver = BnxDriver::GetInstance();
-
-	if (!clBnxDriver.ParseArgs(argc, argv))
-		return -1;
-
-	return clBnxDriver.Run() ? 0 : -1;
-}
-
-#else // _WIN32
-
-int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nCmdShow) {
-	WORD wsaVersion = MAKEWORD(2, 2);
-	WSADATA wsaData;
-	int e;
-
-	e = WSAStartup(wsaVersion, &wsaData);
-	if (e != 0) {
-		BnxErrorStream << "WSAStartup failed with error: " << e << BnxEndl;
-		return -1;
+class BnxWin32Driver : public BnxDriver {
+public:
+	BnxWin32Driver() {
+		m_hWnd = NULL;
+		m_hLock = CreateMutex(NULL, 0, NULL);
 	}
 
-	BnxDriver &clBnxDriver = BnxDriver::GetInstance();
+	virtual ~BnxWin32Driver() {
+		CleanUpWindow();
 
-	if (!clBnxDriver.ParseArgs(__argc, __argv))
-		return -1;
+		if (m_hLock != NULL) {
+			CloseHandle(m_hLock);
+			m_hLock = NULL;
+		}
+	}
 
-	int iRet = clBnxDriver.Run() ? 0 : -1;
+	virtual bool Run();
+	virtual void Shutdown();
 
-	WSACleanup();
+private:
+	enum { TRAY_ICON_MESSAGE = 6112 };
 
-	return iRet;
-}
+	HWND m_hWnd;
+	HANDLE m_hLock;
 
-#endif // !_WIN32
+	static LRESULT OnWindowEvent(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam);
+	static DWORD DispatchRun(LPVOID arg);
+
+	// Disabled
+	BnxWin32Driver(const BnxWin32Driver &);
+
+	// Disabled
+	BnxWin32Driver & operator=(const BnxWin32Driver &);
+
+	bool RegisterWindowClass();
+	bool AddNotificationIcon();
+	bool DeleteNotificationIcon();
+
+	bool MakeWindow();
+	void CleanUpWindow();
+};
+
+#endif // !BNXWIN32DRIVER_H
 
