@@ -236,4 +236,14 @@ DWORD BnxWin32Driver::RunBase() {
 	return (DWORD)bRet;
 }
 
+void BnxWin32Driver::OnCheckShutdownTimer(evutil_socket_t fd, short what) {
+	WaitForSingleObject(m_hLock, INFINITE);
+
+	if (!m_bRun) {
+		BnxDriver::Shutdown();
+		event_del(m_pCheckShutdownTimer);
+	}
+
+	ReleaseMutex(m_hLock);
+}
 

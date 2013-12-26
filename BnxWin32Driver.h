@@ -64,7 +64,6 @@ private:
 	bool m_bRun;
 	struct event *m_pCheckShutdownTimer;
 
-
 	template<void (BnxWin32Driver::*Method)(evutil_socket_t fd, short what)>
 	static void Dispatch(evutil_socket_t fd, short what, void *arg) {
 		BnxWin32Driver *pObject = (BnxWin32Driver *)arg;
@@ -94,13 +93,7 @@ private:
 	void CleanUpWindow();
 
 	DWORD RunBase();
-
-	void OnCheckShutdownTimer(evutil_socket_t fd, short what) {
-		if (!m_bRun) {
-			BnxDriver::Shutdown();
-			event_del(m_pCheckShutdownTimer);
-		}
-	}
+	void OnCheckShutdownTimer(evutil_socket_t fd, short what);
 };
 
 #endif // !BNXWIN32DRIVER_H
