@@ -40,6 +40,8 @@ public:
 	BnxWin32Driver() {
 		m_hWnd = NULL;
 		m_hLock = CreateMutex(NULL, 0, NULL);
+		m_bRun = false;
+		m_pCheckShutdownTimer = NULL;
 	}
 
 	virtual ~BnxWin32Driver() {
@@ -59,9 +61,28 @@ private:
 
 	HWND m_hWnd;
 	HANDLE m_hLock;
+	bool m_bRun;
+	struct event *m_pCheckShutdownTimer;
+
+
+	template<void (BnxWin32Driver::*Method)(evutil_socket_t fd, short what)>
+	static void Dispatch(evutil_socket_t fd, short what, void *arg) {
+		BnxWin32Driver *pObject = (BnxWin32Driver *)arg;
+		(pObject->*Method)(fd, what);
+	}
+
+	template<DWORD (BnxWin32Driver::*Method)()> 
+	static DWORD Dispatch(LPVOID arg) {
+		BnxWin32Driver *pObject = (BnxWin32Driver *)arg;
+		return (pObject->*Method)();
+	}
 
 	static LRESULT OnWindowEvent(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam);
-	static DWORD DispatchRun(LPVOID arg);
+
+	static bool RegisterWindowClass();
+	static bool AddNotificationIcon(HWND hWnd);
+	static bool DeleteNotificationIcon(HWND hWnd);
+	static void ShowContextMenu(HWND hWnd);
 
 	// Disabled
 	BnxWin32Driver(const BnxWin32Driver &);
@@ -69,13 +90,17 @@ private:
 	// Disabled
 	BnxWin32Driver & operator=(const BnxWin32Driver &);
 
-	static bool RegisterWindowClass();
-	static bool AddNotificationIcon(HWND hWnd);
-	static bool DeleteNotificationIcon(HWND hWnd);
-	static void ShowContextMenu(HWND hWnd);
-
 	bool MakeWindow();
 	void CleanUpWindow();
+
+	DWORD RunBase();
+
+	void OnCheckShutdownTimer(evutil_socket_t fd, short what) {
+		if (!m_bRun) {
+			BnxDriver::Shutdown();
+			event_del(m_pCheckShutdownTimer);
+		}
+	}
 };
 
 #endif // !BNXWIN32DRIVER_H

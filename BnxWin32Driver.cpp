@@ -39,8 +39,10 @@ bool BnxWin32Driver::Run() {
 		return false;
 	}
 
+	m_bRun = true;
+
 	DWORD threadId = 0;
-	HANDLE threadHandle = CreateThread(NULL, 0, &DispatchRun, this, 0, &threadId);
+	HANDLE threadHandle = CreateThread(NULL, 0, &Dispatch<&BnxWin32Driver::RunBase>, this, 0, &threadId);
 
 	if (threadHandle == NULL) {
 		BnxErrorStream << "Error: Could not create thread." << BnxEndl;
@@ -72,7 +74,7 @@ bool BnxWin32Driver::Run() {
 void BnxWin32Driver::Shutdown() {
 	WaitForSingleObject(m_hLock, INFINITE);
 
-	BnxDriver::Shutdown();
+	m_bRun = false;
 
 	if (m_hWnd != NULL)
 		PostMessage(m_hWnd, WM_QUIT, 0, 0);
@@ -110,12 +112,6 @@ LRESULT BnxWin32Driver::OnWindowEvent(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARA
 	}
 	return 0;
 }
-
-DWORD BnxWin32Driver::DispatchRun(LPVOID arg) {
-	BnxWin32Driver * const pObject = (BnxWin32Driver *)arg;
-	return (pObject->BnxDriver::Run)();
-}
-
 
 bool BnxWin32Driver::RegisterWindowClass() {
 	HINSTANCE hInst = (HINSTANCE)GetModuleHandle(NULL);
@@ -220,4 +216,24 @@ void BnxWin32Driver::CleanUpWindow() {
 	DestroyWindow(m_hWnd);
 	m_hWnd = NULL;
 }
+
+DWORD BnxWin32Driver::RunBase() {
+	m_pCheckShutdownTimer = event_new(GetEventBase(), -1, EV_PERSIST, &Dispatch<&BnxWin32Driver::OnCheckShutdownTimer>, this);
+
+	struct timeval tv;
+
+	tv.tv_sec = 1;
+	tv.tv_usec = 0;
+
+	event_add(m_pCheckShutdownTimer, &tv);
+
+	bool bRet = BnxDriver::Run();
+
+	event_free(m_pCheckShutdownTimer);
+
+	m_pCheckShutdownTimer = NULL;
+
+	return (DWORD)bRet;
+}
+
 
