@@ -32,7 +32,6 @@
 std::ostream &BnxOutStream = std::cout;
 std::ostream &BnxErrorStream = std::cerr;
 
-std::ostream & (&BnxEndl)(std::ostream &os) = std::endl;
 #else // _WIN32
 std::stringstream BnxOutStream;
 std::stringstream BnxErrorStream;

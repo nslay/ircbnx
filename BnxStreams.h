@@ -35,7 +35,10 @@
 extern std::ostream &BnxOutStream;
 extern std::ostream &BnxErrorStream;
 
-extern std::ostream & (&BnxEndl)(std::ostream &os);
+inline std::ostream & BnxEndl(std::ostream &os) {
+	return std::endl(os);
+}
+
 #else // _WIN32
 extern std::stringstream BnxOutStream;
 extern std::stringstream BnxErrorStream;
