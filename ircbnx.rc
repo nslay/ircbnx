@@ -23,60 +23,13 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef BNXWIN32DRIVER_H
-#define BNXWIN32DRIVER_H
+#include "Resource.h"
 
-#include <cstddef>
-#include <string>
-#include <vector>
-#include <iostream>
-#include "BnxDriver.h"
-#include "IniFile.h"
-#include "BnxBot.h"
-#include <Windows.h>
-
-class BnxWin32Driver : public BnxDriver {
-public:
-	BnxWin32Driver() {
-		m_hWnd = NULL;
-		m_hLock = CreateMutex(NULL, 0, NULL);
-	}
-
-	virtual ~BnxWin32Driver() {
-		CleanUpWindow();
-
-		if (m_hLock != NULL) {
-			CloseHandle(m_hLock);
-			m_hLock = NULL;
-		}
-	}
-
-	virtual bool Run();
-	virtual void Shutdown();
-
-private:
-	enum { TRAY_ICON_MESSAGE = 6112 };
-
-	HWND m_hWnd;
-	HANDLE m_hLock;
-
-	static LRESULT OnWindowEvent(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam);
-	static DWORD DispatchRun(LPVOID arg);
-
-	// Disabled
-	BnxWin32Driver(const BnxWin32Driver &);
-
-	// Disabled
-	BnxWin32Driver & operator=(const BnxWin32Driver &);
-
-	static bool RegisterWindowClass();
-	static bool AddNotificationIcon(HWND hWnd);
-	static bool DeleteNotificationIcon(HWND hWnd);
-	static void ShowContextMenu(HWND hWnd);
-
-	bool MakeWindow();
-	void CleanUpWindow();
-};
-
-#endif // !BNXWIN32DRIVER_H
+IDC_IRCBNXMENU MENU
+BEGIN
+	POPUP "&ircbnx"
+	BEGIN
+		MENUITEM "E&xit", IDM_EXIT
+	END
+END
 

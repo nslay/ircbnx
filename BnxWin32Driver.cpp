@@ -28,6 +28,7 @@
 #include "getopt.h"
 #include "BnxStreams.h"
 #include "BnxWin32Driver.h"
+#include "Resource.h"
 
 #include <Windows.h>
 #include <ShellAPI.h>
@@ -80,15 +81,39 @@ void BnxWin32Driver::Shutdown() {
 }
 
 LRESULT BnxWin32Driver::OnWindowEvent(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam) {
+	BnxWin32Driver &clDriver = (BnxWin32Driver &)BnxDriver::GetInstance();
+	int iId = -1;
+	POINT stPoint;
+
 	switch (uMsg) {
-	case TRAY_ICON_MESSAGE:
-		switch(lParam) {
-		case WM_COMMAND:
+	case WM_CREATE:
+		AddNotificationIcon(hWnd);
+		break;
+	case WM_DESTROY:
+		DeleteNotificationIcon(hWnd);
+		break;
+	case WM_COMMAND:
+		switch (LOWORD(wParam)) {
+		case IDM_EXIT:
+			clDriver.Shutdown();
 			break;
 		}
 		break;
+	case TRAY_ICON_MESSAGE:
+		switch(LOWORD(lParam)) {
+		case WM_RBUTTONDOWN:
+		case WM_CONTEXTMENU:
+			stPoint.x = LOWORD(wParam);
+			stPoint.y = HIWORD(wParam);
+
+			ShowContextMenu(hWnd);
+			break;
+		}
+		break;
+	default:
+		return DefWindowProc(hWnd, uMsg, wParam, lParam);
 	}
-	return DefWindowProc(hWnd, uMsg, wParam, lParam);
+	return 0;
 }
 
 DWORD BnxWin32Driver::DispatchRun(LPVOID arg) {
@@ -106,6 +131,7 @@ bool BnxWin32Driver::RegisterWindowClass() {
 	stWndClass.cbSize = sizeof(stWndClass);
 	stWndClass.lpfnWndProc = (WNDPROC)&OnWindowEvent;
 	stWndClass.hInstance = hInst;
+	stWndClass.lpszMenuName = MAKEINTRESOURCE(IDC_IRCBNXMENU);
 	stWndClass.lpszClassName = "ircbnx";
 
 	RegisterClassEx(&stWndClass);
@@ -113,17 +139,16 @@ bool BnxWin32Driver::RegisterWindowClass() {
 	return true;
 }
 
-bool BnxWin32Driver::AddNotificationIcon() {
-	if (m_hWnd == NULL)
+bool BnxWin32Driver::AddNotificationIcon(HWND hWnd) {
+	if (hWnd == NULL)
 		return false;
 
 	NOTIFYICONDATA stIconData;
 	memset(&stIconData, 0, sizeof(stIconData));
 
 	stIconData.cbSize = sizeof(stIconData);
-	stIconData.hWnd = m_hWnd;
+	stIconData.hWnd = hWnd;
 	stIconData.uID = 0;
-	stIconData.uVersion = NOTIFYICON_VERSION;
 	stIconData.uCallbackMessage = (UINT)TRAY_ICON_MESSAGE;
 	strcpy(stIconData.szTip, "ircbnx");
 
@@ -135,16 +160,48 @@ bool BnxWin32Driver::AddNotificationIcon() {
 	return true;
 }
 
-bool BnxWin32Driver::DeleteNotificationIcon() {
+bool BnxWin32Driver::DeleteNotificationIcon(HWND hWnd) {
+	if (hWnd == NULL)
+		return false;
+
 	NOTIFYICONDATA stIconData;
 	memset(&stIconData, 0, sizeof(stIconData));
 
 	stIconData.cbSize = sizeof(stIconData);
-	stIconData.hWnd = m_hWnd;
+	stIconData.hWnd = hWnd;
+	stIconData.uCallbackMessage = (UINT)TRAY_ICON_MESSAGE;
+	stIconData.uFlags = NIF_MESSAGE;
 
 	Shell_NotifyIcon(NIM_DELETE, &stIconData);
 
 	return true;
+}
+
+void BnxWin32Driver::ShowContextMenu(HWND hWnd) {
+	HINSTANCE hInst = (HINSTANCE)GetModuleHandle(NULL);
+	POINT stPoint;
+
+	GetCursorPos(&stPoint);
+
+	HMENU hMenu = LoadMenu(hInst, MAKEINTRESOURCE(IDC_IRCBNXMENU));
+
+	if (hMenu == NULL)
+		return;
+
+	HMENU hSubMenu = GetSubMenu(hMenu, 0);
+
+	if (hSubMenu == NULL) {
+		DestroyMenu(hMenu);
+		return;
+	}
+
+	SetForegroundWindow(hWnd);
+
+	UINT uiFlags = TPM_CENTERALIGN | TPM_LEFTBUTTON;
+
+	TrackPopupMenuEx(hSubMenu, uiFlags, stPoint.x, stPoint.y, hWnd, NULL);
+
+	DestroyMenu(hMenu);
 }
 
 bool BnxWin32Driver::MakeWindow() {
@@ -158,23 +215,13 @@ bool BnxWin32Driver::MakeWindow() {
 
 	m_hWnd = CreateWindow("ircbnx", "ircbnx", 0, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInst, NULL);
 
-	if (m_hWnd == NULL)
-		return false;
-
-	if (!AddNotificationIcon()) {
-		DestroyWindow(m_hWnd);
-		m_hWnd = NULL;
-		return false;
-	}
-
-	return true;
+	return m_hWnd != NULL;
 }
 
 void BnxWin32Driver::CleanUpWindow() {
 	if (m_hWnd == NULL)
 		return;
 
-	DeleteNotificationIcon();
 	DestroyWindow(m_hWnd);
 	m_hWnd = NULL;
 }
