@@ -20,4 +20,5 @@
 - Add signal handling for graceful exiting.
 - 'shutdown' command now kills all bots.
 - ircbnx now runs as a proper Win32 application on Windows.
+- Add tray icon on Windows to exit ircbnx.
 
