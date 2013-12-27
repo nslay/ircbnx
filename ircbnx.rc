@@ -25,6 +25,8 @@
 
 #include "Resource.h"
 
+IDI_IRCBNXICON	ICON	"ircbnx.ico"
+
 IDC_IRCBNXMENU MENU
 BEGIN
 	POPUP "&ircbnx"

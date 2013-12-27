@@ -122,6 +122,7 @@ bool BnxWin32Driver::RegisterWindowClass() {
 	stWndClass.cbSize = sizeof(stWndClass);
 	stWndClass.lpfnWndProc = (WNDPROC)&OnWindowEvent;
 	stWndClass.hInstance = hInst;
+	stWndClass.hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_IRCBNXICON));
 	stWndClass.lpszMenuName = MAKEINTRESOURCE(IDC_IRCBNXMENU);
 	stWndClass.lpszClassName = "ircbnx";
 
@@ -134,6 +135,8 @@ bool BnxWin32Driver::AddNotificationIcon(HWND hWnd) {
 	if (hWnd == NULL)
 		return false;
 
+	HINSTANCE hInst = (HINSTANCE)GetModuleHandle(NULL);
+
 	NOTIFYICONDATA stIconData;
 	memset(&stIconData, 0, sizeof(stIconData));
 
@@ -143,7 +146,9 @@ bool BnxWin32Driver::AddNotificationIcon(HWND hWnd) {
 	stIconData.uCallbackMessage = (UINT)TRAY_ICON_MESSAGE;
 	strcpy(stIconData.szTip, "ircbnx");
 
-	stIconData.uFlags = NIF_MESSAGE|NIF_TIP;
+	stIconData.hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_IRCBNXICON));
+
+	stIconData.uFlags = NIF_MESSAGE|NIF_TIP|NIF_ICON;
 
 	if (Shell_NotifyIcon(NIM_ADD, &stIconData) == FALSE)
 		return false;

@@ -26,6 +26,7 @@
 #ifndef RESOURCE_H
 #define RESOURCE_H
 
+#define IDI_IRCBNXICON	6511
 #define IDC_IRCBNXMENU	225
 #define IDM_EXIT	727
 
