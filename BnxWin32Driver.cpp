@@ -229,6 +229,12 @@ DWORD BnxWin32Driver::RunBase() {
 
 	bool bRet = BnxDriver::Run();
 
+	if (!bRet) {
+		// If this failed for other reasons, call Shutdown() here
+		event_del(m_pCheckShutdownTimer);
+		Shutdown();
+	}
+
 	event_free(m_pCheckShutdownTimer);
 
 	m_pCheckShutdownTimer = NULL;
