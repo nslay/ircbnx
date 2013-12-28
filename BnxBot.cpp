@@ -787,7 +787,7 @@ void BnxBot::OnRegistered() {
 	tv.tv_usec = 0;
 
 	// TODO: Make this configurable
-	m_clFloodDetector.SetThreshold(3.0f);
+	m_clFloodDetector.SetThreshold(2.0f);
 	m_clFloodDetector.SetTimeStep(1.0f);
 
 	event_add(m_pFloodTimer, &tv);
