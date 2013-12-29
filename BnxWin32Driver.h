@@ -71,12 +71,12 @@ private:
 	}
 
 	template<DWORD (BnxWin32Driver::*Method)()> 
-	static DWORD Dispatch(LPVOID arg) {
+	static DWORD CALLBACK Dispatch(LPVOID arg) {
 		BnxWin32Driver *pObject = (BnxWin32Driver *)arg;
 		return (pObject->*Method)();
 	}
 
-	static LRESULT OnWindowEvent(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam);
+	static LRESULT CALLBACK OnWindowEvent(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam);
 
 	static bool RegisterWindowClass();
 	static bool AddNotificationIcon(HWND hWnd);

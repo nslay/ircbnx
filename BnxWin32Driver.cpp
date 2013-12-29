@@ -42,9 +42,9 @@ bool BnxWin32Driver::Run() {
 	m_bRun = true;
 
 	DWORD threadId = 0;
-	HANDLE threadHandle = CreateThread(NULL, 0, &Dispatch<&BnxWin32Driver::RunBase>, this, 0, &threadId);
+	HANDLE hThread = CreateThread(NULL, 0, &Dispatch<&BnxWin32Driver::RunBase>, this, 0, &threadId);
 
-	if (threadHandle == NULL) {
+	if (hThread == NULL) {
 		BnxErrorStream << "Error: Could not create thread." << BnxEndl;
 		return false;
 	}
@@ -62,9 +62,9 @@ bool BnxWin32Driver::Run() {
 		}
 	}
 
-	WaitForSingleObject(threadHandle, INFINITE);
+	WaitForSingleObject(hThread, INFINITE);
 
-	CloseHandle(threadHandle);
+	CloseHandle(hThread);
 
 	CleanUpWindow();
 
@@ -120,7 +120,7 @@ bool BnxWin32Driver::RegisterWindowClass() {
 	memset(&stWndClass, 0, sizeof(stWndClass));
 
 	stWndClass.cbSize = sizeof(stWndClass);
-	stWndClass.lpfnWndProc = (WNDPROC)&OnWindowEvent;
+	stWndClass.lpfnWndProc = &OnWindowEvent;
 	stWndClass.hInstance = hInst;
 	stWndClass.hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_IRCBNXICON));
 	stWndClass.lpszMenuName = MAKEINTRESOURCE(IDC_IRCBNXMENU);
