@@ -33,6 +33,10 @@
 #include <Windows.h>
 #include <ShellAPI.h>
 
+#ifdef _MSC_VER
+#pragma warning(disable:4996)
+#endif // _MSC_VER
+
 bool BnxWin32Driver::Run() {
 	if (!MakeWindow()) {
 		BnxErrorStream << "Error: Could not create window." << BnxEndl;
@@ -42,7 +46,7 @@ bool BnxWin32Driver::Run() {
 	m_bRun = true;
 
 	DWORD threadId = 0;
-	HANDLE hThread = CreateThread(NULL, 0, &Dispatch<&BnxWin32Driver::RunBase>, this, 0, &threadId);
+	HANDLE hThread = CreateThread(NULL, 0, &BnxWin32Driver::Dispatch<&BnxWin32Driver::RunBase>, this, 0, &threadId);
 
 	if (hThread == NULL) {
 		BnxErrorStream << "Error: Could not create thread." << BnxEndl;
@@ -223,7 +227,7 @@ void BnxWin32Driver::CleanUpWindow() {
 }
 
 DWORD BnxWin32Driver::RunBase() {
-	m_pCheckShutdownTimer = event_new(GetEventBase(), -1, EV_PERSIST, &Dispatch<&BnxWin32Driver::OnCheckShutdownTimer>, this);
+	m_pCheckShutdownTimer = event_new(GetEventBase(), -1, EV_PERSIST, &BnxWin32Driver::Dispatch<&BnxWin32Driver::OnCheckShutdownTimer>, this);
 
 	struct timeval tv;
 
