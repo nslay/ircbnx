@@ -103,7 +103,7 @@ LRESULT BnxWin32Driver::OnWindowEvent(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARA
 			break;
 		}
 		break;
-	case TRAY_ICON_MESSAGE:
+	case WMAPP_NOTIFYMESSAGE:
 		switch(LOWORD(lParam)) {
 		case WM_RBUTTONDOWN:
 		case WM_CONTEXTMENU:
@@ -147,7 +147,7 @@ bool BnxWin32Driver::AddNotificationIcon(HWND hWnd) {
 	stIconData.cbSize = sizeof(stIconData);
 	stIconData.hWnd = hWnd;
 	stIconData.uID = 0;
-	stIconData.uCallbackMessage = (UINT)TRAY_ICON_MESSAGE;
+	stIconData.uCallbackMessage = WMAPP_NOTIFYMESSAGE;
 	strcpy(stIconData.szTip, "ircbnx");
 
 	stIconData.hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_IRCBNXICON));
@@ -169,7 +169,7 @@ bool BnxWin32Driver::DeleteNotificationIcon(HWND hWnd) {
 
 	stIconData.cbSize = sizeof(stIconData);
 	stIconData.hWnd = hWnd;
-	stIconData.uCallbackMessage = (UINT)TRAY_ICON_MESSAGE;
+	stIconData.uCallbackMessage = WMAPP_NOTIFYMESSAGE;
 	stIconData.uFlags = NIF_MESSAGE;
 
 	Shell_NotifyIcon(NIM_DELETE, &stIconData);

@@ -57,8 +57,6 @@ public:
 	virtual void Shutdown();
 
 private:
-	enum { TRAY_ICON_MESSAGE = 6112 };
-
 	HWND m_hWnd;
 	HANDLE m_hLock;
 	bool m_bRun;
@@ -71,7 +69,7 @@ private:
 	}
 
 	template<DWORD (BnxWin32Driver::*Method)()> 
-	static DWORD CALLBACK Dispatch(LPVOID arg) {
+	static DWORD __stdcall Dispatch(LPVOID arg) {
 		BnxWin32Driver *pObject = (BnxWin32Driver *)arg;
 		return (pObject->*Method)();
 	}
