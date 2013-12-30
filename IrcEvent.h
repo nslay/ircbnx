@@ -104,7 +104,7 @@ public:
 private:
 	struct event *m_pEvent;
 	void *m_pArg;
-	void (*m_pCallback)(evutil_socket_t fd, short sWhat, void *pArg);
+	CallbackType m_pCallback;
 
 	template<class ObjectType, void (ObjectType::*Method)(evutil_socket_t fd, short sWhat)>
 	static void Dispatch(evutil_socket_t fd, short sWhat, void *pArg) {
