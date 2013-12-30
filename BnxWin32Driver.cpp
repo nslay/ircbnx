@@ -42,11 +42,11 @@ namespace {
 		((BnxWin32Driver *)pArg)->OnCheckShutdownTimer(fd, sWhat);
 	}
 
-	extern "C" DWORD DispatchRunBase(LPVOID pArg) {
+	extern "C" DWORD __stdcall DispatchRunBase(LPVOID pArg) {
 		return ((BnxWin32Driver *)pArg)->RunBase();
 	}
 
-	extern "C" LRESULT OnWindowEvent(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam) {
+	extern "C" LRESULT CALLBACK OnWindowEvent(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam) {
 		BnxWin32Driver &clDriver = (BnxWin32Driver &)BnxDriver::GetInstance();
 	
 		switch (uMsg) {
