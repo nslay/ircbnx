@@ -33,20 +33,14 @@
 #include "BnxStreams.h"
 #include "BnxUnixDriver.h"
 
-namespace {
-	extern "C" void DispatchOnSignal(evutil_socket_t fd, short sWhat, void *pArg) {
-		((BnxUnixDriver *)pArg)->OnSignal(fd, sWhat);
-	}
-} // end namespace
-
 bool BnxUnixDriver::Run() {
 	if (!Daemonize())
 		return false;
 
-	m_pSigTerm = event_new(GetEventBase(), SIGTERM, EV_SIGNAL|EV_PERSIST, &DispatchOnSignal, this);
-	m_pSigInt = event_new(GetEventBase(), SIGINT, EV_SIGNAL|EV_PERSIST, &DispatchOnSignal, this);
-	m_pSigAbrt = event_new(GetEventBase(), SIGABRT, EV_SIGNAL|EV_PERSIST, &DispatchOnSignal, this);
-	m_pSigQuit = event_new(GetEventBase(), SIGQUIT, EV_SIGNAL|EV_PERSIST, &DispatchOnSignal, this);
+	m_pSigTerm = event_new(GetEventBase(), SIGTERM, EV_SIGNAL|EV_PERSIST, &Dispatch<&BnxUnixDriver::OnSignal>, this);
+	m_pSigInt = event_new(GetEventBase(), SIGINT, EV_SIGNAL|EV_PERSIST, &Dispatch<&BnxUnixDriver::OnSignal>, this);
+	m_pSigAbrt = event_new(GetEventBase(), SIGABRT, EV_SIGNAL|EV_PERSIST, &Dispatch<&BnxUnixDriver::OnSignal>, this);
+	m_pSigQuit = event_new(GetEventBase(), SIGQUIT, EV_SIGNAL|EV_PERSIST, &Dispatch<&BnxUnixDriver::OnSignal>, this);
 
 	event_add(m_pSigTerm, NULL);
 	event_add(m_pSigInt, NULL);

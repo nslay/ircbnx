@@ -37,117 +37,6 @@
 #pragma warning(disable:4996)
 #endif // _MSC_VER
 
-namespace {
-	extern "C" void DispatchOnCheckShutdownTimer(evutil_socket_t fd, short sWhat, void *pArg) {
-		((BnxWin32Driver *)pArg)->OnCheckShutdownTimer(fd, sWhat);
-	}
-
-	extern "C" DWORD __stdcall DispatchRunBase(LPVOID pArg) {
-		return ((BnxWin32Driver *)pArg)->RunBase();
-	}
-
-	extern "C" LRESULT CALLBACK OnWindowEvent(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam) {
-		BnxWin32Driver &clDriver = (BnxWin32Driver &)BnxDriver::GetInstance();
-	
-		switch (uMsg) {
-		case WM_CREATE:
-			clDriver.AddNotificationIcon(hWnd);
-			break;
-		case WM_DESTROY:
-			clDriver.DeleteNotificationIcon(hWnd);
-			break;
-		case WM_COMMAND:
-			switch (LOWORD(wParam)) {
-			case IDM_EXIT:
-				clDriver.Shutdown();
-				break;
-			}
-			break;
-		case WMAPP_NOTIFYMESSAGE:
-			switch(LOWORD(lParam)) {
-			case WM_RBUTTONDOWN:
-			case WM_CONTEXTMENU:
-				clDriver.ShowContextMenu(hWnd);
-				break;
-			}
-			break;
-		default:
-			return DefWindowProc(hWnd, uMsg, wParam, lParam);
-		}
-		return 0;
-	}
-
-} // end namespace
-
-bool BnxWin32Driver::AddNotificationIcon(HWND hWnd) {
-	if (hWnd == NULL)
-		return false;
-
-	HINSTANCE hInst = (HINSTANCE)GetModuleHandle(NULL);
-
-	NOTIFYICONDATA stIconData;
-	memset(&stIconData, 0, sizeof(stIconData));
-
-	stIconData.cbSize = sizeof(stIconData);
-	stIconData.hWnd = hWnd;
-	stIconData.uID = 0;
-	stIconData.uCallbackMessage = WMAPP_NOTIFYMESSAGE;
-	strcpy(stIconData.szTip, "ircbnx");
-
-	stIconData.hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_IRCBNXICON));
-
-	stIconData.uFlags = NIF_MESSAGE|NIF_TIP|NIF_ICON;
-
-	if (Shell_NotifyIcon(NIM_ADD, &stIconData) == FALSE)
-		return false;
-
-	return true;
-}
-
-bool BnxWin32Driver::DeleteNotificationIcon(HWND hWnd) {
-	if (hWnd == NULL)
-		return false;
-
-	NOTIFYICONDATA stIconData;
-	memset(&stIconData, 0, sizeof(stIconData));
-
-	stIconData.cbSize = sizeof(stIconData);
-	stIconData.hWnd = hWnd;
-	stIconData.uCallbackMessage = WMAPP_NOTIFYMESSAGE;
-	stIconData.uFlags = NIF_MESSAGE;
-
-	Shell_NotifyIcon(NIM_DELETE, &stIconData);
-
-	return true;
-}
-
-void BnxWin32Driver::ShowContextMenu(HWND hWnd) {
-	HINSTANCE hInst = (HINSTANCE)GetModuleHandle(NULL);
-	POINT stPoint;
-
-	GetCursorPos(&stPoint);
-
-	HMENU hMenu = LoadMenu(hInst, MAKEINTRESOURCE(IDC_IRCBNXMENU));
-
-	if (hMenu == NULL)
-		return;
-
-	HMENU hSubMenu = GetSubMenu(hMenu, 0);
-
-	if (hSubMenu == NULL) {
-		DestroyMenu(hMenu);
-		return;
-	}
-
-	SetForegroundWindow(hWnd);
-
-	UINT uiFlags = TPM_CENTERALIGN | TPM_LEFTBUTTON;
-
-	TrackPopupMenuEx(hSubMenu, uiFlags, stPoint.x, stPoint.y, hWnd, NULL);
-
-	DestroyMenu(hMenu);
-}
-
 bool BnxWin32Driver::Run() {
 	if (!MakeWindow()) {
 		BnxErrorStream << "Error: Could not create window." << BnxEndl;
@@ -157,7 +46,7 @@ bool BnxWin32Driver::Run() {
 	m_bRun = true;
 
 	DWORD threadId = 0;
-	HANDLE hThread = CreateThread(NULL, 0, &DispatchRunBase, this, 0, &threadId);
+	HANDLE hThread = CreateThread(NULL, 0, &BnxWin32Driver::Dispatch<&BnxWin32Driver::RunBase>, this, 0, &threadId);
 
 	if (hThread == NULL) {
 		BnxErrorStream << "Error: Could not create thread." << BnxEndl;
@@ -197,8 +86,148 @@ void BnxWin32Driver::Shutdown() {
 	ReleaseMutex(m_hLock);
 }
 
+LRESULT BnxWin32Driver::OnWindowEvent(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam) {
+	BnxWin32Driver &clDriver = (BnxWin32Driver &)BnxDriver::GetInstance();
+
+	switch (uMsg) {
+	case WM_CREATE:
+		AddNotificationIcon(hWnd);
+		break;
+	case WM_DESTROY:
+		DeleteNotificationIcon(hWnd);
+		break;
+	case WM_COMMAND:
+		switch (LOWORD(wParam)) {
+		case IDM_EXIT:
+			clDriver.Shutdown();
+			break;
+		}
+		break;
+	case TRAY_ICON_MESSAGE:
+		switch(LOWORD(lParam)) {
+		case WM_RBUTTONDOWN:
+		case WM_CONTEXTMENU:
+			ShowContextMenu(hWnd);
+			break;
+		}
+		break;
+	default:
+		return DefWindowProc(hWnd, uMsg, wParam, lParam);
+	}
+	return 0;
+}
+
+bool BnxWin32Driver::RegisterWindowClass() {
+	HINSTANCE hInst = (HINSTANCE)GetModuleHandle(NULL);
+
+	WNDCLASSEX stWndClass;
+	memset(&stWndClass, 0, sizeof(stWndClass));
+
+	stWndClass.cbSize = sizeof(stWndClass);
+	stWndClass.lpfnWndProc = &OnWindowEvent;
+	stWndClass.hInstance = hInst;
+	stWndClass.hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_IRCBNXICON));
+	stWndClass.lpszMenuName = MAKEINTRESOURCE(IDC_IRCBNXMENU);
+	stWndClass.lpszClassName = "ircbnx";
+
+	RegisterClassEx(&stWndClass);
+
+	return true;
+}
+
+bool BnxWin32Driver::AddNotificationIcon(HWND hWnd) {
+	if (hWnd == NULL)
+		return false;
+
+	HINSTANCE hInst = (HINSTANCE)GetModuleHandle(NULL);
+
+	NOTIFYICONDATA stIconData;
+	memset(&stIconData, 0, sizeof(stIconData));
+
+	stIconData.cbSize = sizeof(stIconData);
+	stIconData.hWnd = hWnd;
+	stIconData.uID = 0;
+	stIconData.uCallbackMessage = (UINT)TRAY_ICON_MESSAGE;
+	strcpy(stIconData.szTip, "ircbnx");
+
+	stIconData.hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_IRCBNXICON));
+
+	stIconData.uFlags = NIF_MESSAGE|NIF_TIP|NIF_ICON;
+
+	if (Shell_NotifyIcon(NIM_ADD, &stIconData) == FALSE)
+		return false;
+
+	return true;
+}
+
+bool BnxWin32Driver::DeleteNotificationIcon(HWND hWnd) {
+	if (hWnd == NULL)
+		return false;
+
+	NOTIFYICONDATA stIconData;
+	memset(&stIconData, 0, sizeof(stIconData));
+
+	stIconData.cbSize = sizeof(stIconData);
+	stIconData.hWnd = hWnd;
+	stIconData.uCallbackMessage = (UINT)TRAY_ICON_MESSAGE;
+	stIconData.uFlags = NIF_MESSAGE;
+
+	Shell_NotifyIcon(NIM_DELETE, &stIconData);
+
+	return true;
+}
+
+void BnxWin32Driver::ShowContextMenu(HWND hWnd) {
+	HINSTANCE hInst = (HINSTANCE)GetModuleHandle(NULL);
+	POINT stPoint;
+
+	GetCursorPos(&stPoint);
+
+	HMENU hMenu = LoadMenu(hInst, MAKEINTRESOURCE(IDC_IRCBNXMENU));
+
+	if (hMenu == NULL)
+		return;
+
+	HMENU hSubMenu = GetSubMenu(hMenu, 0);
+
+	if (hSubMenu == NULL) {
+		DestroyMenu(hMenu);
+		return;
+	}
+
+	SetForegroundWindow(hWnd);
+
+	UINT uiFlags = TPM_CENTERALIGN | TPM_LEFTBUTTON;
+
+	TrackPopupMenuEx(hSubMenu, uiFlags, stPoint.x, stPoint.y, hWnd, NULL);
+
+	DestroyMenu(hMenu);
+}
+
+bool BnxWin32Driver::MakeWindow() {
+	if (m_hWnd != NULL)
+		return true;
+
+	if (!RegisterWindowClass())
+		return false;
+
+	HINSTANCE hInst = (HINSTANCE)GetModuleHandle(NULL);
+
+	m_hWnd = CreateWindow("ircbnx", "ircbnx", 0, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInst, NULL);
+
+	return m_hWnd != NULL;
+}
+
+void BnxWin32Driver::CleanUpWindow() {
+	if (m_hWnd == NULL)
+		return;
+
+	DestroyWindow(m_hWnd);
+	m_hWnd = NULL;
+}
+
 DWORD BnxWin32Driver::RunBase() {
-	m_pCheckShutdownTimer = event_new(GetEventBase(), -1, EV_PERSIST, &DispatchOnCheckShutdownTimer, this);
+	m_pCheckShutdownTimer = event_new(GetEventBase(), -1, EV_PERSIST, &BnxWin32Driver::Dispatch<&BnxWin32Driver::OnCheckShutdownTimer>, this);
 
 	struct timeval tv;
 
@@ -231,46 +260,5 @@ void BnxWin32Driver::OnCheckShutdownTimer(evutil_socket_t fd, short what) {
 	}
 
 	ReleaseMutex(m_hLock);
-}
-
-bool BnxWin32Driver::RegisterWindowClass() {
-	HINSTANCE hInst = (HINSTANCE)GetModuleHandle(NULL);
-
-	WNDCLASSEX stWndClass;
-	memset(&stWndClass, 0, sizeof(stWndClass));
-
-	stWndClass.cbSize = sizeof(stWndClass);
-	stWndClass.lpfnWndProc = &OnWindowEvent;
-	stWndClass.hInstance = hInst;
-	stWndClass.hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_IRCBNXICON));
-	stWndClass.lpszMenuName = MAKEINTRESOURCE(IDC_IRCBNXMENU);
-	stWndClass.lpszClassName = "ircbnx";
-
-	RegisterClassEx(&stWndClass);
-
-	return true;
-}
-
-
-bool BnxWin32Driver::MakeWindow() {
-	if (m_hWnd != NULL)
-		return true;
-
-	if (!RegisterWindowClass())
-		return false;
-
-	HINSTANCE hInst = (HINSTANCE)GetModuleHandle(NULL);
-
-	m_hWnd = CreateWindow("ircbnx", "ircbnx", 0, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInst, NULL);
-
-	return m_hWnd != NULL;
-}
-
-void BnxWin32Driver::CleanUpWindow() {
-	if (m_hWnd == NULL)
-		return;
-
-	DestroyWindow(m_hWnd);
-	m_hWnd = NULL;
 }
 

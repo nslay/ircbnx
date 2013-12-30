@@ -54,20 +54,6 @@
 #include "IrcString.h"
 #include "Irc.h"
 
-namespace {
-	extern "C" void DispatchOnWrite(evutil_socket_t fd, short sWhat, void *pArg) {
-		((IrcClient *)pArg)->OnWrite(fd, sWhat);
-	}
-
-	extern "C" void DispatchOnRead(evutil_socket_t fd, short sWhat, void *pArg) {
-		((IrcClient *)pArg)->OnRead(fd, sWhat);
-	}
-
-	extern "C" void DispatchOnSendTimer(evutil_socket_t fd, short sWhat, void *pArg) {
-		((IrcClient *)pArg)->OnSendTimer(fd, sWhat);
-	}
-} // end namespace
-
 char * IrcClient::PopToken(char *&pStr) {
 	for ( ; *pStr == ' '; ++pStr);
 
@@ -216,9 +202,9 @@ bool IrcClient::Connect(const std::string &strServer, const std::string &strPort
 	freeaddrinfo(pResults);
 
 	// XXX: Handle errors?
-	m_pWriteEvent = event_new(m_pEventBase, m_socket, EV_WRITE, &DispatchOnWrite, this);
-	m_pReadEvent = event_new(m_pEventBase, m_socket, EV_READ | EV_PERSIST, &DispatchOnRead, this);
-	m_pSendTimer = event_new(m_pEventBase, -1, EV_PERSIST, &DispatchOnSendTimer, this);
+	m_pWriteEvent = event_new(m_pEventBase, m_socket, EV_WRITE, &Dispatch<&IrcClient::OnWrite>, this);
+	m_pReadEvent = event_new(m_pEventBase, m_socket, EV_READ | EV_PERSIST, &Dispatch<&IrcClient::OnRead>, this);
+	m_pSendTimer = event_new(m_pEventBase, -1, EV_PERSIST, &Dispatch<&IrcClient::OnSendTimer>, this);
 
 	event_add(m_pWriteEvent, NULL);
 
@@ -272,82 +258,6 @@ void IrcClient::Disconnect() {
 		event_free(m_pSendTimer);
 		m_pSendTimer = NULL;
 	}
-}
-
-void IrcClient::OnWrite(evutil_socket_t fd, short what) {
-	event_add(m_pReadEvent, NULL);
-
-	// TODO: Tunable for send timer
-	struct timeval tv;
-	tv.tv_sec = 0;
-	tv.tv_usec = 500000;
-
-	event_add(m_pSendTimer, &tv);
-	m_clSendCounter.SetTimeStep(0.5f);
-
-	OnConnect();
-}
-
-void IrcClient::OnRead(evutil_socket_t fd, short what) {
-#ifdef _WIN32
-	int readSize = recv(m_socket, m_stagingBuffer + m_stagingBufferSize, 
-		(int)(sizeof(m_stagingBuffer)-1-m_stagingBufferSize),0);
-#else // !_WIN32
-	ssize_t readSize = recv(m_socket, m_stagingBuffer + m_stagingBufferSize, 
-		sizeof(m_stagingBuffer)-1-m_stagingBufferSize,0);
-#endif // _WIN32
-
-	if (readSize == 0) {
-		Log("Remote host closed the connection.");
-		OnDisconnect();
-		return;
-	}
-	else if (readSize < 0) {
-#ifdef _WIN32
-		Log("recv() failed (%d)", WSAGetLastError());
-#else // !_WIN32
-		Log("recv() failed (%d): %s", errno, strerror(errno));
-#endif // _WIN32
-		OnDisconnect();
-		return;
-	}
-
-	time(&m_lastRecvTime);
-
-	m_stagingBufferSize += readSize;
-
-	m_stagingBuffer[m_stagingBufferSize] = '\0';
-
-	char *p, *q;
-
-	p = q = m_stagingBuffer;
-
-	// We check the buffer size since Disconnect() can be called somewhere in ProcessLine()
-	while (m_stagingBufferSize > 0 && (q = strpbrk(p,"\r\n")) != NULL) {
-		*q = '\0';
-
-		m_stagingBufferSize -= (q-p) + 1;
-		if (q != p)
-			ProcessLine(p);
-
-		p = q + 1;
-	}
-
-	memmove(m_stagingBuffer, p, m_stagingBufferSize);
-}
-
-void IrcClient::OnSendTimer(evutil_socket_t fd, short what) {
-	float fRate = m_clSendCounter.SampleRate();
-
-	// TODO: Tunable for rate
-	if (fRate > 2 || m_dqSendQueue.empty())
-		return;
-
-	const std::string &strMessage = m_dqSendQueue.front();
-
-	SendRaw(strMessage.c_str(), strMessage.size());
-
-	m_dqSendQueue.pop_front();
 }
 
 void IrcClient::Log(const char *pFormat, ...) {
@@ -612,5 +522,81 @@ void IrcClient::ProcessLine(char *pLine) {
 		OnWallops(pPrefix, pParams[0]);
 	}
 
+}
+
+void IrcClient::OnWrite(evutil_socket_t fd, short what) {
+	event_add(m_pReadEvent, NULL);
+
+	// TODO: Tunable for send timer
+	struct timeval tv;
+	tv.tv_sec = 0;
+	tv.tv_usec = 500000;
+
+	event_add(m_pSendTimer, &tv);
+	m_clSendCounter.SetTimeStep(0.5f);
+
+	OnConnect();
+}
+
+void IrcClient::OnRead(evutil_socket_t fd, short what) {
+#ifdef _WIN32
+	int readSize = recv(m_socket, m_stagingBuffer + m_stagingBufferSize, 
+		(int)(sizeof(m_stagingBuffer)-1-m_stagingBufferSize),0);
+#else // !_WIN32
+	ssize_t readSize = recv(m_socket, m_stagingBuffer + m_stagingBufferSize, 
+		sizeof(m_stagingBuffer)-1-m_stagingBufferSize,0);
+#endif // _WIN32
+
+	if (readSize == 0) {
+		Log("Remote host closed the connection.");
+		OnDisconnect();
+		return;
+	}
+	else if (readSize < 0) {
+#ifdef _WIN32
+		Log("recv() failed (%d)", WSAGetLastError());
+#else // !_WIN32
+		Log("recv() failed (%d): %s", errno, strerror(errno));
+#endif // _WIN32
+		OnDisconnect();
+		return;
+	}
+
+	time(&m_lastRecvTime);
+
+	m_stagingBufferSize += readSize;
+
+	m_stagingBuffer[m_stagingBufferSize] = '\0';
+
+	char *p, *q;
+
+	p = q = m_stagingBuffer;
+
+	// We check the buffer size since Disconnect() can be called somewhere in ProcessLine()
+	while (m_stagingBufferSize > 0 && (q = strpbrk(p,"\r\n")) != NULL) {
+		*q = '\0';
+
+		m_stagingBufferSize -= (q-p) + 1;
+		if (q != p)
+			ProcessLine(p);
+
+		p = q + 1;
+	}
+
+	memmove(m_stagingBuffer, p, m_stagingBufferSize);
+}
+
+void IrcClient::OnSendTimer(evutil_socket_t fd, short what) {
+	float fRate = m_clSendCounter.SampleRate();
+
+	// TODO: Tunable for rate
+	if (fRate > 2 || m_dqSendQueue.empty())
+		return;
+
+	const std::string &strMessage = m_dqSendQueue.front();
+
+	SendRaw(strMessage.c_str(), strMessage.size());
+
+	m_dqSendQueue.pop_front();
 }
 

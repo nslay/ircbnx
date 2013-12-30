@@ -72,14 +72,6 @@ public:
 
 	virtual void Disconnect();
 
-	// Libevent callbacks
-	void OnConnectTimer(evutil_socket_t fd, short what);
-	void OnFloodTimer(evutil_socket_t fd, short what);
-	void OnVoteBanTimer(evutil_socket_t fd, short what);
-	void OnChannelsTimer(evutil_socket_t fd, short what);
-	void OnAntiIdleTimer(evutil_socket_t fd, short what);
-	void OnSeenListTimer(evutil_socket_t fd, short what);
-
 protected:
 	typedef std::vector<BnxChannel>::iterator ChannelIterator;
 
@@ -194,11 +186,24 @@ private:
 	BnxFloodDetector m_clFloodDetector;
 	BnxSeenList m_clSeenList;
 
+	template<void (BnxBot::*Method)(evutil_socket_t, short)>
+	static void Dispatch(evutil_socket_t fd, short what, void *arg) {
+		BnxBot *pObject = (BnxBot *)arg;
+		(pObject->*Method)(fd, what);
+	}
+
 	void AddChannel(const char *pChannel);
 	void DeleteChannel(const char *pChannel);
 	ChannelIterator DeleteChannel(ChannelIterator channelItr);
 	void Squelch(const IrcUser &clUser);
 	void Unsquelch(const IrcUser &clser);
+
+	void OnConnectTimer(evutil_socket_t fd, short what);
+	void OnFloodTimer(evutil_socket_t fd, short what);
+	void OnVoteBanTimer(evutil_socket_t fd, short what);
+	void OnChannelsTimer(evutil_socket_t fd, short what);
+	void OnAntiIdleTimer(evutil_socket_t fd, short what);
+	void OnSeenListTimer(evutil_socket_t fd, short what);
 };
 
 #endif // !BNXBOT_H

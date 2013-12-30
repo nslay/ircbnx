@@ -68,11 +68,6 @@ public:
 	virtual bool Reconnect();
 	virtual void Disconnect();
 
-	// Libevent callbacks
-	void OnWrite(evutil_socket_t fd, short what);
-	void OnRead(evutil_socket_t fd, short what);
-	void OnSendTimer(evutil_socket_t fd, short what);
-
 protected:
 	enum WhenType { AUTO = 0, NOW, LATER };
 
@@ -124,9 +119,21 @@ private:
 
 	static char * PopToken(char *&pStr);
 
+	template<void (IrcClient::*Method)(evutil_socket_t, short)>
+	static void Dispatch(evutil_socket_t fd, short what, void *arg) {
+		IrcClient *pObject = (IrcClient *)arg;
+		(pObject->*Method)(fd, what);
+	}
+
 	void CloseSocket();
 
 	void ProcessLine(char *pLine);
+
+	// Libevent callbacks
+	void OnWrite(evutil_socket_t fd, short what);
+	void OnRead(evutil_socket_t fd, short what);
+	void OnSendTimer(evutil_socket_t fd, short what);
+
 };
 
 #endif // !IRCCLIENT_H
