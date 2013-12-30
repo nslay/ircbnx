@@ -250,6 +250,124 @@ void BnxBot::Disconnect() {
 	m_clFloodDetector.Reset();
 }
 
+void BnxBot::OnConnectTimer(evutil_socket_t fd, short what) {
+	if (!Connect(m_strServer, m_strPort)) {
+		// Connect failed outright so reschedule the timer
+		struct timeval tv;
+
+		tv.tv_sec = 5;
+		tv.tv_usec = 0;
+
+		evtimer_add(m_pConnectTimer, &tv);
+	}
+}
+
+void BnxBot::OnFloodTimer(evutil_socket_t fd, short what) {
+	std::vector<IrcUser> vFlooders;
+
+	m_clFloodDetector.Detect(vFlooders);
+
+	for (size_t i = 0; i < vFlooders.size(); ++i) {
+		Log("Ignoring %s for flooding", vFlooders[i].GetHostmask().c_str());
+		Squelch(IrcUser("*","*",vFlooders[i].GetHostname()));
+	}
+
+	// Detect floods in channels
+	for (size_t i = 0; i < m_vCurrentChannels.size(); ++i) {
+		BnxChannel &clChannel = m_vCurrentChannels[i];
+
+		clChannel.ExpireWarningEntries();
+
+		BnxFloodDetector &clDetector = clChannel.GetFloodDetector();
+
+		vFlooders.clear();
+
+		// This should be called regardless of channel operator status
+		clDetector.Detect(vFlooders);
+
+		if (!clChannel.IsOperator())
+			continue;
+
+		for (size_t j = 0; j < vFlooders.size(); ++j) {
+			const IrcUser &clUser = vFlooders[j];
+
+			BnxChannel::WarningIterator warningItr = clChannel.Warn(clUser.GetHostname());
+
+			switch (warningItr->GetCount()) {
+			case 0:
+				break;
+			case 1:
+				Send(AUTO, "PRIVMSG %s :%s: Stop flooding! I'm warning you!\r\n", 
+					clChannel.GetName().c_str(), clUser.GetNickname().c_str());
+				break;
+			case 2:
+				Log("Kicking %s from %s for flooding", 
+					clUser.GetHostmask().c_str(), clChannel.GetName().c_str());
+
+				Send(AUTO, "KICK %s %s :stop flooding!\r\n", 
+					clChannel.GetName().c_str(), clUser.GetNickname().c_str());
+				break;
+			case 3:
+			default:
+				Log("Banning %s from %s for flooding", 
+					clUser.GetHostmask().c_str(), clChannel.GetName().c_str());
+
+				Send(AUTO, "MODE %s +b %s\r\n", 
+					clChannel.GetName().c_str(), clUser.GetBanMask().c_str());
+				Send(AUTO, "KICK %s %s :for flooding\r\n", 
+					clChannel.GetName().c_str(), clUser.GetNickname().c_str());
+
+				clChannel.DeleteWarningEntry(warningItr);
+			}
+		}
+
+	}
+
+}
+
+void BnxBot::OnVoteBanTimer(evutil_socket_t fd, short what) {
+	for (size_t i = 0; i < m_vCurrentChannels.size(); ++i) {
+		BnxChannel &clChannel = m_vCurrentChannels[i];
+
+		if (clChannel.IsVoteBanInProgress() && clChannel.VoteBanExpired()) {
+			const IrcUser &clUser = clChannel.GetVoteBanMask();
+
+			if (clChannel.TallyVote() >= 0) {
+				Send(AUTO, "PRIVMSG %s :Banning %s by popular request...\r\n", 
+					clChannel.GetName().c_str(), clUser.GetNickname().c_str());
+				SplatterKick(clChannel.GetName().c_str(), clUser);
+			}
+			else {
+				Send(AUTO, "PRIVMSG %s :OK, %s can stay.\r\n",
+					clChannel.GetName().c_str(), clUser.GetNickname().c_str());
+			}
+
+			clChannel.ResetVoteBan();
+		}
+	}
+}
+
+void BnxBot::OnChannelsTimer(evutil_socket_t fd, short what) {
+	for (size_t i = 0; i < m_vHomeChannels.size(); ++i) {
+		ChannelIterator channelItr = GetChannel(m_vHomeChannels[i].c_str());
+
+		if (channelItr == ChannelEnd())
+			Send(AUTO, "JOIN %s\r\n", m_vHomeChannels[i].c_str());
+	}
+}
+
+void BnxBot::OnAntiIdleTimer(evutil_socket_t fd, short what) {
+	if (time(NULL)-GetLastRecvTime() > 30)
+		Send(AUTO, "PING :%s\r\n", GetCurrentServer().c_str());
+}
+
+void BnxBot::OnSeenListTimer(evutil_socket_t fd, short what) {
+	// Occasionally expire and save entries
+
+	m_clSeenList.ExpireEntries();
+	m_clSeenList.Save();
+}
+
 BnxBot::ChannelIterator BnxBot::ChannelBegin() {
 	return m_vCurrentChannels.begin();
 }
@@ -1823,123 +1941,5 @@ void BnxBot::Unsquelch(const IrcUser &clUser) {
 
 	if (itr != m_vSquelchedUsers.end())
 		m_vSquelchedUsers.erase(itr);
-}
-
-void BnxBot::OnConnectTimer(evutil_socket_t fd, short what) {
-	if (!Connect(m_strServer, m_strPort)) {
-		// Connect failed outright so reschedule the timer
-		struct timeval tv;
-
-		tv.tv_sec = 5;
-		tv.tv_usec = 0;
-
-		evtimer_add(m_pConnectTimer, &tv);
-	}
-}
-
-void BnxBot::OnFloodTimer(evutil_socket_t fd, short what) {
-	std::vector<IrcUser> vFlooders;
-
-	m_clFloodDetector.Detect(vFlooders);
-
-	for (size_t i = 0; i < vFlooders.size(); ++i) {
-		Log("Ignoring %s for flooding", vFlooders[i].GetHostmask().c_str());
-		Squelch(IrcUser("*","*",vFlooders[i].GetHostname()));
-	}
-
-	// Detect floods in channels
-	for (size_t i = 0; i < m_vCurrentChannels.size(); ++i) {
-		BnxChannel &clChannel = m_vCurrentChannels[i];
-
-		clChannel.ExpireWarningEntries();
-
-		BnxFloodDetector &clDetector = clChannel.GetFloodDetector();
-
-		vFlooders.clear();
-
-		// This should be called regardless of channel operator status
-		clDetector.Detect(vFlooders);
-
-		if (!clChannel.IsOperator())
-			continue;
-
-		for (size_t j = 0; j < vFlooders.size(); ++j) {
-			const IrcUser &clUser = vFlooders[j];
-
-			BnxChannel::WarningIterator warningItr = clChannel.Warn(clUser.GetHostname());
-
-			switch (warningItr->GetCount()) {
-			case 0:
-				break;
-			case 1:
-				Send(AUTO, "PRIVMSG %s :%s: Stop flooding! I'm warning you!\r\n", 
-					clChannel.GetName().c_str(), clUser.GetNickname().c_str());
-				break;
-			case 2:
-				Log("Kicking %s from %s for flooding", 
-					clUser.GetHostmask().c_str(), clChannel.GetName().c_str());
-
-				Send(AUTO, "KICK %s %s :stop flooding!\r\n", 
-					clChannel.GetName().c_str(), clUser.GetNickname().c_str());
-				break;
-			case 3:
-			default:
-				Log("Banning %s from %s for flooding", 
-					clUser.GetHostmask().c_str(), clChannel.GetName().c_str());
-
-				Send(AUTO, "MODE %s +b %s\r\n", 
-					clChannel.GetName().c_str(), clUser.GetBanMask().c_str());
-				Send(AUTO, "KICK %s %s :for flooding\r\n", 
-					clChannel.GetName().c_str(), clUser.GetNickname().c_str());
-
-				clChannel.DeleteWarningEntry(warningItr);
-			}
-		}
-
-	}
-
-}
-
-void BnxBot::OnVoteBanTimer(evutil_socket_t fd, short what) {
-	for (size_t i = 0; i < m_vCurrentChannels.size(); ++i) {
-		BnxChannel &clChannel = m_vCurrentChannels[i];
-
-		if (clChannel.IsVoteBanInProgress() && clChannel.VoteBanExpired()) {
-			const IrcUser &clUser = clChannel.GetVoteBanMask();
-
-			if (clChannel.TallyVote() >= 0) {
-				Send(AUTO, "PRIVMSG %s :Banning %s by popular request...\r\n", 
-					clChannel.GetName().c_str(), clUser.GetNickname().c_str());
-				SplatterKick(clChannel.GetName().c_str(), clUser);
-			}
-			else {
-				Send(AUTO, "PRIVMSG %s :OK, %s can stay.\r\n",
-					clChannel.GetName().c_str(), clUser.GetNickname().c_str());
-			}
-
-			clChannel.ResetVoteBan();
-		}
-	}
-}
-
-void BnxBot::OnChannelsTimer(evutil_socket_t fd, short what) {
-	for (size_t i = 0; i < m_vHomeChannels.size(); ++i) {
-		ChannelIterator channelItr = GetChannel(m_vHomeChannels[i].c_str());
-
-		if (channelItr == ChannelEnd())
-			Send(AUTO, "JOIN %s\r\n", m_vHomeChannels[i].c_str());
-	}
-}
-
-void BnxBot::OnAntiIdleTimer(evutil_socket_t fd, short what) {
-	if (time(NULL)-GetLastRecvTime() > 30)
-		Send(AUTO, "PING :%s\r\n", GetCurrentServer().c_str());
-}
-
-void BnxBot::OnSeenListTimer(evutil_socket_t fd, short what) {
-	// Occasionally expire and save entries
-
-	m_clSeenList.ExpireEntries();
-	m_clSeenList.Save();
 }
 

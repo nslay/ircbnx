@@ -46,7 +46,6 @@ namespace {
 		return ((BnxWin32Driver *)pArg)->RunBase();
 	}
 
-
 	extern "C" LRESULT OnWindowEvent(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam) {
 		BnxWin32Driver &clDriver = (BnxWin32Driver &)BnxDriver::GetInstance();
 	
