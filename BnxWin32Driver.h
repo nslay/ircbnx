@@ -31,17 +31,23 @@
 #include <vector>
 #include <iostream>
 #include "BnxDriver.h"
+#include "IrcEvent.h"
 #include "IniFile.h"
 #include "BnxBot.h"
 #include <Windows.h>
 
 class BnxWin32Driver : public BnxDriver {
 public:
+	static bool RegisterWindowClass();
+	static bool AddNotificationIcon(HWND hWnd);
+	static bool DeleteNotificationIcon(HWND hWnd);
+	static void ShowContextMenu(HWND hWnd);
+
 	BnxWin32Driver() {
 		m_hWnd = NULL;
 		m_hLock = CreateMutex(NULL, 0, NULL);
 		m_bRun = false;
-		m_pCheckShutdownTimer = NULL;
+		m_clCheckShutdownTimer = IrcEvent::Bind<BnxWin32Driver, &BnxWin32Driver::OnCheckShutdownTimer>(this);
 	}
 
 	virtual ~BnxWin32Driver() {
@@ -56,30 +62,13 @@ public:
 	virtual bool Run();
 	virtual void Shutdown();
 
+	DWORD RunBase();
+
 private:
 	HWND m_hWnd;
 	HANDLE m_hLock;
 	bool m_bRun;
-	struct event *m_pCheckShutdownTimer;
-
-	template<void (BnxWin32Driver::*Method)(evutil_socket_t fd, short what)>
-	static void Dispatch(evutil_socket_t fd, short what, void *arg) {
-		BnxWin32Driver *pObject = (BnxWin32Driver *)arg;
-		(pObject->*Method)(fd, what);
-	}
-
-	template<DWORD (BnxWin32Driver::*Method)()> 
-	static DWORD __stdcall Dispatch(LPVOID arg) {
-		BnxWin32Driver *pObject = (BnxWin32Driver *)arg;
-		return (pObject->*Method)();
-	}
-
-	static LRESULT CALLBACK OnWindowEvent(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam);
-
-	static bool RegisterWindowClass();
-	static bool AddNotificationIcon(HWND hWnd);
-	static bool DeleteNotificationIcon(HWND hWnd);
-	static void ShowContextMenu(HWND hWnd);
+	IrcEvent m_clCheckShutdownTimer;
 
 	// Disabled
 	BnxWin32Driver(const BnxWin32Driver &);
@@ -90,7 +79,6 @@ private:
 	bool MakeWindow();
 	void CleanUpWindow();
 
-	DWORD RunBase();
 	void OnCheckShutdownTimer(evutil_socket_t fd, short what);
 };
 
