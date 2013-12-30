@@ -44,15 +44,14 @@ public:
 	virtual bool Run();
 	virtual void Shutdown();
 
+	// Libevent callback
+	void OnSignal(evutil_socket_t signal, short what) {
+		Shutdown();
+	}
+
 private:
 	// Unix-specific signals
 	struct event *m_pSigTerm, *m_pSigInt, *m_pSigAbrt, *m_pSigQuit;
-
-	template<void (BnxUnixDriver::*Method)(evutil_socket_t, short)>
-	static void Dispatch(evutil_socket_t fd, short what, void *arg) {
-		BnxUnixDriver *pObject = (BnxUnixDriver *)arg;
-		(pObject->*Method)(fd, what);
-	}
 
 	// Disabled
 	BnxUnixDriver(const BnxUnixDriver &);
@@ -61,10 +60,6 @@ private:
 	BnxUnixDriver & operator=(const BnxUnixDriver &);
 
 	bool Daemonize();
-
-	void OnSignal(evutil_socket_t signal, short what) {
-		Shutdown();
-	}
 };
 
 #endif // !BNXUNIXDRIVER_H

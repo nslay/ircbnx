@@ -39,6 +39,33 @@
 #pragma warning(disable:4996)
 #endif // _MSC_VER
 
+namespace {
+	extern "C" void DispatchOnConnectTimer(evutil_socket_t fd, short sWhat, void *pArg) {
+		((BnxBot *)pArg)->OnConnectTimer(fd, sWhat);
+	}
+
+	extern "C" void DispatchOnFloodTimer(evutil_socket_t fd, short sWhat, void *pArg) {
+		((BnxBot *)pArg)->OnFloodTimer(fd, sWhat);
+	}
+
+	extern "C" void DispatchOnVoteBanTimer(evutil_socket_t fd, short sWhat, void *pArg) {
+		((BnxBot *)pArg)->OnVoteBanTimer(fd, sWhat);
+	}
+
+	extern "C" void DispatchOnChannelsTimer(evutil_socket_t fd, short sWhat, void *pArg) {
+		((BnxBot *)pArg)->OnChannelsTimer(fd, sWhat);
+	}
+
+	extern "C" void DispatchOnAntiIdleTimer(evutil_socket_t fd, short sWhat, void *pArg) {
+		((BnxBot *)pArg)->OnAntiIdleTimer(fd, sWhat);
+	}
+
+	extern "C" void DispatchOnSeenListTimer(evutil_socket_t fd, short sWhat, void *pArg) {
+		((BnxBot *)pArg)->OnSeenListTimer(fd, sWhat);
+	}
+
+} // end namespace
+
 std::string BnxBot::GetVersionString() {
 	std::stringstream versionStream;
 
@@ -143,12 +170,12 @@ void BnxBot::StartUp() {
 	Log("Starting up ...");
 	Log("Version: %s", GetVersionString().c_str());
 
-	m_pConnectTimer = event_new(GetEventBase(), -1, 0, &Dispatch<&BnxBot::OnConnectTimer>, this);
-	m_pFloodTimer = event_new(GetEventBase(), -1, EV_PERSIST, &Dispatch<&BnxBot::OnFloodTimer>, this);
-	m_pVoteBanTimer = event_new(GetEventBase(), -1, EV_PERSIST, &Dispatch<&BnxBot::OnVoteBanTimer>, this);
-	m_pChannelsTimer = event_new(GetEventBase(), -1, EV_PERSIST, &Dispatch<&BnxBot::OnChannelsTimer>, this);
-	m_pAntiIdleTimer = event_new(GetEventBase(), -1, EV_PERSIST, &Dispatch<&BnxBot::OnAntiIdleTimer>, this);
-	m_pSeenListTimer = event_new(GetEventBase(), -1, EV_PERSIST, &Dispatch<&BnxBot::OnSeenListTimer>, this);
+	m_pConnectTimer = event_new(GetEventBase(), -1, 0, &DispatchOnConnectTimer, this);
+	m_pFloodTimer = event_new(GetEventBase(), -1, EV_PERSIST, &DispatchOnFloodTimer, this);
+	m_pVoteBanTimer = event_new(GetEventBase(), -1, EV_PERSIST, &DispatchOnVoteBanTimer, this);
+	m_pChannelsTimer = event_new(GetEventBase(), -1, EV_PERSIST, &DispatchOnChannelsTimer, this);
+	m_pAntiIdleTimer = event_new(GetEventBase(), -1, EV_PERSIST, &DispatchOnAntiIdleTimer, this);
+	m_pSeenListTimer = event_new(GetEventBase(), -1, EV_PERSIST, &DispatchOnSeenListTimer, this);
 
 	struct timeval tv;
 	tv.tv_sec = tv.tv_usec = 0;

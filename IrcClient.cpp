@@ -54,6 +54,20 @@
 #include "IrcString.h"
 #include "Irc.h"
 
+namespace {
+	extern "C" void DispatchOnWrite(evutil_socket_t fd, short sWhat, void *pArg) {
+		((IrcClient *)pArg)->OnWrite(fd, sWhat);
+	}
+
+	extern "C" void DispatchOnRead(evutil_socket_t fd, short sWhat, void *pArg) {
+		((IrcClient *)pArg)->OnRead(fd, sWhat);
+	}
+
+	extern "C" void DispatchOnSendTimer(evutil_socket_t fd, short sWhat, void *pArg) {
+		((IrcClient *)pArg)->OnSendTimer(fd, sWhat);
+	}
+} // end namespace
+
 char * IrcClient::PopToken(char *&pStr) {
 	for ( ; *pStr == ' '; ++pStr);
 
@@ -202,9 +216,9 @@ bool IrcClient::Connect(const std::string &strServer, const std::string &strPort
 	freeaddrinfo(pResults);
 
 	// XXX: Handle errors?
-	m_pWriteEvent = event_new(m_pEventBase, m_socket, EV_WRITE, &Dispatch<&IrcClient::OnWrite>, this);
-	m_pReadEvent = event_new(m_pEventBase, m_socket, EV_READ | EV_PERSIST, &Dispatch<&IrcClient::OnRead>, this);
-	m_pSendTimer = event_new(m_pEventBase, -1, EV_PERSIST, &Dispatch<&IrcClient::OnSendTimer>, this);
+	m_pWriteEvent = event_new(m_pEventBase, m_socket, EV_WRITE, &DispatchOnWrite, this);
+	m_pReadEvent = event_new(m_pEventBase, m_socket, EV_READ | EV_PERSIST, &DispatchOnRead, this);
+	m_pSendTimer = event_new(m_pEventBase, -1, EV_PERSIST, &DispatchOnSendTimer, this);
 
 	event_add(m_pWriteEvent, NULL);
 
