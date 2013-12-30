@@ -35,6 +35,7 @@
 #include "BnxChannel.h"
 #include "BnxFloodDetector.h"
 #include "BnxSeenList.h"
+#include "IrcEvent.h"
 #include "IrcClient.h"
 #include "IrcUser.h"
 
@@ -46,11 +47,7 @@ public:
 
 	static std::string GetVersionString();
 
-	BnxBot()
-	: m_strLogFile("bot.log"), m_pConnectTimer(NULL), m_pFloodTimer(NULL), 
-		m_pVoteBanTimer(NULL), m_pChannelsTimer(NULL), m_pAntiIdleTimer(NULL), 
-		m_bChatter(true) { }
-
+	BnxBot();
 	virtual ~BnxBot();
 
 	void SetProfileName(const std::string &strProfileName);
@@ -172,8 +169,9 @@ private:
 
 	std::string m_strProfileName, m_strServer, m_strPort, m_strNickServ, 
 			m_strNickServPassword, m_strLogFile;
-	struct event *m_pConnectTimer, *m_pFloodTimer, *m_pVoteBanTimer, 
-			*m_pChannelsTimer, *m_pAntiIdleTimer, *m_pSeenListTimer;
+
+	IrcEvent m_clConnectTimer, m_clFloodTimer, m_clVoteBanTimer,
+		m_clChannelsTimer, m_clAntiIdleTimer, m_clSeenListTimer;
 
 	bool m_bChatter;
 
@@ -185,12 +183,6 @@ private:
 	BnxShitList m_clShitList;
 	BnxFloodDetector m_clFloodDetector;
 	BnxSeenList m_clSeenList;
-
-	template<void (BnxBot::*Method)(evutil_socket_t, short)>
-	static void Dispatch(evutil_socket_t fd, short what, void *arg) {
-		BnxBot *pObject = (BnxBot *)arg;
-		(pObject->*Method)(fd, what);
-	}
 
 	void AddChannel(const char *pChannel);
 	void DeleteChannel(const char *pChannel);

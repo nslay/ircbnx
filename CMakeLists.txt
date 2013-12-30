@@ -34,6 +34,7 @@ ADD_EXECUTABLE(ircbnx ${EXECUTABLE_TYPE} Main.cpp Irc.h
 	IrcString.h IrcString.cpp
 	IrcUser.h IrcUser.cpp
 	IrcTraits.h IrcTraits.cpp
+	IrcEvent.h IrcEvent.cpp
 	IrcClient.h IrcClient.cpp 
 	IrcCounter.h
 	Ctcp.h Ctcp.cpp

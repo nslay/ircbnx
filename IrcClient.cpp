@@ -69,6 +69,18 @@ char * IrcClient::PopToken(char *&pStr) {
 	return pTmp;
 }
 
+IrcClient::IrcClient() {
+	m_socket = INVALID_SOCKET;
+	m_strUsername = "IrcClient";
+	m_strRealName = "IrcClient";
+	m_stagingBufferSize = 0;
+	m_lastRecvTime = 0;
+	m_pEventBase = NULL; 
+	m_clReadEvent = IrcEvent::Bind<IrcClient, &IrcClient::OnRead>(this);
+	m_clWriteEvent = IrcEvent::Bind<IrcClient, &IrcClient::OnWrite>(this);
+	m_clSendTimer = IrcEvent::Bind<IrcClient, &IrcClient::OnSendTimer>(this);
+}
+
 
 IrcClient::~IrcClient() {
 	Disconnect();
@@ -202,11 +214,11 @@ bool IrcClient::Connect(const std::string &strServer, const std::string &strPort
 	freeaddrinfo(pResults);
 
 	// XXX: Handle errors?
-	m_pWriteEvent = event_new(m_pEventBase, m_socket, EV_WRITE, &Dispatch<&IrcClient::OnWrite>, this);
-	m_pReadEvent = event_new(m_pEventBase, m_socket, EV_READ | EV_PERSIST, &Dispatch<&IrcClient::OnRead>, this);
-	m_pSendTimer = event_new(m_pEventBase, -1, EV_PERSIST, &Dispatch<&IrcClient::OnSendTimer>, this);
+	m_clWriteEvent.New(m_pEventBase, m_socket, EV_WRITE);
+	m_clReadEvent.New(m_pEventBase, m_socket, EV_READ | EV_PERSIST);
+	m_clSendTimer.NewTimer(m_pEventBase, EV_PERSIST);
 
-	event_add(m_pWriteEvent, NULL);
+	m_clWriteEvent.Add();
 
 	m_strCurrentServer = strServer;
 	m_strCurrentPort = strPort;
@@ -241,23 +253,9 @@ void IrcClient::Disconnect() {
 
 	CloseSocket();
 
-	if (m_pWriteEvent != NULL) {
-		event_del(m_pWriteEvent);
-		event_free(m_pWriteEvent);
-		m_pWriteEvent = NULL;
-	}
-
-	if (m_pReadEvent != NULL) {
-		event_del(m_pReadEvent);
-		event_free(m_pReadEvent);
-		m_pReadEvent = NULL;
-	}
-
-	if (m_pSendTimer != NULL) {
-		event_del(m_pSendTimer);
-		event_free(m_pSendTimer);
-		m_pSendTimer = NULL;
-	}
+	m_clWriteEvent.Free();
+	m_clReadEvent.Free();
+	m_clSendTimer.Free();
 }
 
 void IrcClient::Log(const char *pFormat, ...) {
@@ -525,14 +523,15 @@ void IrcClient::ProcessLine(char *pLine) {
 }
 
 void IrcClient::OnWrite(evutil_socket_t fd, short what) {
-	event_add(m_pReadEvent, NULL);
+	m_clReadEvent.Add();
 
 	// TODO: Tunable for send timer
 	struct timeval tv;
 	tv.tv_sec = 0;
 	tv.tv_usec = 500000;
 
-	event_add(m_pSendTimer, &tv);
+	m_clSendTimer.Add(&tv);
+
 	m_clSendCounter.SetTimeStep(0.5f);
 
 	OnConnect();

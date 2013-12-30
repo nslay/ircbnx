@@ -48,6 +48,18 @@ std::string BnxBot::GetVersionString() {
 	return versionStream.str();
 }
 
+BnxBot::BnxBot() {
+	m_strLogFile = "bot.log";
+	m_bChatter = true;
+
+	m_clConnectTimer = IrcEvent::Bind<BnxBot, &BnxBot::OnConnectTimer>(this);
+	m_clFloodTimer = IrcEvent::Bind<BnxBot, &BnxBot::OnFloodTimer>(this);
+	m_clVoteBanTimer = IrcEvent::Bind<BnxBot, &BnxBot::OnVoteBanTimer>(this);
+	m_clChannelsTimer = IrcEvent::Bind<BnxBot, &BnxBot::OnChannelsTimer>(this);
+	m_clAntiIdleTimer = IrcEvent::Bind<BnxBot, &BnxBot::OnAntiIdleTimer>(this);
+	m_clSeenListTimer = IrcEvent::Bind<BnxBot, &BnxBot::OnSeenListTimer>(this);
+}
+
 BnxBot::~BnxBot() {
 	Shutdown();
 }
@@ -137,23 +149,23 @@ void BnxBot::SetLogFile(const std::string &strLogFile) {
 }
 
 void BnxBot::StartUp() {
-	if (m_pConnectTimer != NULL)
+	if (m_clConnectTimer)
 		return;
 
 	Log("Starting up ...");
 	Log("Version: %s", GetVersionString().c_str());
 
-	m_pConnectTimer = event_new(GetEventBase(), -1, 0, &Dispatch<&BnxBot::OnConnectTimer>, this);
-	m_pFloodTimer = event_new(GetEventBase(), -1, EV_PERSIST, &Dispatch<&BnxBot::OnFloodTimer>, this);
-	m_pVoteBanTimer = event_new(GetEventBase(), -1, EV_PERSIST, &Dispatch<&BnxBot::OnVoteBanTimer>, this);
-	m_pChannelsTimer = event_new(GetEventBase(), -1, EV_PERSIST, &Dispatch<&BnxBot::OnChannelsTimer>, this);
-	m_pAntiIdleTimer = event_new(GetEventBase(), -1, EV_PERSIST, &Dispatch<&BnxBot::OnAntiIdleTimer>, this);
-	m_pSeenListTimer = event_new(GetEventBase(), -1, EV_PERSIST, &Dispatch<&BnxBot::OnSeenListTimer>, this);
+	m_clConnectTimer.NewTimer(GetEventBase(), 0);
+	m_clFloodTimer.NewTimer(GetEventBase(), EV_PERSIST);
+	m_clVoteBanTimer.NewTimer(GetEventBase(), EV_PERSIST);
+	m_clChannelsTimer.NewTimer(GetEventBase(), EV_PERSIST);
+	m_clAntiIdleTimer.NewTimer(GetEventBase(), EV_PERSIST);
+	m_clSeenListTimer.NewTimer(GetEventBase(), EV_PERSIST);
 
 	struct timeval tv;
 	tv.tv_sec = tv.tv_usec = 0;
 
-	evtimer_add(m_pConnectTimer, &tv);
+	m_clConnectTimer.Add(&tv);
 }
 
 void BnxBot::Shutdown() {
@@ -162,60 +174,22 @@ void BnxBot::Shutdown() {
 
 	Disconnect();
 
-	if (m_pConnectTimer != NULL) {
-		event_del(m_pConnectTimer);
-		event_free(m_pConnectTimer);
-		m_pConnectTimer = NULL;
-	}
-
-	if (m_pFloodTimer != NULL) {
-		event_del(m_pFloodTimer);
-		event_free(m_pFloodTimer);
-		m_pFloodTimer = NULL;
-	}
-
-	if (m_pVoteBanTimer != NULL) {
-		event_del(m_pVoteBanTimer);
-		event_free(m_pVoteBanTimer);
-		m_pVoteBanTimer = NULL;
-	}
-
-	if (m_pChannelsTimer != NULL) {
-		event_del(m_pChannelsTimer);
-		event_free(m_pChannelsTimer);
-		m_pChannelsTimer = NULL;
-	}
-
-	if (m_pAntiIdleTimer != NULL) {
-		event_del(m_pAntiIdleTimer);
-		event_free(m_pAntiIdleTimer);
-		m_pAntiIdleTimer = NULL;
-	}
-
-	if (m_pSeenListTimer != NULL) {
-		event_del(m_pSeenListTimer);
-		event_free(m_pSeenListTimer);
-		m_pSeenListTimer = NULL;
-	}
+	m_clConnectTimer.Free();
+	m_clFloodTimer.Free();
+	m_clVoteBanTimer.Free();
+	m_clChannelsTimer.Free();
+	m_clAntiIdleTimer.Free();
+	m_clSeenListTimer.Free();
 }
 
 void BnxBot::Disconnect() {
 	IrcClient::Disconnect();
 
-	if (m_pFloodTimer != NULL)
-		event_del(m_pFloodTimer);
-
-	if (m_pVoteBanTimer != NULL)
-		event_del(m_pVoteBanTimer);
-
-	if (m_pChannelsTimer != NULL)
-		event_del(m_pChannelsTimer);
-
-	if (m_pAntiIdleTimer != NULL)
-		event_del(m_pAntiIdleTimer);
-
-	if (m_pSeenListTimer != NULL)
-		event_del(m_pSeenListTimer);
+	m_clFloodTimer.Delete();
+	m_clVoteBanTimer.Delete();
+	m_clChannelsTimer.Delete();
+	m_clAntiIdleTimer.Delete();
+	m_clSeenListTimer.Delete();
 
 	m_vCurrentChannels.clear();
 	m_vSquelchedUsers.clear();
@@ -769,14 +743,11 @@ void BnxBot::OnConnect() {
 void BnxBot::OnDisconnect() {
 	IrcClient::OnDisconnect();
 
-	if (m_pConnectTimer == NULL)
-		return;
-
 	struct timeval tv;
 	tv.tv_sec = 5;
 	tv.tv_usec = 0;
 
-	evtimer_add(m_pConnectTimer, &tv);
+	m_clConnectTimer.Add(&tv);
 }
 
 void BnxBot::OnRegistered() {
@@ -790,17 +761,17 @@ void BnxBot::OnRegistered() {
 	m_clFloodDetector.SetThreshold(2.0f);
 	m_clFloodDetector.SetTimeStep(1.0f);
 
-	event_add(m_pFloodTimer, &tv);
-	event_add(m_pVoteBanTimer, &tv);
+	m_clFloodTimer.Add(&tv);
+	m_clVoteBanTimer.Add(&tv);
 
 	tv.tv_sec = 10;
-	event_add(m_pChannelsTimer, &tv);
+	m_clChannelsTimer.Add(&tv);
 
 	tv.tv_sec = 60;
-	event_add(m_pAntiIdleTimer, &tv);
+	m_clAntiIdleTimer.Add(&tv);
 
 	tv.tv_sec = 300;
-	event_add(m_pSeenListTimer, &tv);
+	m_clSeenListTimer.Add(&tv);
 
 	if (IsMe(GetNickname()) &&
 		!m_strNickServ.empty() && !m_strNickServPassword.empty()) {
@@ -1806,7 +1777,7 @@ void BnxBot::OnConnectTimer(evutil_socket_t fd, short what) {
 		tv.tv_sec = 5;
 		tv.tv_usec = 0;
 
-		evtimer_add(m_pConnectTimer, &tv);
+		m_clConnectTimer.Add(&tv);
 	}
 }
 

@@ -30,6 +30,7 @@
 #include <deque>
 #include "IrcTraits.h"
 #include "IrcCounter.h"
+#include "IrcEvent.h"
 #include "event2/event.h"
 
 #ifdef _WIN32
@@ -40,10 +41,7 @@
 
 class IrcClient {
 public:
-	IrcClient()
-	: m_socket(INVALID_SOCKET), m_strUsername("IrcClient"), m_strRealName("IrcClient"), 
-	m_stagingBufferSize(0), m_lastRecvTime(0), m_pEventBase(NULL), m_pReadEvent(NULL), 
-	m_pWriteEvent(NULL), m_pSendTimer(NULL) { }
+	IrcClient();
 
 	virtual ~IrcClient();
 
@@ -115,15 +113,9 @@ private:
 	time_t m_lastRecvTime;
 
 	struct event_base *m_pEventBase;
-	struct event *m_pReadEvent, *m_pWriteEvent, *m_pSendTimer;
+	IrcEvent m_clReadEvent, m_clWriteEvent, m_clSendTimer;
 
 	static char * PopToken(char *&pStr);
-
-	template<void (IrcClient::*Method)(evutil_socket_t, short)>
-	static void Dispatch(evutil_socket_t fd, short what, void *arg) {
-		IrcClient *pObject = (IrcClient *)arg;
-		(pObject->*Method)(fd, what);
-	}
 
 	void CloseSocket();
 

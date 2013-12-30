@@ -23,51 +23,23 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef BNXUNIXDRIVER_H
-#define BNXUNIXDRIVER_H
-
-#include <cstddef>
-#include <string>
-#include <vector>
-#include <sstream>
-#include <iostream>
-#include "event2/event.h"
 #include "IrcEvent.h"
-#include "BnxDriver.h"
-#include "BnxBot.h"
 
-class BnxUnixDriver : public BnxDriver {
-public:
-	BnxUnixDriver() {
-		m_clSigTerm = m_clSigInt = m_clSigAbrt = m_clSigQuit = 
-			IrcEvent::Bind<BnxUnixDriver, &BnxUnixDriver::OnSignal>(this);
+namespace {
+	extern "C" void CDispatch(evutil_socket_t fd, short sWhat, void *pArg) {
+		IrcEvent &clEvent = *(IrcEvent *)pArg;
+		clEvent(fd, sWhat);
 	}
+} // end namespace
 
-	virtual bool Run();
-	virtual void Shutdown();
+bool IrcEvent::New(struct event_base *pBase, evutil_socket_t fd, short sWhat) {
+	Free();
 
-private:
-	// Unix-specific signals
-	IrcEvent m_clSigTerm, m_clSigInt, m_clSigAbrt, m_clSigQuit;
+	if (m_pCallback == NULL)
+		return false;
 
-	template<void (BnxUnixDriver::*Method)(evutil_socket_t, short)>
-	static void Dispatch(evutil_socket_t fd, short what, void *arg) {
-		BnxUnixDriver *pObject = (BnxUnixDriver *)arg;
-		(pObject->*Method)(fd, what);
-	}
+	m_pEvent = event_new(pBase, fd, sWhat, &CDispatch, this);
 
-	// Disabled
-	BnxUnixDriver(const BnxUnixDriver &);
-
-	// Disabled
-	BnxUnixDriver & operator=(const BnxUnixDriver &);
-
-	bool Daemonize();
-
-	void OnSignal(evutil_socket_t signal, short what) {
-		Shutdown();
-	}
-};
-
-#endif // !BNXUNIXDRIVER_H
+	return m_pEvent != NULL;
+}
 

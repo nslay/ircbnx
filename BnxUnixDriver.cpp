@@ -37,24 +37,22 @@ bool BnxUnixDriver::Run() {
 	if (!Daemonize())
 		return false;
 
-	m_pSigTerm = event_new(GetEventBase(), SIGTERM, EV_SIGNAL|EV_PERSIST, &Dispatch<&BnxUnixDriver::OnSignal>, this);
-	m_pSigInt = event_new(GetEventBase(), SIGINT, EV_SIGNAL|EV_PERSIST, &Dispatch<&BnxUnixDriver::OnSignal>, this);
-	m_pSigAbrt = event_new(GetEventBase(), SIGABRT, EV_SIGNAL|EV_PERSIST, &Dispatch<&BnxUnixDriver::OnSignal>, this);
-	m_pSigQuit = event_new(GetEventBase(), SIGQUIT, EV_SIGNAL|EV_PERSIST, &Dispatch<&BnxUnixDriver::OnSignal>, this);
+	m_clSigTerm.New(GetEventBase(), SIGTERM, EV_SIGNAL|EV_PERSIST);
+	m_clSigInt.New(GetEventBase(), SIGINT, EV_SIGNAL|EV_PERSIST);
+	m_clSigAbrt.New(GetEventBase(), SIGABRT, EV_SIGNAL|EV_PERSIST);
+	m_clSigQuit.New(GetEventBase(), SIGQUIT, EV_SIGNAL|EV_PERSIST);
 
-	event_add(m_pSigTerm, NULL);
-	event_add(m_pSigInt, NULL);
-	event_add(m_pSigAbrt, NULL);
-	event_add(m_pSigQuit, NULL);
+	m_clSigTerm.Add();
+	m_clSigInt.Add();
+	m_clSigAbrt.Add();
+	m_clSigQuit.Add();
 
 	bool bRet = BnxDriver::Run();
 
-	event_free(m_pSigTerm);
-	event_free(m_pSigInt);
-	event_free(m_pSigAbrt);
-	event_free(m_pSigQuit);
-
-	m_pSigTerm = m_pSigInt = m_pSigAbrt = m_pSigQuit = NULL;
+	m_clSigTerm.Free();
+	m_clSigInt.Free();
+	m_clSigAbrt.Free();
+	m_clSigQuit.Free();
 
 	return bRet;
 }
@@ -62,17 +60,10 @@ bool BnxUnixDriver::Run() {
 void BnxUnixDriver::Shutdown() {
 	BnxDriver::Shutdown();
 
-	if (m_pSigTerm != NULL)
-		event_del(m_pSigTerm);
-
-	if (m_pSigInt != NULL)
-		event_del(m_pSigInt);
-	
-	if (m_pSigAbrt != NULL)
-		event_del(m_pSigAbrt);
-
-	if (m_pSigQuit != NULL)
-		event_del(m_pSigQuit);
+	m_clSigTerm.Delete();
+	m_clSigInt.Delete();
+	m_clSigAbrt.Delete();
+	m_clSigQuit.Delete();
 }
 
 bool BnxUnixDriver::Daemonize() {
