@@ -50,12 +50,6 @@ private:
 	// Unix-specific signals
 	IrcEvent m_clSigTerm, m_clSigInt, m_clSigAbrt, m_clSigQuit;
 
-	template<void (BnxUnixDriver::*Method)(evutil_socket_t, short)>
-	static void Dispatch(evutil_socket_t fd, short what, void *arg) {
-		BnxUnixDriver *pObject = (BnxUnixDriver *)arg;
-		(pObject->*Method)(fd, what);
-	}
-
 	// Disabled
 	BnxUnixDriver(const BnxUnixDriver &);
 
