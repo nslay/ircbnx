@@ -71,7 +71,7 @@ private:
 	}
 
 	template<DWORD (BnxWin32Driver::*Method)()> 
-	static DWORD CALLBACK Dispatch(LPVOID arg) {
+	static DWORD __stdcall Dispatch(LPVOID arg) {
 		BnxWin32Driver *pObject = (BnxWin32Driver *)arg;
 		return (pObject->*Method)();
 	}
