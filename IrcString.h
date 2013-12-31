@@ -32,6 +32,8 @@ int IrcToUpper(int c, IrcCaseMapping mapping = ASCII);
 
 int IrcToLower(int c, IrcCaseMapping mapping = ASCII);
 
+int IrcIsPunct(int c, IrcCaseMapping mapping = ASCII);
+
 int IrcIsSpecial(int c);
 
 bool IrcIsHostmask(const char *pString);
@@ -41,6 +43,8 @@ bool IrcIsNickname(const char *pString);
 int IrcStrCaseCmp(const char *pString1, const char *pString2, IrcCaseMapping mapping = ASCII);
 
 char * IrcStrCaseStr(const char *pBig, const char *pLittle, IrcCaseMapping mapping = ASCII);
+
+char * IrcStrCaseWord(const char *pBig, const char *pLittle, IrcCaseMapping mapping = ASCII);
 
 bool IrcMatch(const char *pPattern, const char *pString, IrcCaseMapping mapping = ASCII);
 

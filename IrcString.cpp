@@ -90,6 +90,39 @@ int IrcToLower(int c, IrcCaseMapping mapping) {
 	return tolower(c);
 }
 
+int IrcIsPunct(int c, IrcCaseMapping mapping) {
+	switch(mapping) {
+	case RFC1459:
+		switch (c) {
+		case '[':
+		case '{':
+		case ']':
+		case '}':
+		case '\\':
+		case '|':
+		case '~':
+		case '^':
+			return 0;
+		}
+		break;
+	case STRICT_RFC1459:
+		switch (c) {
+		case '[':
+		case '{':
+		case ']':
+		case '}':
+		case '\\':
+		case '|':
+			return 0;
+		}
+		break;
+	case ASCII:
+		break;
+	}
+
+	return ispunct(c);
+}
+
 int IrcIsSpecial(int c) {
 	switch (c) {
 	case '[':
@@ -161,6 +194,24 @@ char * IrcStrCaseStr(const char *pBig, const char *pLittle, IrcCaseMapping mappi
 	}
 
 	return *pLittleCurrent != '\0' ? NULL : (char *)pMatch;
+}
+
+char * IrcStrCaseWord(const char *pBig, const char *pWord, IrcCaseMapping mapping) {
+	while (*pBig != '\0') {
+		for ( ; *pBig != '\0' && (IrcIsPunct(*pBig, mapping) || isspace(*pBig)); ++pBig);
+
+		const char *pMatch = pBig;
+		const char *pWordCurrent = pWord;
+
+		for ( ; *pBig != '\0' && *pWordCurrent != '\0' && IrcToLower(*pWordCurrent, mapping) == IrcToLower(*pBig, mapping); ++pBig, ++pWordCurrent);
+
+		if (*pWordCurrent == '\0' && (*pBig == '\0' || IrcIsPunct(*pBig, mapping) || isspace(*pBig)))
+			return (char *)pMatch;
+
+		for ( ; *pBig != '\0' && !IrcIsPunct(*pBig, mapping) && !isspace(*pBig); ++pBig);
+	}
+
+	return NULL;
 }
 
 bool IrcMatch(const char *pPattern, const char *pString, IrcCaseMapping mapping) {

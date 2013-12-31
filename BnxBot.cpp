@@ -543,7 +543,7 @@ void BnxBot::ProcessMessage(const char *pSource, const char *pTarget, const char
 			return;
 
 		if (channelItr->GetSize() != 2 && 
-			IrcStrCaseStr(pMessage,GetCurrentNickname().c_str()) == NULL) {
+			IrcStrCaseWord(pMessage,GetCurrentNickname().c_str()) == NULL) {
 			return;
 		}
 
