@@ -216,7 +216,7 @@ char * IrcStrCaseWord(const char *pBig, const char *pWord, IrcCaseMapping mappin
 
 char * IrcStrCaseNick(const char *pBig, const char *pNick, IrcCaseMapping mapping) {
 	while (*pBig != '\0') {
-		for ( ; *pBig != '\0' && !IrcIsSpecial(*pBig) && !isalnum(*pBig); ++pBig);
+		for ( ; *pBig != '\0' && !IrcIsSpecial(*pBig) && !isalpha(*pBig); ++pBig);
 
 		const char *pMatch = pBig;
 		const char *pNickCurrent = pNick;
