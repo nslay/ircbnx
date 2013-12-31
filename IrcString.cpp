@@ -214,6 +214,24 @@ char * IrcStrCaseWord(const char *pBig, const char *pWord, IrcCaseMapping mappin
 	return NULL;
 }
 
+char * IrcStrCaseNick(const char *pBig, const char *pNick, IrcCaseMapping mapping) {
+	while (*pBig != '\0') {
+		for ( ; *pBig != '\0' && !IrcIsSpecial(*pBig) && !isalnum(*pBig); ++pBig);
+
+		const char *pMatch = pBig;
+		const char *pNickCurrent = pNick;
+
+		for ( ; *pBig != '\0' && *pNickCurrent != '\0' && IrcToLower(*pNickCurrent, mapping) == IrcToLower(*pBig, mapping); ++pBig, ++pNickCurrent);
+
+		if (*pNickCurrent == '\0' && (*pBig == '\0' || (*pBig != '-' && !IrcIsSpecial(*pBig) && !isalnum(*pBig))))
+			return (char *)pMatch;
+
+		for ( ; *pBig != '\0' && (*pBig == '-' || IrcIsSpecial(*pBig) || isalnum(*pBig)); ++pBig);
+	}
+
+	return NULL;
+}
+
 bool IrcMatch(const char *pPattern, const char *pString, IrcCaseMapping mapping) {
 	if (pPattern == NULL || pString == NULL)
 		return false;

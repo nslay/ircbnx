@@ -44,7 +44,9 @@ int IrcStrCaseCmp(const char *pString1, const char *pString2, IrcCaseMapping map
 
 char * IrcStrCaseStr(const char *pBig, const char *pLittle, IrcCaseMapping mapping = ASCII);
 
-char * IrcStrCaseWord(const char *pBig, const char *pLittle, IrcCaseMapping mapping = ASCII);
+char * IrcStrCaseWord(const char *pBig, const char *pWord, IrcCaseMapping mapping = ASCII);
+
+char * IrcStrCaseNick(const char *pBig, const char *pLittle, IrcCaseMapping mapping = ASCII);
 
 bool IrcMatch(const char *pPattern, const char *pString, IrcCaseMapping mapping = ASCII);
 
