@@ -22,3 +22,6 @@
 - ircbnx now runs as a proper Win32 application on Windows.
 - Add tray icon on Windows to exit ircbnx.
 
+1.3.0 - ??/??/????
+- The bot will now only respond when its nickname is used as an individual word.
+
