@@ -69,20 +69,6 @@ public:
 	}
 
 private:
-	struct HostnameEquals {
-		HostnameEquals(const std::string &strHostname_)
-		: strHostname(strHostname_) { }
-
-		bool operator()(const std::pair<IrcUser, IrcCounter> &clPair) const {
-			const IrcUser &clUser = clPair.first;
-			const std::string &strHostname2 = clUser.GetHostname();
-
-			return !IrcStrCaseCmp(strHostname.c_str(), strHostname2.c_str());
-		}
-
-		const std::string &strHostname;
-	};
-
 	float m_fTimeStep, m_fThreshold;
 	std::vector<std::pair<IrcUser, IrcCounter> > m_vFloodCounters;
 };

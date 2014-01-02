@@ -89,11 +89,17 @@ public:
 	}
 
 	Iterator FindMatch(const IrcUser &clUser) {
-		return std::find_if(Begin(), End(), MaskMatches(clUser));
+		return std::find_if(Begin(), End(), 
+			[&clUser](const IrcUser &clMask) {
+				return clMask.Matches(clUser);
+			});
 	}
 
 	ConstIterator FindMatch(const IrcUser &clUser) const {
-		return std::find_if(Begin(), End(), MaskMatches(clUser));
+		return std::find_if(Begin(), End(), 
+			[&clUser](const IrcUser &clMask) {
+				return clMask.Matches(clUser);
+			});
 	}
 
 	void Reset() {
@@ -101,17 +107,6 @@ public:
 	}
 
 private:
-	struct MaskMatches {
-		MaskMatches(const IrcUser &clUser_)
-		: clUser(clUser_) { }
-
-		bool operator()(const IrcUser &clMask) const {
-			return clMask.Matches(clUser);
-		}
-
-		const IrcUser &clUser;
-	};
-
 	std::string m_strShitListFile;
 	std::vector<IrcUser> m_vHostmasks;
 };

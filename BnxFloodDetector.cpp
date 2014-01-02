@@ -27,11 +27,14 @@
 #include "BnxFloodDetector.h"
 
 IrcCounter & BnxFloodDetector::GetCounter(const IrcUser &clUser) {
-	std::vector<std::pair<IrcUser, IrcCounter> >::iterator itr;
+	const std::string &strHostname = clUser.GetHostname();
 
-	itr = std::find_if(m_vFloodCounters.begin(), 
+	auto itr = std::find_if(m_vFloodCounters.begin(), 
 				m_vFloodCounters.end(), 
-				HostnameEquals(clUser.GetHostname()));
+				[&strHostname](const std::pair<IrcUser, IrcCounter> &clPair) {
+					const std::string &strOther = clPair.first.GetHostname();
+					return !IrcStrCaseCmp(strHostname.c_str(), strOther.c_str());
+				});
 
 	if (itr != m_vFloodCounters.end())
 		return itr->second;
