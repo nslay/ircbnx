@@ -851,6 +851,11 @@ void BnxBot::OnNumeric(const char *pSource, int numeric, const char *pParams[], 
 		pChannel = pParams[1];
 		DeleteHomeChannels(pChannel);
 		break;
+	case ERR_ERRONEUSNICKNAME:
+		// If this happens, the bot never even registers ... 
+		if (!IsRegistered())
+			BnxDriver::GetInstance().Shutdown();
+		break;
 	}
 }
 

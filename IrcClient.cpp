@@ -371,6 +371,12 @@ void IrcClient::OnNumeric(const char *pPrefix, int numeric, const char **pParams
 			Send(AUTO, "NICK %s\r\n", nickStream.str().c_str());
 		}
 		break;
+	case ERR_ERRONEUSNICKNAME:
+		if (!IsRegistered()) {
+			Log("Cannot register due to erroneous nickname.");
+			Disconnect();
+		}
+		break;
 	}
 }
 
