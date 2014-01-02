@@ -497,6 +497,10 @@ bool BnxBot::ProcessCommand(const char *pSource, const char *pTarget, const char
 		return OnCommandLastSeen(*sessionItr, strChannel, iDays);
 	}
 
+	if (strCommand == "reconnect") {
+		return OnCommandReconnect(*sessionItr);
+	}
+
 	return false;
 }
 
@@ -1741,6 +1745,20 @@ bool BnxBot::OnCommandLastSeen(UserSession &clSession, const std::string &strCha
 	}
 
 	Send(AUTO, "PRIVMSG %s :Saw a total of %d users.\r\n", clUser.GetNickname().c_str(), iCount);
+
+	return true;
+}
+
+bool BnxBot::OnCommandReconnect(UserSession &clSession) {
+	if (clSession.GetAccessLevel() < 100)
+		return false;
+
+	Send(NOW, "QUIT :Reconnecting ...\r\n");
+
+	struct timeval tv;
+	tv.tv_sec = tv.tv_usec = 0;
+
+	m_clConnectTimer.Add(&tv);
 
 	return true;
 }
