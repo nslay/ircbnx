@@ -95,8 +95,10 @@ void BnxBot::AddHomeChannels(const std::string &strChannels) {
 		if (strChannel.empty())
 			continue;
 
-		if (std::find_if(m_vHomeChannels.begin(), m_vHomeChannels.end(),
-				StringEquals(strChannel)) == m_vHomeChannels.end()) {
+		if (std::find_if(m_vHomeChannels.cbegin(), m_vHomeChannels.cend(),
+				[&strChannel](const std::string &strOther) {
+					return !IrcStrCaseCmp(strChannel.c_str(), strOther.c_str());
+				}) == m_vHomeChannels.end()) {
 			m_vHomeChannels.push_back(strChannel);
 		}
 	}
@@ -107,10 +109,10 @@ void BnxBot::DeleteHomeChannels(const std::string &strChannels) {
 
 	std::string strChannel;
 	while (std::getline(channelStream,strChannel,',')) {
-		std::vector<std::string>::iterator itr;
-
-		itr = std::find_if(m_vHomeChannels.begin(), m_vHomeChannels.end(), 
-					StringEquals(strChannel));
+		auto itr = std::find_if(m_vHomeChannels.begin(), m_vHomeChannels.end(), 
+					[&strChannel](const std::string &strOther) {
+						return !IrcStrCaseCmp(strChannel.c_str(), strOther.c_str());
+					});
 
 		if (itr != m_vHomeChannels.end())
 			m_vHomeChannels.erase(itr);
@@ -636,9 +638,11 @@ BnxBot::ChannelIterator BnxBot::GetChannel(const char *pChannel) {
 }
 
 bool BnxBot::IsSquelched(const IrcUser &clUser) {
-	return std::find_if(m_vSquelchedUsers.begin(), 
-				m_vSquelchedUsers.end(), 
-				MaskMatches(clUser)) != m_vSquelchedUsers.end();
+	return std::find_if(m_vSquelchedUsers.cbegin(), 
+				m_vSquelchedUsers.cend(), 
+				[&clUser](const IrcUser &clMask) {
+					return clMask.Matches(clUser);
+				}) != m_vSquelchedUsers.end();
 }
 
 void BnxBot::SplatterKick(const char *pChannel, const IrcUser &clUser) {

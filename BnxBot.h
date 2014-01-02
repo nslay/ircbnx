@@ -145,28 +145,6 @@ protected:
 	virtual bool OnCommandLastSeen(UserSession &clSession, const std::string &strChannel, int iDays);
 
 private:
-	struct MaskMatches {
-		MaskMatches(const IrcUser &clUser_)
-		: clUser(clUser_) { }
-
-		bool operator()(const IrcUser &clMask) const {
-			return clMask.Matches(clUser);
-		}
-
-		const IrcUser &clUser;
-	};
-
-	struct StringEquals {
-		StringEquals(const std::string &strString1_)
-		: strString1(strString1_) { }
-
-		bool operator()(const std::string &strString2) const {
-			return !IrcStrCaseCmp(strString1.c_str(),strString2.c_str());
-		}
-
-		const std::string &strString1;
-	};
-
 	std::string m_strProfileName, m_strServer, m_strPort, m_strNickServ, 
 			m_strNickServPassword, m_strLogFile;
 
