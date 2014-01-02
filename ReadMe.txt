@@ -332,4 +332,5 @@ CentOS 6.3:
 Windows 7:
 - MingW64 4.5.3
 - Visual Studio 2010
+- Visual Studio 2012
 
