@@ -47,7 +47,7 @@ public:
 		m_hWnd = nullptr;
 		m_hLock = CreateMutex(nullptr, 0, nullptr);
 		m_bRun = false;
-		m_clCheckShutdownTimer = IrcEvent::Bind<BnxWin32Driver, &BnxWin32Driver::OnCheckShutdownTimer>(this);
+		m_clCheckShutdownTimer = IrcEvent::Bind(&BnxWin32Driver::OnCheckShutdownTimer, this);
 	}
 
 	virtual ~BnxWin32Driver() {

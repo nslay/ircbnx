@@ -81,10 +81,10 @@ private:
 	struct event_base *m_pEventBase;
 
 	// Disabled
-	BnxDriver(const BnxDriver &);
+	BnxDriver(const BnxDriver &) = delete;
 
 	// Disabled
-	BnxDriver & operator=(const BnxDriver &);
+	BnxDriver & operator=(const BnxDriver &) = delete;
 
 	void LoadBot(const IniFile::Section &clSection);
 };

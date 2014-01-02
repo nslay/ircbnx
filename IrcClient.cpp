@@ -41,6 +41,7 @@
 #include <errno.h>
 #endif // _WIN32
 
+#include <functional>
 #include <sstream>
 #include <cstdarg>
 #include <cstdio>
@@ -78,9 +79,9 @@ IrcClient::IrcClient() {
 	m_stagingBufferSize = 0;
 	m_lastRecvTime = 0;
 	m_pEventBase = nullptr; 
-	m_clReadEvent = IrcEvent::Bind<IrcClient, &IrcClient::OnRead>(this);
-	m_clWriteEvent = IrcEvent::Bind<IrcClient, &IrcClient::OnWrite>(this);
-	m_clSendTimer = IrcEvent::Bind<IrcClient, &IrcClient::OnSendTimer>(this);
+	m_clReadEvent = IrcEvent::Bind(&IrcClient::OnRead, this);
+	m_clWriteEvent = IrcEvent::Bind(&IrcClient::OnWrite, this);
+	m_clSendTimer = IrcEvent::Bind(&IrcClient::OnSendTimer, this);
 }
 
 

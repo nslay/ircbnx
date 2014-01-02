@@ -26,40 +26,27 @@
 #ifndef IRCEVENT_H
 #define IRCEVENT_H
 
+#include <functional>
+#include <memory>
 #include "event2/event.h"
 
 class IrcEvent {
 public:
-	typedef void (*CallbackType)(evutil_socket_t, short, void *);
+	template<typename ObjectType>
+	static IrcEvent Bind(void (ObjectType::*Method)(evutil_socket_t, short), ObjectType *p_clObject) {
+		using namespace std::placeholders;
 
-	IrcEvent() {
-		m_pEvent = nullptr;
-		m_pArg = nullptr;
-		m_pCallback = nullptr;
+		return IrcEvent(std::bind(Method, p_clObject, _1, _2));
 	}
+
+	IrcEvent() = default;
 
 	IrcEvent(const IrcEvent &clEvent) {
-		m_pEvent = nullptr;
-		m_pArg = clEvent.m_pArg;
-		m_pCallback = clEvent.m_pCallback;
+		*this = clEvent;
 	}
 
-	virtual ~IrcEvent() {
-		Free();
-	}
-
-	static IrcEvent Bind(CallbackType pCallback, void *pArg) {
-		IrcEvent clEvent;
-
-		clEvent.m_pArg = pArg;
-		clEvent.m_pCallback = pCallback;
-
-		return clEvent;
-	}
-
-	template<typename ObjectType, void (ObjectType::*Method)(evutil_socket_t fd, short sWhat)>
-	static IrcEvent Bind(ObjectType *p_clObject) {
-		return Bind(&Dispatch<ObjectType, Method>, p_clObject);
+	explicit IrcEvent(const std::function<void (evutil_socket_t, short)> &clCallback) {
+		m_clCallback = clCallback;
 	}
 
 	bool New(struct event_base *pBase, evutil_socket_t fd, short sWhat);
@@ -69,48 +56,42 @@ public:
 	}
 
 	bool Add(struct timeval *p_stTv = nullptr) const {
-		return m_pEvent != nullptr && event_add(m_pEvent, p_stTv) == 0;
+		return m_pEvent && event_add(m_pEvent.get(), p_stTv) == 0;
 	}
 
 	bool Delete() const {
-		return m_pEvent != nullptr && event_del(m_pEvent) == 0;
+		return m_pEvent && event_del(m_pEvent.get()) == 0;
 	}
 
 	void Free() {
-		if (m_pEvent != nullptr) {
-			event_free(m_pEvent);
-			m_pEvent = nullptr;
-		}
+		m_pEvent.reset();
 	}
 
 	void operator()(evutil_socket_t fd, short sWhat) const {
-		(*m_pCallback)(fd, sWhat, m_pArg);
+		m_clCallback(fd, sWhat);
 	}
 
-	IrcEvent & operator=(const IrcEvent &clEvent) {
-		if (this == &clEvent)
-			return *this;
-
-		m_pArg = clEvent.m_pArg;
-		m_pCallback = clEvent.m_pCallback;
+	IrcEvent & operator=(const IrcEvent &clEvent) & {
+		if (this != &clEvent)
+			m_clCallback = clEvent.m_clCallback;
 
 		return *this;
 	}
 
-	operator bool() const {
+	explicit operator bool() const {
 		return m_pEvent != nullptr;
 	}
 
 private:
-	struct event *m_pEvent;
-	void *m_pArg;
-	CallbackType m_pCallback;
+	struct EventDeleter {
+		void operator()(struct event *pEvent) const {
+			if (pEvent != nullptr)
+				event_free(pEvent);
+		}
+	};
 
-	template<class ObjectType, void (ObjectType::*Method)(evutil_socket_t fd, short sWhat)>
-	static void Dispatch(evutil_socket_t fd, short sWhat, void *pArg) {
-		ObjectType * const p_clObject = (ObjectType *)pArg;
-		(p_clObject->*Method)(fd, sWhat);
-	}
+	std::unique_ptr<struct event, EventDeleter> m_pEvent;
+	std::function<void (evutil_socket_t, short)> m_clCallback;
 };
 
 #endif // !IRCEVENT_H

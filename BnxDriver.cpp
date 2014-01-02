@@ -107,7 +107,7 @@ bool BnxDriver::Load() {
 }
 
 bool BnxDriver::Run() {
-	if (!Load())
+	if (!Load() || m_vBots.empty())
 		return false;
 
 	for (size_t i = 0; i < m_vBots.size(); ++i) {

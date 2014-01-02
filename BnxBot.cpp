@@ -24,6 +24,7 @@
  */
 
 #include <algorithm>
+#include <functional>
 #include <fstream>
 #include <sstream>
 #include <ctime>
@@ -52,12 +53,12 @@ BnxBot::BnxBot() {
 	m_strLogFile = "bot.log";
 	m_bChatter = true;
 
-	m_clConnectTimer = IrcEvent::Bind<BnxBot, &BnxBot::OnConnectTimer>(this);
-	m_clFloodTimer = IrcEvent::Bind<BnxBot, &BnxBot::OnFloodTimer>(this);
-	m_clVoteBanTimer = IrcEvent::Bind<BnxBot, &BnxBot::OnVoteBanTimer>(this);
-	m_clChannelsTimer = IrcEvent::Bind<BnxBot, &BnxBot::OnChannelsTimer>(this);
-	m_clAntiIdleTimer = IrcEvent::Bind<BnxBot, &BnxBot::OnAntiIdleTimer>(this);
-	m_clSeenListTimer = IrcEvent::Bind<BnxBot, &BnxBot::OnSeenListTimer>(this);
+	m_clConnectTimer = IrcEvent::Bind(&BnxBot::OnConnectTimer, this);
+	m_clFloodTimer = IrcEvent::Bind(&BnxBot::OnFloodTimer, this);
+	m_clVoteBanTimer = IrcEvent::Bind(&BnxBot::OnVoteBanTimer, this);
+	m_clChannelsTimer = IrcEvent::Bind(&BnxBot::OnChannelsTimer, this);
+	m_clAntiIdleTimer = IrcEvent::Bind(&BnxBot::OnAntiIdleTimer, this);
+	m_clSeenListTimer = IrcEvent::Bind(&BnxBot::OnSeenListTimer, this);
 }
 
 BnxBot::~BnxBot() {

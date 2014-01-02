@@ -33,12 +33,10 @@ namespace {
 } // end namespace
 
 bool IrcEvent::New(struct event_base *pBase, evutil_socket_t fd, short sWhat) {
-	Free();
-
-	if (m_pCallback == nullptr)
+	if (!m_clCallback)
 		return false;
 
-	m_pEvent = event_new(pBase, fd, sWhat, &CDispatch, this);
+	m_pEvent.reset(event_new(pBase, fd, sWhat, &CDispatch, this));
 
 	return m_pEvent != nullptr;
 }

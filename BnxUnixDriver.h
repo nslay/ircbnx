@@ -40,7 +40,7 @@ class BnxUnixDriver : public BnxDriver {
 public:
 	BnxUnixDriver() {
 		m_clSigTerm = m_clSigInt = m_clSigAbrt = m_clSigQuit = 
-			IrcEvent::Bind<BnxUnixDriver, &BnxUnixDriver::OnSignal>(this);
+			IrcEvent::Bind(&BnxUnixDriver::OnSignal, this);
 	}
 
 	virtual bool Run();
