@@ -24,4 +24,5 @@
 
 1.3.0 - ??/??/????
 - The bot will now only respond when its nickname is used as an individual word.
+- Added a 'reconnect' command.
 

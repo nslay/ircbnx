@@ -143,6 +143,7 @@ protected:
 	virtual bool OnCommandWho(UserSession &clSession, const std::string &strChannel);
 	virtual bool OnCommandSeen(UserSession &clSession, const std::string &strNickname);
 	virtual bool OnCommandLastSeen(UserSession &clSession, const std::string &strChannel, int iDays);
+	virtual bool OnCommandReconnect(UserSession &clSession);
 
 private:
 	struct MaskMatches {

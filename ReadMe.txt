@@ -173,6 +173,8 @@ to the bot prior to issuing commands, see "login" under "Level 0".
 
 shutdown - Have all bots quit and exit.
 
+reconnect - Have the bot reconnect to the server.
+
 userlist - Display the access list.
 
 useradd <hostmask> <accesslevel> <password> - Add a new user to command
