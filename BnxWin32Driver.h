@@ -44,8 +44,8 @@ public:
 	static void ShowContextMenu(HWND hWnd);
 
 	BnxWin32Driver() {
-		m_hWnd = NULL;
-		m_hLock = CreateMutex(NULL, 0, NULL);
+		m_hWnd = nullptr;
+		m_hLock = CreateMutex(nullptr, 0, nullptr);
 		m_bRun = false;
 		m_clCheckShutdownTimer = IrcEvent::Bind<BnxWin32Driver, &BnxWin32Driver::OnCheckShutdownTimer>(this);
 	}
@@ -53,9 +53,9 @@ public:
 	virtual ~BnxWin32Driver() {
 		CleanUpWindow();
 
-		if (m_hLock != NULL) {
+		if (m_hLock != nullptr) {
 			CloseHandle(m_hLock);
-			m_hLock = NULL;
+			m_hLock = nullptr;
 		}
 	}
 

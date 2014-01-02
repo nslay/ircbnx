@@ -80,7 +80,7 @@ public:
 
 		void Reset() {
 			m_clUser.Reset();
-			m_timeStamp = time(NULL);
+			m_timeStamp = time(nullptr);
 			ResetVote();
 		}
 
@@ -117,17 +117,17 @@ public:
 
 		void Warn() {
 			++m_uiCount;
-			m_timeStamp = time(NULL);
+			m_timeStamp = time(nullptr);
 		}
 
 		void Reset() {
 			m_strHostname.clear();
-			m_timeStamp = time(NULL);
+			m_timeStamp = time(nullptr);
 			m_uiCount = 0;
 		}
 
 		bool IsExpired() const {
-			return time(NULL)-m_timeStamp > WARNING_TIMEOUT;
+			return time(nullptr)-m_timeStamp > WARNING_TIMEOUT;
 		}
 
 		bool operator==(const std::string &strHostname) const {
@@ -253,7 +253,7 @@ public:
 	}
 
 	bool VoteBanExpired() const {
-		return time(NULL) - GetVoteBanTime() >= VOTEBAN_TIMEOUT;
+		return time(nullptr) - GetVoteBanTime() >= VOTEBAN_TIMEOUT;
 	}
 
 	void ResetVoteBan();

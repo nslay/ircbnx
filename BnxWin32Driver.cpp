@@ -77,7 +77,7 @@ namespace {
 } // end namespace
 
 bool BnxWin32Driver::RegisterWindowClass() {
-	HINSTANCE hInst = (HINSTANCE)GetModuleHandle(NULL);
+	HINSTANCE hInst = (HINSTANCE)GetModuleHandle(nullptr);
 
 	WNDCLASSEX stWndClass;
 	memset(&stWndClass, 0, sizeof(stWndClass));
@@ -95,10 +95,10 @@ bool BnxWin32Driver::RegisterWindowClass() {
 }
 
 bool BnxWin32Driver::AddNotificationIcon(HWND hWnd) {
-	if (hWnd == NULL)
+	if (hWnd == nullptr)
 		return false;
 
-	HINSTANCE hInst = (HINSTANCE)GetModuleHandle(NULL);
+	HINSTANCE hInst = (HINSTANCE)GetModuleHandle(nullptr);
 
 	NOTIFYICONDATA stIconData;
 	memset(&stIconData, 0, sizeof(stIconData));
@@ -120,7 +120,7 @@ bool BnxWin32Driver::AddNotificationIcon(HWND hWnd) {
 }
 
 bool BnxWin32Driver::DeleteNotificationIcon(HWND hWnd) {
-	if (hWnd == NULL)
+	if (hWnd == nullptr)
 		return false;
 
 	NOTIFYICONDATA stIconData;
@@ -137,19 +137,19 @@ bool BnxWin32Driver::DeleteNotificationIcon(HWND hWnd) {
 }
 
 void BnxWin32Driver::ShowContextMenu(HWND hWnd) {
-	HINSTANCE hInst = (HINSTANCE)GetModuleHandle(NULL);
+	HINSTANCE hInst = (HINSTANCE)GetModuleHandle(nullptr);
 	POINT stPoint;
 
 	GetCursorPos(&stPoint);
 
 	HMENU hMenu = LoadMenu(hInst, MAKEINTRESOURCE(IDC_IRCBNXMENU));
 
-	if (hMenu == NULL)
+	if (hMenu == nullptr)
 		return;
 
 	HMENU hSubMenu = GetSubMenu(hMenu, 0);
 
-	if (hSubMenu == NULL) {
+	if (hSubMenu == nullptr) {
 		DestroyMenu(hMenu);
 		return;
 	}
@@ -158,7 +158,7 @@ void BnxWin32Driver::ShowContextMenu(HWND hWnd) {
 
 	UINT uiFlags = TPM_CENTERALIGN | TPM_LEFTBUTTON;
 
-	TrackPopupMenuEx(hSubMenu, uiFlags, stPoint.x, stPoint.y, hWnd, NULL);
+	TrackPopupMenuEx(hSubMenu, uiFlags, stPoint.x, stPoint.y, hWnd, nullptr);
 
 	DestroyMenu(hMenu);
 }
@@ -172,9 +172,9 @@ bool BnxWin32Driver::Run() {
 	m_bRun = true;
 
 	DWORD threadId = 0;
-	HANDLE hThread = CreateThread(NULL, 0, &DispatchRunBase, this, 0, &threadId);
+	HANDLE hThread = CreateThread(nullptr, 0, &DispatchRunBase, this, 0, &threadId);
 
-	if (hThread == NULL) {
+	if (hThread == nullptr) {
 		BnxErrorStream << "Error: Could not create thread." << BnxEndl;
 		return false;
 	}
@@ -206,7 +206,7 @@ void BnxWin32Driver::Shutdown() {
 
 	m_bRun = false;
 
-	if (m_hWnd != NULL)
+	if (m_hWnd != nullptr)
 		PostMessage(m_hWnd, WM_QUIT, 0, 0);
 
 	ReleaseMutex(m_hLock);
@@ -236,25 +236,25 @@ DWORD BnxWin32Driver::RunBase() {
 }
 
 bool BnxWin32Driver::MakeWindow() {
-	if (m_hWnd != NULL)
+	if (m_hWnd != nullptr)
 		return true;
 
 	if (!RegisterWindowClass())
 		return false;
 
-	HINSTANCE hInst = (HINSTANCE)GetModuleHandle(NULL);
+	HINSTANCE hInst = (HINSTANCE)GetModuleHandle(nullptr);
 
-	m_hWnd = CreateWindow("ircbnx", "ircbnx", 0, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInst, NULL);
+	m_hWnd = CreateWindow("ircbnx", "ircbnx", 0, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr, hInst, nullptr);
 
-	return m_hWnd != NULL;
+	return m_hWnd != nullptr;
 }
 
 void BnxWin32Driver::CleanUpWindow() {
-	if (m_hWnd == NULL)
+	if (m_hWnd == nullptr)
 		return;
 
 	DestroyWindow(m_hWnd);
-	m_hWnd = NULL;
+	m_hWnd = nullptr;
 }
 
 void BnxWin32Driver::OnCheckShutdownTimer(evutil_socket_t fd, short what) {

@@ -208,7 +208,7 @@ BnxBot::ChannelIterator BnxBot::ChannelEnd() {
 void BnxBot::Log(const char *pFormat, ...) {
 	FILE *pFile = fopen(m_strLogFile.c_str(), "a");
 
-	if (pFile == NULL)
+	if (pFile == nullptr)
 		return;
 
 	time_t rawTime = 0;
@@ -543,14 +543,14 @@ void BnxBot::ProcessMessage(const char *pSource, const char *pTarget, const char
 			return;
 
 		if (channelItr->GetSize() != 2 && 
-			IrcStrCaseNick(pMessage,GetCurrentNickname().c_str()) == NULL) {
+			IrcStrCaseNick(pMessage,GetCurrentNickname().c_str()) == nullptr) {
 			return;
 		}
 
 		// BNX seems to only consider "fuck" inappropriate
 		// Due to the multi-channel nature of IRC, we can only do this in channel
 		// The original would also ban for whispered profanity
-		if (channelItr->IsOperator() && IrcStrCaseStr(pMessage,"fuck") != NULL) {
+		if (channelItr->IsOperator() && IrcStrCaseStr(pMessage,"fuck") != nullptr) {
 			Send(LATER, "PRIVMSG %s :I don't appreciate being spoken to in that manner, %s.\r\n", 
 					pTarget, clUser.GetNickname().c_str());
 			Send(LATER, "MODE %s +b %s\r\n", pTarget, clUser.GetBanMask().c_str());
@@ -787,8 +787,8 @@ void BnxBot::OnRegistered() {
 void BnxBot::OnNumeric(const char *pSource, int numeric, const char *pParams[], unsigned int numParams) {
 	IrcClient::OnNumeric(pSource, numeric, pParams, numParams);
 
-	const char *pChannel = NULL, *pTrailing = NULL, *pUsername = NULL, 
-		*pHostname = NULL, *pNickname = NULL, *pMode = NULL;
+	const char *pChannel = nullptr, *pTrailing = nullptr, *pUsername = nullptr, 
+		*pHostname = nullptr, *pNickname = nullptr, *pMode = nullptr;
 	ChannelIterator channelItr;
 
 	switch (numeric) {
@@ -843,7 +843,7 @@ void BnxBot::OnNumeric(const char *pSource, int numeric, const char *pParams[], 
 			m_clSeenList.Saw(clUser, pChannel);
 		}
 
-		if (IsMe(pNickname) && strchr(pMode,'@') != NULL)
+		if (IsMe(pNickname) && strchr(pMode,'@') != nullptr)
 			channelItr->SetOperator(true);
 
 		break;
@@ -1717,7 +1717,7 @@ bool BnxBot::OnCommandLastSeen(UserSession &clSession, const std::string &strCha
 		const BnxSeenList::SeenInfo &clSeenInfo = itr->second;
 
 		if (IrcStrCaseCmp(clSeenInfo.GetChannel().c_str(), strChannel.c_str()) != 0 ||
-			time(NULL) - clSeenInfo.GetTimestamp() >= iMaxTime) {
+			time(nullptr) - clSeenInfo.GetTimestamp() >= iMaxTime) {
 			continue;
 		}
 
@@ -1881,7 +1881,7 @@ void BnxBot::OnChannelsTimer(evutil_socket_t fd, short what) {
 }
 
 void BnxBot::OnAntiIdleTimer(evutil_socket_t fd, short what) {
-	if (time(NULL)-GetLastRecvTime() > 30)
+	if (time(nullptr)-GetLastRecvTime() > 30)
 		Send(AUTO, "PING :%s\r\n", GetCurrentServer().c_str());
 }
 

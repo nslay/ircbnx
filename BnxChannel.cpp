@@ -135,7 +135,7 @@ void BnxChannel::VoteBan(const IrcUser &clUser) {
 
 	m_bVoteBan = true;
 	m_clVoteBanMask = clUser;
-	m_voteBanTime = time(NULL);
+	m_voteBanTime = time(nullptr);
 }
 
 void BnxChannel::VoteYay(const std::string &strNickname) {

@@ -106,7 +106,7 @@ public:
 		: m_iAccessLevel(0), m_lastAccessTime(0) { }
 
 		UserSession(const IrcUser &clUser, int iAccessLevel)
-		: m_clUser(clUser), m_iAccessLevel(iAccessLevel), m_lastAccessTime(time(NULL)) { }
+		: m_clUser(clUser), m_iAccessLevel(iAccessLevel), m_lastAccessTime(time(nullptr)) { }
 
 		const IrcUser & GetUser() const {
 			return m_clUser;
@@ -117,11 +117,11 @@ public:
 		}
 
 		time_t LastAccessTime() const {
-			return time(NULL)-m_lastAccessTime;
+			return time(nullptr)-m_lastAccessTime;
 		}
 
 		void Update() {
-			m_lastAccessTime = time(NULL);
+			m_lastAccessTime = time(nullptr);
 		}
 
 		bool operator==(const IrcUser &clUser) const {
@@ -232,17 +232,6 @@ public:
 	}
 
 private:
-	struct EntryMatches {
-		EntryMatches(const IrcUser &clUser_)
-		: clUser(clUser_) { }
-	
-		bool operator()(const UserEntry &clEntry) const {
-			return clEntry.GetHostmask().Matches(clUser);
-		}
-
-		const IrcUser &clUser;
-	};
-
 	std::string m_strAccessListFile;
 	std::vector<UserEntry> m_vUserEntries;
 	std::vector<UserSession> m_vUserSessions;

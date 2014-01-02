@@ -33,13 +33,13 @@ public:
 	typedef void (*CallbackType)(evutil_socket_t, short, void *);
 
 	IrcEvent() {
-		m_pEvent = NULL;
-		m_pArg = NULL;
-		m_pCallback = NULL;
+		m_pEvent = nullptr;
+		m_pArg = nullptr;
+		m_pCallback = nullptr;
 	}
 
 	IrcEvent(const IrcEvent &clEvent) {
-		m_pEvent = NULL;
+		m_pEvent = nullptr;
 		m_pArg = clEvent.m_pArg;
 		m_pCallback = clEvent.m_pCallback;
 	}
@@ -68,18 +68,18 @@ public:
 		return New(pBase, -1, sWhat);
 	}
 
-	bool Add(struct timeval *p_stTv = NULL) const {
-		return m_pEvent != NULL && event_add(m_pEvent, p_stTv) == 0;
+	bool Add(struct timeval *p_stTv = nullptr) const {
+		return m_pEvent != nullptr && event_add(m_pEvent, p_stTv) == 0;
 	}
 
 	bool Delete() const {
-		return m_pEvent != NULL && event_del(m_pEvent) == 0;
+		return m_pEvent != nullptr && event_del(m_pEvent) == 0;
 	}
 
 	void Free() {
-		if (m_pEvent != NULL) {
+		if (m_pEvent != nullptr) {
 			event_free(m_pEvent);
-			m_pEvent = NULL;
+			m_pEvent = nullptr;
 		}
 	}
 
@@ -98,7 +98,7 @@ public:
 	}
 
 	operator bool() const {
-		return m_pEvent != NULL;
+		return m_pEvent != nullptr;
 	}
 
 private:

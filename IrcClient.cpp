@@ -77,7 +77,7 @@ IrcClient::IrcClient() {
 	m_strRealName = "IrcClient";
 	m_stagingBufferSize = 0;
 	m_lastRecvTime = 0;
-	m_pEventBase = NULL; 
+	m_pEventBase = nullptr; 
 	m_clReadEvent = IrcEvent::Bind<IrcClient, &IrcClient::OnRead>(this);
 	m_clWriteEvent = IrcEvent::Bind<IrcClient, &IrcClient::OnWrite>(this);
 	m_clSendTimer = IrcEvent::Bind<IrcClient, &IrcClient::OnSendTimer>(this);
@@ -178,7 +178,7 @@ bool IrcClient::Connect(const std::string &strServer, const std::string &strPort
 	}
 #endif // _WIN32
 
-	struct addrinfo hints, *pResults = NULL;
+	struct addrinfo hints, *pResults = nullptr;
 	memset(&hints, 0, sizeof(hints));
 
 	hints.ai_family = AF_INET;
@@ -458,7 +458,7 @@ void IrcClient::CloseSocket() {
 }
 
 void IrcClient::ProcessLine(char *pLine) {
-	const char *pPrefix = NULL, *pCommand = NULL, *pParams[15] = { NULL };
+	const char *pPrefix = nullptr, *pCommand = nullptr, *pParams[15] = { nullptr };
 	unsigned int numParams = 0;
 
 	//puts(pLine);
@@ -481,7 +481,7 @@ void IrcClient::ProcessLine(char *pLine) {
 	if (isdigit(pCommand[0])) {
 		// This is probably a numeric
 
-		int numeric = strtol(pCommand,NULL,10);
+		int numeric = strtol(pCommand,nullptr,10);
 
 		OnNumeric(pPrefix, numeric, pParams, numParams);
 	}
@@ -580,7 +580,7 @@ void IrcClient::OnRead(evutil_socket_t fd, short what) {
 	p = q = m_stagingBuffer;
 
 	// We check the buffer size since Disconnect() can be called somewhere in ProcessLine()
-	while (m_stagingBufferSize > 0 && (q = strpbrk(p,"\r\n")) != NULL) {
+	while (m_stagingBufferSize > 0 && (q = strpbrk(p,"\r\n")) != nullptr) {
 		*q = '\0';
 
 		m_stagingBufferSize -= (q-p) + 1;

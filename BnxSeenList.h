@@ -75,7 +75,7 @@ public:
 		}
 
 		bool IsExpired() const {
-			return (time(NULL)-m_timeStamp) > (EXPIRE_TIME_IN_DAYS*60*60*24);
+			return (time(nullptr)-m_timeStamp) > (EXPIRE_TIME_IN_DAYS*60*60*24);
 		}
 
 		void Update() {

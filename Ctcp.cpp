@@ -32,20 +32,20 @@ bool CtcpEncoder::Encode(const CtcpMessage &message) {
 	size_t tagSize = message.tagSize, dataSize = message.dataSize,
 		expectedSize = 0;
 
-	if (pTag != NULL) {
+	if (pTag != nullptr) {
 		// Check for \040, not allowed in tags
-		if (memchr(pTag, 0040, tagSize) != NULL)
+		if (memchr(pTag, 0040, tagSize) != nullptr)
 			return false;
 
 		// Followed by two \001
 		expectedSize += ComputeEncodedSize(pTag, tagSize) + 2;
 
 		// And a space
-		if (pData != NULL && dataSize > 0)
+		if (pData != nullptr && dataSize > 0)
 			++expectedSize;
 	}
 
-	if (pData != NULL && dataSize > 0) 
+	if (pData != nullptr && dataSize > 0) 
 		expectedSize += ComputeEncodedSize(pData, dataSize);
 
 	// Too big
@@ -53,18 +53,18 @@ bool CtcpEncoder::Encode(const CtcpMessage &message) {
 		return false;
 
 	char *pBuffer = m_aBuffer + m_bufferSize;
-	if (pTag != NULL) {
+	if (pTag != nullptr) {
 		*pBuffer++ = 0001;
 		pBuffer += Encode(pTag, tagSize, pBuffer);
 
-		if (pData != NULL && dataSize > 0)
+		if (pData != nullptr && dataSize > 0)
 			*pBuffer++ = 0040;
 	}
 
-	if (pData != NULL && dataSize > 0) 
+	if (pData != nullptr && dataSize > 0) 
 		pBuffer += Encode(pData, dataSize, pBuffer);
 
-	if (pTag != NULL)
+	if (pTag != nullptr)
 		*pBuffer++ = 0001;
 
 	m_bufferSize += expectedSize;
@@ -144,7 +144,7 @@ size_t CtcpEncoder::Encode(const void *pData, size_t dataSize, char *pDest) {
 
 bool CtcpDecoder::Decode(CtcpMessage &message) {
 
-	message.tag = message.data = NULL;
+	message.tag = message.data = nullptr;
 	message.tagSize = message.dataSize = 0;
 
 	if (m_aBuffer[m_offset] == '\0')

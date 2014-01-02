@@ -54,7 +54,7 @@ BnxDriver & BnxDriver::GetInstance() {
 BnxDriver::~BnxDriver() {
 	BnxDriver::Reset();
 	event_base_free(m_pEventBase);
-	m_pEventBase = NULL;
+	m_pEventBase = nullptr;
 }
 
 void BnxDriver::Usage() {
@@ -154,7 +154,7 @@ void BnxDriver::LoadBot(const IniFile::Section &clSection) {
 
 	BnxBot *pclBot = GetBot(clSection.GetName());
 
-	if (pclBot == NULL) {
+	if (pclBot == nullptr) {
 		pclBot = new BnxBot();
 		pclBot->SetProfileName(clSection.GetName());
 
@@ -191,6 +191,6 @@ BnxBot * BnxDriver::GetBot(const std::string &strProfile) const {
 			return m_vBots[i];
 	}
 
-	return NULL;
+	return nullptr;
 }
 

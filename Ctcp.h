@@ -42,7 +42,7 @@ struct CtcpMessage {
 inline CtcpMessage MakeCtcpMessage(const char *pData) {
 	CtcpMessage message;
 
-	message.tag = NULL;
+	message.tag = nullptr;
 	message.tagSize = 0;
 
 	message.data = pData;

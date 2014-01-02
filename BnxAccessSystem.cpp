@@ -68,7 +68,9 @@ bool BnxAccessSystem::DeleteUser(const IrcUser &clHostmask) {
 bool BnxAccessSystem::Login(const IrcUser &clUser, const std::string &strPassword) {
 	ConstEntryIterator entryItr;
 
-	entryItr = std::find_if(EntryBegin(), EntryEnd(), EntryMatches(clUser));
+	entryItr = std::find_if(EntryBegin(), EntryEnd(), [&clUser](const UserEntry &clEntry) {
+		return clEntry.GetHostmask().Matches(clUser);
+	});
 
 	if (entryItr == EntryEnd() || !entryItr->CheckPassword(strPassword))
 		return false;
