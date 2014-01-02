@@ -46,12 +46,6 @@ BnxDriver & BnxDriver::GetInstance() {
 	return clDriver;
 }
 
-BnxDriver::~BnxDriver() {
-	BnxDriver::Reset();
-	event_base_free(m_pEventBase);
-	m_pEventBase = nullptr;
-}
-
 void BnxDriver::Usage() {
 	// TODO: Get program name
 	BnxErrorStream << "Usage: ircbnx [-hv] [-c config.ini]" << BnxEndl;
@@ -126,9 +120,6 @@ void BnxDriver::Shutdown() {
 }
 
 void BnxDriver::Reset() {
-	for (size_t i = 0; i < m_vBots.size(); ++i)
-		delete m_vBots[i];
-
 	m_vBots.clear();
 }
 
@@ -144,13 +135,13 @@ void BnxDriver::LoadBot(const IniFile::Section &clSection) {
 	if (strServer.empty() || strNickname.empty())
 		return;
 
-	BnxBot *pclBot = GetBot(clSection.GetName());
+	std::shared_ptr<BnxBot> p_clBot = GetBot(clSection.GetName());
 
-	if (pclBot == nullptr) {
-		pclBot = new BnxBot();
-		pclBot->SetProfileName(clSection.GetName());
+	if (!p_clBot) {
+		p_clBot.reset(new BnxBot());
+		p_clBot->SetProfileName(clSection.GetName());
 
-		m_vBots.push_back(pclBot);
+		m_vBots.push_back(p_clBot);
 	}
 
 	std::string strPort = clSection.GetValue<std::string>("port", "6667");
@@ -164,25 +155,25 @@ void BnxDriver::LoadBot(const IniFile::Section &clSection) {
 	std::string strNickServ = clSection.GetValue<std::string>("nickserv", "");
 	std::string strNickServPassword = clSection.GetValue<std::string>("nickservpassword", "");
 	
-	pclBot->SetServerAndPort(strServer, strPort);
-	pclBot->SetNickServAndPassword(strNickServ, strNickServPassword);
-	pclBot->SetNickname(strNickname);
-	pclBot->SetUsername(strUsername);
-	pclBot->SetRealName(strRealName);
-	pclBot->LoadResponseRules(strResponseRules);
-	pclBot->LoadAccessList(strAccessList);
-	pclBot->LoadShitList(strShitList);
-	pclBot->LoadSeenList(strSeenList);
-	pclBot->SetLogFile(m_strLogFile);
-	pclBot->SetHomeChannels(strHomeChannels);
+	p_clBot->SetServerAndPort(strServer, strPort);
+	p_clBot->SetNickServAndPassword(strNickServ, strNickServPassword);
+	p_clBot->SetNickname(strNickname);
+	p_clBot->SetUsername(strUsername);
+	p_clBot->SetRealName(strRealName);
+	p_clBot->LoadResponseRules(strResponseRules);
+	p_clBot->LoadAccessList(strAccessList);
+	p_clBot->LoadShitList(strShitList);
+	p_clBot->LoadSeenList(strSeenList);
+	p_clBot->SetLogFile(m_strLogFile);
+	p_clBot->SetHomeChannels(strHomeChannels);
 }
 
-BnxBot * BnxDriver::GetBot(const std::string &strProfile) const {
-	for (size_t i = 0; i < m_vBots.size(); ++i) {
-		if (strProfile == m_vBots[i]->GetProfileName())
-			return m_vBots[i];
+std::shared_ptr<BnxBot> BnxDriver::GetBot(const std::string &strProfile) const {
+	for (auto &p_clBot : m_vBots) {
+		if (strProfile == p_clBot->GetProfileName())
+			return p_clBot;
 	}
 
-	return nullptr;
+	return std::shared_ptr<BnxBot>();
 }
 

@@ -31,23 +31,24 @@
 #include <vector>
 #include <sstream>
 #include <iostream>
+#include <memory>
 #include "event2/event.h"
 #include "IniFile.h"
 #include "BnxBot.h"
 
 class BnxDriver {
 public:
-	typedef std::vector<BnxBot *>::const_iterator BotIterator;
+	typedef std::vector<std::shared_ptr<BnxBot> >::const_iterator BotIterator;
 
 	static BnxDriver & GetInstance();
 
 	BnxDriver() {
 		m_strConfigFile = "bot.ini";
 		m_strLogFile = "bot.log";
-		m_pEventBase = event_base_new();
+		m_pEventBase.reset(event_base_new());
 	}
 
-	virtual ~BnxDriver();
+	virtual ~BnxDriver() { }
 
 	virtual void SetConfigFile(const std::string &strConfigFile) {
 		m_strConfigFile = strConfigFile;
@@ -68,17 +69,24 @@ public:
 		return m_vBots.end();
 	}
 
-	BnxBot * GetBot(const std::string &strProfile) const;
+	std::shared_ptr<BnxBot> GetBot(const std::string &strProfile) const;
 
 protected:
 	struct event_base * GetEventBase() const {
-		return m_pEventBase;
+		return m_pEventBase.get();
 	}
 
 private:
+	struct EventBaseDeleter {
+		void operator()(struct event_base *pEventBase) const {
+			if (pEventBase != nullptr)
+				event_base_free(pEventBase);
+		}
+	};
+
 	std::string m_strConfigFile, m_strLogFile;
-	std::vector<BnxBot *> m_vBots;
-	struct event_base *m_pEventBase;
+	std::vector<std::shared_ptr<BnxBot> > m_vBots;
+	std::unique_ptr<struct event_base, EventBaseDeleter> m_pEventBase;
 
 	// Disabled
 	BnxDriver(const BnxDriver &) = delete;
