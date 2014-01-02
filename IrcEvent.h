@@ -32,11 +32,19 @@
 
 class IrcEvent {
 public:
+	typedef std::function<void (evutil_socket_t, short)> CallbackType;
+
 	template<typename ObjectType>
 	static IrcEvent Bind(void (ObjectType::*Method)(evutil_socket_t, short), ObjectType *p_clObject) {
 		using namespace std::placeholders;
 
 		return IrcEvent(std::bind(Method, p_clObject, _1, _2));
+	}
+
+	static IrcEvent Bind(void (*callback)(evutil_socket_t, short, void *), void *pArg) {
+		using namespace std::placeholders;
+
+		return IrcEvent(std::bind(callback, _1, _2, pArg));
 	}
 
 	IrcEvent() = default;
@@ -45,7 +53,7 @@ public:
 		*this = clEvent;
 	}
 
-	explicit IrcEvent(const std::function<void (evutil_socket_t, short)> &clCallback) {
+	explicit IrcEvent(const CallbackType &clCallback) {
 		m_clCallback = clCallback;
 	}
 
@@ -91,7 +99,7 @@ private:
 	};
 
 	std::unique_ptr<struct event, EventDeleter> m_pEvent;
-	std::function<void (evutil_socket_t, short)> m_clCallback;
+	CallbackType m_clCallback;
 };
 
 #endif // !IRCEVENT_H
