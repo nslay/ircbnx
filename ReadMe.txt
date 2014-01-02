@@ -287,9 +287,6 @@ IRCBNX exhibits some of the following additional behaviors:
 
 To build IRCBNX from source, you will need CMake, a C++ compiler, and 
 the following dependencies:
-- PCRE (required for Windows, optional for Unix-like systems)
-http://pcre.org/
-
 - libevent2
 http://libevent.org
 
@@ -306,10 +303,9 @@ run:
 
 ccmake /path/to/source/directory
 
-In both cases, "configure" and then specify whether you want to enable
-PCRE (recommended), the location of the libevent headers and
-libraries, and the location of the PCRE headers and libraries. Next
-"generate" to generate the build system.
+In both cases, "configure" and then specify the location of the 
+libevent headers andl ibraries. Next "generate" to generate the build 
+system.
 
 Visual Studio:
 - Open the solution in the build directory you created and proceed.
@@ -321,16 +317,4 @@ IRCBNX is known to build in the following environments:
 
 FreeBSD 10.0:
 - Clang 3.3
-
-FreeBSD 9.1:
-- GCC 4.2
-- Clang 3.1
-
-CentOS 6.3:
-- GCC 4.4.6
-
-Windows 7:
-- MingW64 4.5.3
-- Visual Studio 2010
-- Visual Studio 2012
 
