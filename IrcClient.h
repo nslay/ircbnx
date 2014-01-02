@@ -115,8 +115,6 @@ private:
 	struct event_base *m_pEventBase;
 	IrcEvent m_clReadEvent, m_clWriteEvent, m_clSendTimer;
 
-	static char * PopToken(char *&pStr);
-
 	void CloseSocket();
 
 	void ProcessLine(char *pLine);
