@@ -35,11 +35,6 @@
 #include "BnxWin32Driver.h"
 #endif
 
-#ifdef USE_PCRE
-// Include for pcre_version()
-#include "pcre.h"
-#endif // USE_PCRE
-
 BnxDriver & BnxDriver::GetInstance() {
 #if defined(__unix__)
 	static BnxUnixDriver clDriver;
@@ -73,9 +68,6 @@ bool BnxDriver::ParseArgs(int argc, char *argv[]) {
 		case 'v':
 			BnxOutStream << BnxBot::GetVersionString() << "\n\n";
 			BnxOutStream << "libevent: " << event_get_version() << '\n';
-#ifdef USE_PCRE
-			BnxOutStream << "pcre: " << pcre_version() << BnxEndl;
-#endif // USE_PCRE
 			return false;
 		case 'h':
 		default:
