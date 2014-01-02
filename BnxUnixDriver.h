@@ -51,10 +51,10 @@ private:
 	IrcEvent m_clSigTerm, m_clSigInt, m_clSigAbrt, m_clSigQuit;
 
 	// Disabled
-	BnxUnixDriver(const BnxUnixDriver &);
+	BnxUnixDriver(const BnxUnixDriver &) = delete;
 
 	// Disabled
-	BnxUnixDriver & operator=(const BnxUnixDriver &);
+	BnxUnixDriver & operator=(const BnxUnixDriver &) = delete;
 
 	bool Daemonize();
 

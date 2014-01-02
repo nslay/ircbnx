@@ -128,15 +128,15 @@ bool BnxResponseEngine::LoadFromStream(std::istream &is) {
 void BnxResponseEngine::SaveToStream(std::ostream &os) const {
 	std::vector<std::string> vRegexRules;
 
-	for (size_t i = 0; i < m_vRules.size(); ++i) {
-		const std::vector<std::string> &vResponses = m_vRules[i].GetResponses();
-		m_vRules[i].GetRules(vRegexRules);
+	for (auto &clRule : m_vRules) {
+		auto &vResponses = clRule.GetResponses();
+		vRegexRules = clRule.GetRules();
 
-		for (size_t j = 0; j < vRegexRules.size(); ++j)
-			os << "P " << vRegexRules[j] << std::endl;
+		for (auto &strRegex : vRegexRules)
+			os << "P " << strRegex << std::endl;
 
-		for (size_t j = 0; j < vResponses.size(); ++j)
-			os << "R " << vResponses[j] << std::endl;
+		for (auto &strResponse : vResponses)
+			os << "R " << strResponse << std::endl;
 	}
 }
 

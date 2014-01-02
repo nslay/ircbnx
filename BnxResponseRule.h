@@ -31,32 +31,14 @@
 #include <string>
 #include <vector>
 #include <utility>
-
-#ifdef USE_PCRE
-#include <pcreposix.h>
-#else // !USE_PCRE
-#include <regex.h>
-#endif // USE_PCRE
+#include <regex>
 
 class BnxResponseRule {
 public:
-	BnxResponseRule() { }
-
-	~BnxResponseRule() {
-		Reset();
-	}
-
-	BnxResponseRule(const BnxResponseRule &clRule) {
-		*this = clRule;
-	}
-
 	bool AddRule(const std::string &strRegex) {
-		regex_t rule;
+		using namespace std::regex_constants;
 
-		if (regcomp(&rule, strRegex.c_str(), REG_EXTENDED | REG_ICASE | REG_NOSUB) != 0)
-			return false;
-
-		m_vRegexRules.push_back(std::make_pair(strRegex, rule));
+		m_vRegexRules.push_back(std::make_pair(strRegex, std::regex(strRegex, ECMAScript | icase)));
 
 		return true;
 	}
@@ -73,25 +55,24 @@ public:
 		return m_vResponses;
 	}
 
-	void GetRules(std::vector<std::string> &vRegexRules) const {
-		vRegexRules.resize(m_vRegexRules.size());
+	std::vector<std::string> GetRules() const {
+		std::vector<std::string> vRegexRules;
+		vRegexRules.reserve(m_vRegexRules.size());
 
-		for (size_t i = 0; i < m_vRegexRules.size(); ++i)
-			vRegexRules[i] = m_vRegexRules[i].first;
+		for (auto &rulePair : m_vRegexRules)
+			vRegexRules.push_back(rulePair.first);
+
+		return vRegexRules;
 	}
 
 	void Reset() {
-		for (size_t i = 0; i < m_vRegexRules.size(); ++i)
-			regfree(&m_vRegexRules[i].second);
-
 		m_vRegexRules.clear();
 		m_vResponses.clear();
 	}
 
 	bool operator==(const std::string &strMessage) const {
-		for (size_t i = 0; i < m_vRegexRules.size(); ++i) {
-			//std::cout << "Matching: '" << strMessage << "' against '" << m_vRegexRules[i].first << "'" << std::endl;
-			if (regexec(&m_vRegexRules[i].second, strMessage.c_str(), 0, NULL, 0) == 0) 
+		for (auto &rulePair : m_vRegexRules) {
+			if (std::regex_search(strMessage, rulePair.second))
 				return true;
 		}
 
@@ -102,24 +83,8 @@ public:
 		return !(*this == strMessage);
 	}
 
-	BnxResponseRule & operator=(const BnxResponseRule &clRule) {
-		if (this == &clRule)
-			return *this;
-
-		Reset();
-
-		// POSIX gives us no way to copy regex_t
-		// So compile new ones ...
-
-		m_vResponses = clRule.m_vResponses;
-		for (size_t i = 0; i < clRule.m_vRegexRules.size(); ++i)
-			AddRule(clRule.m_vRegexRules[i].first);
-
-		return *this;
-	}
-
 private:
-	std::vector<std::pair<std::string, regex_t> > m_vRegexRules;
+	std::vector<std::pair<std::string, std::regex> > m_vRegexRules;
 	std::vector<std::string> m_vResponses;
 };
 

@@ -55,9 +55,7 @@ public:
 	}
 
 	const std::string & ComputeResponse(const std::string &strMessage) const {
-		std::vector<BnxResponseRule>::const_iterator itr;
-
-		itr = std::find(m_vRules.begin(), m_vRules.end(), strMessage);
+		auto itr = std::find(m_vRules.begin(), m_vRules.end(), strMessage);
 
 		if (itr == m_vRules.end()) {
 			const std::vector<std::string> &vDefaultResponses = (!strMessage.empty() && *strMessage.rbegin() == '?') ? 
