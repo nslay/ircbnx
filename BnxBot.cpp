@@ -96,10 +96,10 @@ void BnxBot::AddHomeChannels(const std::string &strChannels) {
 		if (strChannel.empty())
 			continue;
 
-		if (std::find_if(m_vHomeChannels.cbegin(), m_vHomeChannels.cend(),
-				[&strChannel](const std::string &strOther) {
-					return !IrcStrCaseCmp(strChannel.c_str(), strOther.c_str());
-				}) == m_vHomeChannels.end()) {
+		if (std::none_of(m_vHomeChannels.cbegin(), m_vHomeChannels.cend(), 
+			[&strChannel](const std::string &strOther) {
+				return !IrcStrCaseCmp(strChannel.c_str(), strOther.c_str());
+			})) {
 			m_vHomeChannels.push_back(strChannel);
 		}
 	}
@@ -111,9 +111,9 @@ void BnxBot::DeleteHomeChannels(const std::string &strChannels) {
 	std::string strChannel;
 	while (std::getline(channelStream,strChannel,',')) {
 		auto itr = std::find_if(m_vHomeChannels.begin(), m_vHomeChannels.end(), 
-					[&strChannel](const std::string &strOther) {
-						return !IrcStrCaseCmp(strChannel.c_str(), strOther.c_str());
-					});
+			[&strChannel](const std::string &strOther) {
+				return !IrcStrCaseCmp(strChannel.c_str(), strOther.c_str());
+			});
 
 		if (itr != m_vHomeChannels.end())
 			m_vHomeChannels.erase(itr);

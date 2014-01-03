@@ -75,7 +75,7 @@ void BnxChannel::UpdateMember(const std::string &strNick, const std::string &str
 	if (memberItr != MemberEnd())
 		memberItr->GetUser().SetNickname(strNewNick);
 
-	if (IsVoteBanInProgress() && !IrcStrCaseCmp(m_clVoteBanMask.GetNickname().c_str(), strNick.c_str()))
+	if (IsVoteBanInProgress() && !IrcStrCaseCmp(m_clVoteBanMask.GetNickname().c_str(), strNick.c_str(), m_eCaseMapping))
 		m_clVoteBanMask.SetNickname(strNewNick);
 }
 
