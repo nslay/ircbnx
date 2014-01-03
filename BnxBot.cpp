@@ -643,11 +643,10 @@ BnxBot::ChannelIterator BnxBot::GetChannel(const char *pChannel) {
 }
 
 bool BnxBot::IsSquelched(const IrcUser &clUser) {
-	return std::find_if(m_vSquelchedUsers.cbegin(), 
-				m_vSquelchedUsers.cend(), 
-				[&clUser](const IrcUser &clMask) {
-					return clMask.Matches(clUser);
-				}) != m_vSquelchedUsers.end();
+	return std::any_of(m_vSquelchedUsers.cbegin(), m_vSquelchedUsers.cend(),
+		[&clUser](const IrcUser &clMask) {
+			return clMask.Matches(clUser);
+		});
 }
 
 void BnxBot::SplatterKick(const char *pChannel, const IrcUser &clUser) {
