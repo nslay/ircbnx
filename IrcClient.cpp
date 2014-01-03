@@ -70,7 +70,7 @@ namespace {
 	
 		return pTmp;
 	}
-}
+} // end namespace
 
 IrcClient::IrcClient() {
 	m_socket = INVALID_SOCKET;
