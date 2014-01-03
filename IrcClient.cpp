@@ -54,20 +54,22 @@
 #include "IrcString.h"
 #include "Irc.h"
 
-char * IrcClient::PopToken(char *&pStr) {
-	for ( ; *pStr == ' '; ++pStr);
-
-	char *pTmp = pStr;
-
-	for ( ; *pStr != ' ' && *pStr != '\0'; ++pStr);
-
-	if (*pStr != '\0') {
-		*pStr++ = '\0';
+namespace {
+	char * PopToken(char *&pStr) {
 		for ( ; *pStr == ' '; ++pStr);
+	
+		char *pTmp = pStr;
+	
+		for ( ; *pStr != ' ' && *pStr != '\0'; ++pStr);
+	
+		if (*pStr != '\0') {
+			*pStr++ = '\0';
+			for ( ; *pStr == ' '; ++pStr);
+		}
+	
+		return pTmp;
 	}
-
-	return pTmp;
-}
+} // end namespace
 
 IrcClient::IrcClient() {
 	m_socket = INVALID_SOCKET;
