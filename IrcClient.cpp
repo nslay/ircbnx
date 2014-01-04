@@ -379,6 +379,12 @@ void IrcClient::OnNumeric(const char *pPrefix, int numeric, const char **pParams
 			Disconnect();
 		}
 		break;
+	case ERR_PASSWDMISMATCH:
+		if (!IsRegistered()) {
+			Log("Cannot register due to incorrect server password.");
+			Disconnect();
+		}
+		break;
 	}
 }
 

@@ -860,6 +860,10 @@ void BnxBot::OnNumeric(const char *pSource, int numeric, const char *pParams[], 
 		if (!IsRegistered())
 			BnxDriver::GetInstance().Shutdown();
 		break;
+	case ERR_PASSWDMISMATCH:
+		if (!IsRegistered())
+			BnxDriver::GetInstance().Shutdown();
+		break;
 	}
 }
 
